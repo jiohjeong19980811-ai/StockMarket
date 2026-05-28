@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T16:45:00-04:00",
+  "lastUpdated": "2026-05-28T17:05:00-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,9 +11,9 @@
   ],
   "currentFocus": {
     "phase": "Milestone 2: Domain And Database Contracts",
-    "task": "Define persisted research contracts, audit trail, and migration approach",
+    "task": "Implement runtime domain schemas, initial database migrations, and audit constraints",
     "owner": "Codex founding CTO / lead architect / security reviewer",
-    "status": "Planned",
+    "status": "In Progress",
     "priority": "High",
     "category": "Domain and persistence design"
   },
@@ -207,17 +207,19 @@
       "title": "Define domain and database contracts",
       "phase": "Milestone 2",
       "owner": "Codex founding CTO / lead architect / security reviewer",
-      "status": "Planned",
+      "status": "In Progress",
       "priority": "High",
       "category": "Domain and persistence design",
       "blockers": [],
-      "nextStep": "Choose the migration/local database approach, then implement persisted research contracts with auditability and risk gates.",
+      "nextStep": "Execute the Milestone 2 implementation plan with Drizzle/libSQL migrations, runtime schemas, audit constraints, and safety tests.",
       "relatedDocs": [
         "docs/architecture.md",
         "docs/implementation-plan.md",
         "docs/product-roadmap.md",
         "docs/risk-and-compliance.md",
         "docs/backtesting-and-validation.md",
+        "docs/superpowers/specs/2026-05-28-milestone-2-domain-db-design.md",
+        "docs/superpowers/plans/2026-05-28-milestone-2-domain-db.md",
         "packages/core",
         "packages/db"
       ],

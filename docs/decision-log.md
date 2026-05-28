@@ -107,3 +107,21 @@ Reason: The product is paper-trading-first. Even unused broker credentials creat
 Decision: Add a root `ci` script that runs typecheck, lint, format check, unit tests, hook tests, dependency audit, production build, and API smoke validation.
 
 Reason: Review fixes should be validated through one repeatable command before commits, future PRs, or milestone transitions.
+
+## 2026-05-28: Milestone 2 Persistence Stack
+
+Decision: Use Drizzle ORM and Drizzle Kit for TypeScript-first schema and migration work. Use SQLite/libSQL for the first local MVP implementation and CI migration tests, while keeping Postgres as the likely future system of record.
+
+Reason: Milestone 2 needs committed migrations, explicit constraints, fast local validation, and low setup friction. A future Postgres move should wait until ingestion volume, paid-provider licensing, and deployment needs are clearer.
+
+## 2026-05-28: Runtime Domain Validation
+
+Decision: Add Zod runtime schemas for persisted recommendation/domain contracts in addition to TypeScript interfaces.
+
+Reason: API and database boundaries need runtime validation for citations, timestamps, score ranges, freshness, audit linkage, and options risk fields. TypeScript alone does not protect stored data or external inputs.
+
+## 2026-05-28: Raw Provider Payload Retention
+
+Decision: Do not store full raw provider, article, options-chain, or AI prompt payloads until provider terms and secret-redaction rules are reviewed. Store normalized facts, source references, timestamps, hashes, and allowed excerpts/summaries first.
+
+Reason: Market/news data licensing may restrict local storage or redistribution, and raw prompts or payloads may accidentally include secrets or untrusted instructions.

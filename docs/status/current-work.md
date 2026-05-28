@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T16:45:00-04:00
+Last updated: 2026-05-28T17:05:00-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 2: Domain And Database Contracts |
-| Current task | Define persisted research contracts, audit trail, and migration approach |
+| Current task | Implement runtime domain schemas, initial database migrations, and audit constraints |
 | Owner/agent | Codex acting as founding CTO / lead architect / security reviewer |
-| Status | Planned |
+| Status | In Progress |
 | Priority | High |
 | Category | Domain and persistence design |
 | Blockers | None |
-| Next step | Commit Milestone 1 review fixes, then plan Milestone 2 schema/contracts before implementation |
-| Related docs/files | `package.json`, `apps/api`, `apps/web`, `packages/`, `docs/superpowers/plans/2026-05-28-milestone-1-scaffold.md`, `docs/status/work-items.json` |
-| Validation required | Milestone 1 review completed: `npm.cmd run ci`, `python -m json.tool docs/status/work-items.json`, `git diff --check`, API smoke, dependency audit, and secret-pattern scan |
+| Next step | Execute the Milestone 2 implementation plan and validate with focused tests plus `npm.cmd run ci` |
+| Related docs/files | `docs/superpowers/specs/2026-05-28-milestone-2-domain-db-design.md`, `docs/superpowers/plans/2026-05-28-milestone-2-domain-db.md`, `packages/core`, `packages/db`, `apps/api/src/env.ts` |
+| Validation required | Required before completion: core schema tests, DB migration tests, API env tests, root CI, status JSON parse, whitespace check, and secret-pattern scan |
 
 ## Status Vocabulary
 

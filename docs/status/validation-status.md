@@ -1,20 +1,20 @@
 # Validation Status
 
-Last updated: 2026-05-28T16:45:00-04:00
+Last updated: 2026-05-28T17:05:00-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 1 review validation |
-| Current task | Scaffold review fixes validated and ready to commit |
+| Current phase | Milestone 2 planning validation |
+| Current task | Domain/database design and implementation plan prepared |
 | Owner/agent | Codex founding CTO / QA reviewer / security reviewer |
-| Status | Completed |
+| Status | In Progress |
 | Priority | High |
 | Category | Validation |
 | Blockers | None |
-| Next step | Commit scaffold review fixes, then begin Milestone 2 planning |
-| Related docs/files | `package.json`, `apps/api`, `apps/web`, `packages/`, `docs/status/` |
+| Next step | Validate planning docs, commit them, then execute Milestone 2 implementation |
+| Related docs/files | `docs/superpowers/specs/2026-05-28-milestone-2-domain-db-design.md`, `docs/superpowers/plans/2026-05-28-milestone-2-domain-db.md`, `docs/status/` |
 
 ## Checks
 
@@ -72,6 +72,14 @@ Last updated: 2026-05-28T16:45:00-04:00
 | Milestone 1 review dependency audit | Completed | npm reported 0 vulnerabilities after registry-access retry | `npm.cmd run audit:deps` |
 | Milestone 1 review API smoke | Completed | Built API health route returned expected response with live trading disabled | `npm.cmd run smoke:api` |
 | Milestone 1 review secret-pattern scan | Completed | No secret-shaped tokens or broker credential assignments found; scan returned no matches | `rg` secret-pattern scan |
+| Milestone 2 data subagent handoff | Completed | Data engineering recommended Drizzle, committed SQL migrations, strong provider lineage, and explicit DB constraints | Multi-agent `data-engineering` handoff |
+| Milestone 2 security subagent handoff | Completed | Security/compliance approved research-only M2 with stricter audit, options, retention, and broker/env guardrails | Multi-agent `security-compliance` handoff |
+| Milestone 2 design spec | Completed | Domain/database design written with Drizzle/libSQL local MVP decision and Postgres future path | `docs/superpowers/specs/2026-05-28-milestone-2-domain-db-design.md` |
+| Milestone 2 implementation plan | Completed | Implementation plan written for runtime schemas, DB migrations, env guardrails, docs, and validation | `docs/superpowers/plans/2026-05-28-milestone-2-domain-db.md` |
+| Milestone 2 planning status JSON parse | Completed | `docs/status/work-items.json` parsed successfully | `python -m json.tool docs/status/work-items.json` |
+| Milestone 2 planning whitespace check | Completed | No whitespace errors; only Git line-ending warnings on Windows working copy | `git diff --check` |
+| Milestone 2 planning unfinished-marker scan | Completed | No unfinished markers found in planning/status docs | `rg` unfinished-marker scan |
+| Milestone 2 planning secret-pattern scan | Completed | No token-shaped secret matches found in planning/status docs | stricter `rg` secret-pattern scan |
 
 ## Rule
 

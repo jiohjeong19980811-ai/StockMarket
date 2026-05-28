@@ -118,7 +118,7 @@ Hard no-trade gates:
 
 ## Promotion Gates
 
-A strategy can move from research candidate to recommended paper-trade candidate only when:
+A strategy can move from research candidate to paper-trade candidate only when:
 
 - Inputs are fresh enough for the strategy.
 - Sources and timestamps are present.
