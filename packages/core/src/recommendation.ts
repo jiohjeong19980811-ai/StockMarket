@@ -5,7 +5,7 @@ export const opportunityDecisions = [
   "watchlist",
   "paper_trade",
   "avoid",
-  "needs_more_data"
+  "needs_more_data",
 ] as const;
 
 export type OpportunityDecision = (typeof opportunityDecisions)[number];

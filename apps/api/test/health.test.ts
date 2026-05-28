@@ -6,12 +6,12 @@ describe("health route", () => {
     const server = buildServer({
       APP_ENV: "test",
       API_PORT: 4000,
-      LIVE_TRADING_ENABLED: false
+      LIVE_TRADING_ENABLED: false,
     });
 
     const response = await server.inject({
       method: "GET",
-      url: "/health"
+      url: "/health",
     });
 
     expect(response.statusCode).toBe(200);
@@ -19,7 +19,7 @@ describe("health route", () => {
       service: "stockmarket-api",
       status: "ok",
       appEnv: "test",
-      liveTradingEnabled: false
+      liveTradingEnabled: false,
     });
   });
 });

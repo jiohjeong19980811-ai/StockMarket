@@ -15,7 +15,7 @@
 - Create `package.json`: root workspace scripts and dependency catalog.
 - Create `tsconfig.base.json`: shared strict TypeScript compiler settings.
 - Create `tsconfig.json`: root TypeScript build references.
-- Create `vitest.workspace.ts`: workspace-aware Vitest projects.
+- Create `vitest.config.ts`: workspace-aware Vitest projects.
 - Create `eslint.config.mjs`: root lint config for TypeScript and React.
 - Create `.prettierrc.json` and `.prettierignore`: deterministic code formatting without reformatting existing docs.
 - Create `apps/api/package.json`, `apps/api/tsconfig.json`, `apps/api/vitest.config.ts`, `apps/api/src/env.ts`, `apps/api/src/server.ts`, `apps/api/src/index.ts`, `apps/api/test/env.test.ts`, and `apps/api/test/health.test.ts`.
@@ -29,7 +29,7 @@
 - Create: `package.json`
 - Create: `tsconfig.base.json`
 - Create: `tsconfig.json`
-- Create: `vitest.workspace.ts`
+- Create: `vitest.config.ts`
 - Create: `eslint.config.mjs`
 - Create: `.prettierrc.json`
 - Create: `.prettierignore`
@@ -137,12 +137,40 @@ Create `tsconfig.json`:
 }
 ```
 
-Create `vitest.workspace.ts`:
+Create `vitest.config.ts`:
 
 ```ts
-import { defineWorkspace } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vitest/config";
 
-export default defineWorkspace(["packages/*/vitest.config.ts", "apps/*/vitest.config.ts"]);
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        test: {
+          name: "core",
+          environment: "node",
+          include: ["packages/core/test/**/*.test.ts"]
+        }
+      },
+      {
+        test: {
+          name: "api",
+          environment: "node",
+          include: ["apps/api/test/**/*.test.ts"]
+        }
+      },
+      {
+        plugins: [react()],
+        test: {
+          name: "web",
+          environment: "jsdom",
+          include: ["apps/web/test/**/*.test.tsx"]
+        }
+      }
+    ]
+  }
+});
 ```
 
 Create `eslint.config.mjs`:
@@ -157,9 +185,9 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   {
     ignores: [
-      "dist",
-      "build",
-      "coverage",
+      "**/dist/**",
+      "**/build/**",
+      "**/coverage/**",
       "node_modules",
       ".codex/hooks/__pycache__",
       "docs"
@@ -226,7 +254,7 @@ Expected: `package-lock.json` is created, dependencies install, and no install s
 Run:
 
 ```powershell
-git add package.json package-lock.json tsconfig.base.json tsconfig.json vitest.workspace.ts eslint.config.mjs .prettierrc.json .prettierignore
+git add package.json package-lock.json tsconfig.base.json tsconfig.json vitest.config.ts eslint.config.mjs .prettierrc.json .prettierignore
 git commit -m "chore: add workspace tooling"
 ```
 

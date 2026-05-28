@@ -1,20 +1,20 @@
 const panels = [
   {
     title: "Daily Opportunities",
-    body: "No recommendations are generated until data, citations, risk, and evidence gates exist."
+    body: "No recommendations are generated until data, citations, risk, and evidence gates exist.",
   },
   {
     title: "Strategy Evidence",
-    body: "Strategies start as hypotheses and require reproducible validation before paper-trade eligibility."
+    body: "Strategies start as hypotheses and require reproducible validation before paper-trade eligibility.",
   },
   {
     title: "Data Freshness",
-    body: "Provider timestamps and quality checks will drive confidence and no-trade outcomes."
+    body: "Provider timestamps and quality checks will drive confidence and no-trade outcomes.",
   },
   {
     title: "Paper Trading",
-    body: "Simulated decisions will be recorded before any future broker integration is considered."
-  }
+    body: "Simulated decisions will be recorded before any future broker integration is considered.",
+  },
 ];
 
 export function App() {

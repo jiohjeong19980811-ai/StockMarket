@@ -7,7 +7,7 @@ export const strategyFamilies = [
   "news_sentiment",
   "value_quality",
   "sector_macro",
-  "portfolio_risk"
+  "portfolio_risk",
 ] as const;
 
 export type StrategyFamily = (typeof strategyFamilies)[number];
@@ -17,7 +17,7 @@ export const evidenceStatuses = [
   "watchlist_eligible",
   "paper_trade_eligible",
   "avoid",
-  "needs_more_data"
+  "needs_more_data",
 ] as const;
 
 export type EvidenceStatus = (typeof evidenceStatuses)[number];

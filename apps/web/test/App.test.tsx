@@ -7,8 +7,12 @@ describe("operator console shell", () => {
   it("shows research-first safety posture", () => {
     render(<App />);
 
-    expect(screen.getByRole("heading", { name: "StockMarket Operator Console" })).toBeInTheDocument();
-    expect(screen.getByText("Research first. Paper trading first. Live trading prohibited.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "StockMarket Operator Console" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Research first. Paper trading first. Live trading prohibited."),
+    ).toBeInTheDocument();
     expect(screen.getByText("No good trades today is a valid outcome.")).toBeInTheDocument();
   });
 });

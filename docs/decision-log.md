@@ -65,3 +65,15 @@ Reason: Strategy research must understand proven categories, failure modes, back
 Decision: Use an npm-workspaces TypeScript monorepo for Milestone 1. Scaffold `apps/api` with Fastify, `apps/web` with Vite React, and shared packages under `packages/` for core, data, db, scoring, backtesting, paper trading, and agents.
 
 Reason: npm is already available locally through `npm.cmd`, while `pnpm` is not installed. TypeScript supports the repo's type-safety requirement, Fastify provides a lightweight typed API surface, and Vite React matches the UI research direction without adding a full-stack framework or broker/trading surface.
+
+## 2026-05-28: Milestone 1 Vitest Project Config
+
+Decision: Use root `vitest.config.ts` with `test.projects` instead of `vitest.workspace.ts`.
+
+Reason: The installed Vitest version marks workspace files as deprecated. A root project config keeps tests warning-free while still separating core, API, and web environments.
+
+## 2026-05-28: Source Package Unignore
+
+Decision: Keep generated/local market data ignored with `data/`, but explicitly unignore `packages/data/`.
+
+Reason: The repo needs a source package named `packages/data` for provider contracts. The ignore rule should protect local datasets without hiding application source code.

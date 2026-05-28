@@ -6,7 +6,9 @@ const envSchema = z.object({
   LIVE_TRADING_ENABLED: z
     .enum(["false", "False", "FALSE", "0", "true", "True", "TRUE", "1"])
     .default("false")
-    .transform((value) => value === "true" || value === "True" || value === "TRUE" || value === "1")
+    .transform(
+      (value) => value === "true" || value === "True" || value === "TRUE" || value === "1",
+    ),
 });
 
 export type ApiEnv = {

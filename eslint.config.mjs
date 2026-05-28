@@ -7,13 +7,13 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   {
     ignores: [
-      "dist",
-      "build",
-      "coverage",
+      "**/dist/**",
+      "**/build/**",
+      "**/coverage/**",
       "node_modules",
       ".codex/hooks/__pycache__",
-      "docs"
-    ]
+      "docs",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -23,16 +23,16 @@ export default tseslint.config(
       ecmaVersion: 2022,
       globals: {
         ...globals.browser,
-        ...globals.node
-      }
+        ...globals.node,
+      },
     },
     plugins: {
       "react-hooks": reactHooks,
-      "react-refresh": reactRefresh
+      "react-refresh": reactRefresh,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }]
-    }
-  }
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+    },
+  },
 );

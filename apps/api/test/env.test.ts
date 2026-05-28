@@ -7,8 +7,8 @@ describe("API environment validation", () => {
       loadEnv({
         APP_ENV: "development",
         API_PORT: "4000",
-        LIVE_TRADING_ENABLED: "true"
-      })
+        LIVE_TRADING_ENABLED: "true",
+      }),
     ).toThrow("LIVE_TRADING_ENABLED must remain false in MVP");
   });
 
@@ -16,7 +16,7 @@ describe("API environment validation", () => {
     const env = loadEnv({
       APP_ENV: "development",
       API_PORT: "4000",
-      LIVE_TRADING_ENABLED: "false"
+      LIVE_TRADING_ENABLED: "false",
     });
 
     expect(env.APP_ENV).toBe("development");
