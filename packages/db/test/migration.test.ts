@@ -53,6 +53,42 @@ async function seedRecommendationDependencies() {
   );
 }
 
+async function seedProviderRecord(dataset = "prices") {
+  const ingestionRunId = `ingest_${dataset}`;
+  const providerRecordId = `provider_record_${dataset}`;
+  await execute(
+    `INSERT INTO ingestion_runs
+      (id, provider_name, provider_dataset, adapter_version, status, started_at, completed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [ingestionRunId, "mock-provider", dataset, "adapter-v0", "completed", now, now],
+  );
+  await execute(
+    `INSERT INTO provider_records
+      (id, ingestion_run_id, provider_name, provider_dataset, provider_record_id, content_hash,
+       provider_timestamp, source_published_at, retrieved_at, ingested_at, normalized_at,
+       adapter_version, normalization_version, quality_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      providerRecordId,
+      ingestionRunId,
+      "mock-provider",
+      dataset,
+      `${dataset}-record-1`,
+      `hash_${dataset}`,
+      now,
+      now,
+      now,
+      now,
+      now,
+      "adapter-v0",
+      "normalize-v0",
+      "fresh",
+    ],
+  );
+
+  return providerRecordId;
+}
+
 async function insertRecommendation(overrides: Record<string, unknown> = {}) {
   const row = {
     id: "rec_1",
@@ -125,8 +161,13 @@ describe("database migrations", () => {
     const result = await client.execute(
       "SELECT name, checksum FROM schema_migrations ORDER BY name",
     );
-    expect(result.rows.map((row) => row.name)).toEqual(["0000_initial_research_schema.sql"]);
-    expect(result.rows[0]?.checksum).toEqual(expect.stringMatching(/^[a-f0-9]{64}$/));
+    expect(result.rows.map((row) => row.name)).toEqual([
+      "0000_initial_research_schema.sql",
+      "0001_normalized_ingestion_tables.sql",
+    ]);
+    for (const row of result.rows) {
+      expect(row.checksum).toEqual(expect.stringMatching(/^[a-f0-9]{64}$/));
+    }
   });
 
   it("rejects modified migration files after they have been applied", async () => {
@@ -265,6 +306,208 @@ describe("database migrations", () => {
 
     expect(ingestionColumns.rows.map((row) => row.name)).not.toContain("metadata_json");
     expect(auditColumns.rows.map((row) => row.name)).not.toContain("metadata_json");
+  });
+
+  it("creates normalized ingestion tables with provider lineage", async () => {
+    const result = await client.execute(
+      "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
+    );
+
+    expect(result.rows.map((row) => row.name)).toEqual(
+      expect.arrayContaining(["price_bars", "news_articles", "earnings_events", "option_quotes"]),
+    );
+  });
+
+  it("accepts normalized ingestion rows linked to provider records", async () => {
+    const priceProviderRecordId = await seedProviderRecord("prices");
+    const newsProviderRecordId = await seedProviderRecord("news");
+    const earningsProviderRecordId = await seedProviderRecord("earnings");
+    const optionsProviderRecordId = await seedProviderRecord("options");
+
+    await execute(
+      `INSERT INTO price_bars
+        (id, provider_record_id, symbol, bar_interval, timestamp, open, high, low, close,
+         adjusted_close, volume, currency)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "price_bar_1",
+        priceProviderRecordId,
+        "MSFT",
+        "1d",
+        now,
+        100,
+        105,
+        99,
+        104,
+        104,
+        1200000,
+        "USD",
+      ],
+    );
+    await execute(
+      `INSERT INTO news_articles
+        (id, provider_record_id, symbol, title, url, source, published_at, retrieved_at,
+         duplicate_key)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "news_1",
+        newsProviderRecordId,
+        "MSFT",
+        "Microsoft announces example update",
+        "https://example.com/msft-news",
+        "example",
+        now,
+        now,
+        "example-msft-news",
+      ],
+    );
+    await execute(
+      `INSERT INTO earnings_events
+        (id, provider_record_id, symbol, fiscal_period, announcement_date, announcement_timing,
+         eps_estimate, eps_actual, eps_surprise, source_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "earnings_1",
+        earningsProviderRecordId,
+        "MSFT",
+        "2026-Q3",
+        "2026-05-01",
+        "after_market",
+        2.1,
+        2.3,
+        0.2,
+        "https://example.com/msft-earnings",
+      ],
+    );
+    await execute(
+      `INSERT INTO option_quotes
+        (id, provider_record_id, underlying_symbol, contract_symbol, expiration, strike,
+         option_type, quote_timestamp, bid, ask, mid, volume, open_interest,
+         implied_volatility, underlying_price, liquidity_flags_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "option_quote_1",
+        optionsProviderRecordId,
+        "MSFT",
+        "MSFT260619C00100000",
+        "2026-06-19",
+        100,
+        "call",
+        now,
+        2.4,
+        2.6,
+        2.5,
+        150,
+        1200,
+        0.42,
+        101.1,
+        "[]",
+      ],
+    );
+
+    const result = await client.execute("SELECT COUNT(*) AS count FROM option_quotes");
+    expect(result.rows[0]?.count).toBe(1);
+  });
+
+  it("rejects normalized ingestion rows without provider lineage", async () => {
+    await expect(
+      execute(
+        `INSERT INTO price_bars
+          (id, provider_record_id, symbol, bar_interval, timestamp, open, high, low, close, volume)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "price_bar_no_lineage",
+          "missing_provider_record",
+          "MSFT",
+          "1d",
+          now,
+          100,
+          105,
+          99,
+          104,
+          100,
+        ],
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("rejects normalized ingestion rows with unsafe market data", async () => {
+    const priceProviderRecordId = await seedProviderRecord("prices");
+    const newsProviderRecordId = await seedProviderRecord("news");
+    const optionsProviderRecordId = await seedProviderRecord("options");
+
+    await execute(
+      `INSERT INTO news_articles
+        (id, provider_record_id, symbol, title, url, source, published_at, retrieved_at,
+         duplicate_key)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "news_duplicate_1",
+        newsProviderRecordId,
+        "MSFT",
+        "Microsoft announces example update",
+        "https://example.com/msft-news",
+        "example",
+        now,
+        now,
+        "example-msft-news",
+      ],
+    );
+
+    await expect(
+      execute(
+        `INSERT INTO price_bars
+          (id, provider_record_id, symbol, bar_interval, timestamp, open, high, low, close, volume)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ["price_bar_invalid", priceProviderRecordId, "MSFT", "1d", now, 100, 98, 99, 104, 100],
+      ),
+    ).rejects.toThrow();
+    await expect(
+      execute(
+        `INSERT INTO news_articles
+          (id, provider_record_id, symbol, title, url, source, published_at, retrieved_at,
+           duplicate_key)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "news_duplicate_2",
+          newsProviderRecordId,
+          "MSFT",
+          "Duplicate Microsoft update",
+          "https://example.com/msft-news-copy",
+          "example",
+          now,
+          now,
+          "example-msft-news",
+        ],
+      ),
+    ).rejects.toThrow();
+    await expect(
+      execute(
+        `INSERT INTO option_quotes
+          (id, provider_record_id, underlying_symbol, contract_symbol, expiration, strike,
+           option_type, quote_timestamp, bid, ask, mid, volume, open_interest,
+           implied_volatility, underlying_price, liquidity_flags_json)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "option_quote_invalid",
+          optionsProviderRecordId,
+          "MSFT",
+          "MSFT260619C00100000",
+          "2026-06-19",
+          100,
+          "call",
+          now,
+          2.7,
+          2.4,
+          2.55,
+          150,
+          1200,
+          0.42,
+          101.1,
+          "[]",
+        ],
+      ),
+    ).rejects.toThrow();
   });
 
   it("rejects recommendations with out-of-range scores", async () => {

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T18:35:25-04:00",
+  "lastUpdated": "2026-05-28T18:49:04-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -10,12 +10,12 @@
     "Deferred"
   ],
   "currentFocus": {
-    "phase": "Pre-merge review fixes",
-    "task": "Security, QA, and architecture review blockers closed before moving to Milestone 3",
-    "owner": "Codex founding CTO / lead architect / security reviewer / quantitative research lead",
+    "phase": "Milestone 3: Provider interfaces and mock ingestion",
+    "task": "Provider contracts, deterministic mock providers, normalized ingestion tables, and first-pass data quality checks added",
+    "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
     "status": "Completed",
     "priority": "High",
-    "category": "Release readiness and safety validation"
+    "category": "Provider ingestion and data quality"
   },
   "items": [
     {
@@ -287,6 +287,35 @@
         "Core schema tests",
         "DB migration tests",
         "JSON/TOML parse",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M3-001",
+      "title": "Add provider interfaces, mock ingestion, and normalized ingestion tables",
+      "phase": "Milestone 3",
+      "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Provider ingestion and data quality",
+      "blockers": [],
+      "nextStep": "Continue Milestone 3 with a DB-backed ingestion sink and provider-specific adapter stubs.",
+      "relatedDocs": [
+        "docs/superpowers/plans/2026-05-28-milestone-3-provider-ingestion.md",
+        "packages/data",
+        "packages/db/migrations/0001_normalized_ingestion_tables.sql",
+        "packages/db/src/schema.ts",
+        "packages/db/test/migration.test.ts"
+      ],
+      "validationRequired": [
+        "Provider contract tests",
+        "Data quality ingestion tests",
+        "DB migration tests",
+        "Type check",
+        "Lint",
+        "Format check",
+        "Root CI",
         "Secret-pattern scan",
         "Live-trading surface scan"
       ]

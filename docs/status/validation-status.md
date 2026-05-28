@@ -1,25 +1,28 @@
 # Validation Status
 
-Last updated: 2026-05-28T18:35:25-04:00
+Last updated: 2026-05-28T18:49:04-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Pre-merge review validation |
-| Current task | Security, QA, and architecture review blockers closed before moving to Milestone 3 |
-| Owner/agent | Codex founding CTO / lead architect / security reviewer / quantitative research lead |
+| Current phase | Milestone 3 provider ingestion validation |
+| Current task | Provider contracts, deterministic mock providers, normalized ingestion tables, and first-pass data quality checks added |
+| Owner/agent | Codex founding CTO / lead architect / principal engineer / data quality reviewer |
 | Status | Completed |
 | Priority | High |
-| Category | Release readiness and safety validation |
+| Category | Provider ingestion and data quality |
 | Blockers | None |
-| Next step | Commit review fixes, merge the reviewed branch to `main` when clean, then begin Milestone 3 provider-interface planning |
-| Related docs/files | `.codex/config.toml`, `.codex/hooks/policy.py`, `.codex/hooks/tests/test_policy.py`, `.env.example`, `packages/core`, `packages/db`, `docs/status/` |
+| Next step | Commit the Milestone 3 provider-ingestion slice, then continue with a DB-backed ingestion sink and provider-specific adapter stubs |
+| Related docs/files | `packages/data`, `packages/db/migrations/0001_normalized_ingestion_tables.sql`, `packages/db/src/schema.ts`, `packages/db/test/migration.test.ts`, `docs/superpowers/plans/2026-05-28-milestone-3-provider-ingestion.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 3 aggregate CI | Completed | Typecheck, lint, format, 54 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
+| Milestone 3 data ingestion tests | Completed | 7 tests passed for provider-neutral mock providers, no broker execution methods, content hashes, missing timestamp flags, duplicate news flags, earnings date flags, and options liquidity/spread flags | `npm.cmd run test --workspace @stockmarket/data -- ingestion` |
+| Milestone 3 DB migration tests | Completed | 20 tests passed, including normalized price/news/earnings/options tables, provider lineage constraints, duplicate news rejection, and unsafe market-data rejection | `npm.cmd run test --workspace @stockmarket/db -- migration` |
 | Pre-merge review aggregate CI | Completed | Typecheck, lint, format, 43 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
 | Pre-merge core schema regression | Completed | 7 core schema tests passed, including malformed ISO timestamp rejection | `npm.cmd run test --workspace @stockmarket/core -- schemas` |
 | Pre-merge DB migration and gate regression | Completed | 16 DB migration tests passed, including checksum tamper detection, transactional rollback, nonempty invalidation conditions, and paper-trade liquidity threshold | `npm.cmd run test --workspace @stockmarket/db -- migration` |

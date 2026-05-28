@@ -91,6 +91,194 @@ export const dataQualityEvents = sqliteTable("data_quality_events", {
   createdAt: text("created_at").notNull(),
 });
 
+export const priceBars = sqliteTable(
+  "price_bars",
+  {
+    id: text("id").primaryKey(),
+    providerRecordId: text("provider_record_id")
+      .notNull()
+      .references(() => providerRecords.id),
+    instrumentId: text("instrument_id").references(() => instruments.id),
+    symbol: text("symbol").notNull(),
+    barInterval: text("bar_interval", { enum: ["1d", "1h", "15m", "5m", "1m"] }).notNull(),
+    timestamp: text("timestamp").notNull(),
+    open: real("open").notNull(),
+    high: real("high").notNull(),
+    low: real("low").notNull(),
+    close: real("close").notNull(),
+    adjustedClose: real("adjusted_close"),
+    volume: integer("volume").notNull(),
+    currency: text("currency").notNull().default("USD"),
+  },
+  (table) => [
+    uniqueIndex("price_bars_symbol_interval_timestamp_provider_unique").on(
+      table.symbol,
+      table.barInterval,
+      table.timestamp,
+      table.providerRecordId,
+    ),
+    index("price_bars_symbol_timestamp_idx").on(table.symbol, table.timestamp),
+    index("price_bars_provider_record_idx").on(table.providerRecordId),
+    check("price_bars_symbol_nonempty", sql`length(${table.symbol}) > 0`),
+    check("price_bars_timestamp_nonempty", sql`length(${table.timestamp}) > 0`),
+    check("price_bars_open_positive", sql`${table.open} > 0`),
+    check("price_bars_high_positive", sql`${table.high} > 0`),
+    check("price_bars_low_positive", sql`${table.low} > 0`),
+    check("price_bars_close_positive", sql`${table.close} > 0`),
+    check(
+      "price_bars_adjusted_close_positive",
+      sql`${table.adjustedClose} IS NULL OR ${table.adjustedClose} > 0`,
+    ),
+    check("price_bars_volume_nonnegative", sql`${table.volume} >= 0`),
+    check("price_bars_high_low_order", sql`${table.high} >= ${table.low}`),
+    check(
+      "price_bars_ohlc_bounds",
+      sql`${table.high} >= ${table.open} AND ${table.high} >= ${table.close}
+        AND ${table.low} <= ${table.open} AND ${table.low} <= ${table.close}`,
+    ),
+  ],
+);
+
+export const newsArticles = sqliteTable(
+  "news_articles",
+  {
+    id: text("id").primaryKey(),
+    providerRecordId: text("provider_record_id")
+      .notNull()
+      .references(() => providerRecords.id),
+    symbol: text("symbol").notNull(),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    source: text("source").notNull(),
+    publishedAt: text("published_at").notNull(),
+    retrievedAt: text("retrieved_at").notNull(),
+    summary: text("summary").notNull().default(""),
+    sentimentScore: real("sentiment_score"),
+    duplicateKey: text("duplicate_key").notNull(),
+  },
+  (table) => [
+    uniqueIndex("news_articles_duplicate_key_unique").on(table.duplicateKey),
+    index("news_articles_symbol_published_idx").on(table.symbol, table.publishedAt),
+    index("news_articles_provider_record_idx").on(table.providerRecordId),
+    check("news_articles_symbol_nonempty", sql`length(${table.symbol}) > 0`),
+    check("news_articles_title_nonempty", sql`length(${table.title}) > 0`),
+    check("news_articles_url_nonempty", sql`length(${table.url}) > 0`),
+    check("news_articles_source_nonempty", sql`length(${table.source}) > 0`),
+    check("news_articles_published_nonempty", sql`length(${table.publishedAt}) > 0`),
+    check("news_articles_retrieved_nonempty", sql`length(${table.retrievedAt}) > 0`),
+    check("news_articles_duplicate_key_nonempty", sql`length(${table.duplicateKey}) > 0`),
+    check(
+      "news_articles_sentiment_range",
+      sql`${table.sentimentScore} IS NULL OR (${table.sentimentScore} >= -1 AND ${table.sentimentScore} <= 1)`,
+    ),
+  ],
+);
+
+export const earningsEvents = sqliteTable(
+  "earnings_events",
+  {
+    id: text("id").primaryKey(),
+    providerRecordId: text("provider_record_id")
+      .notNull()
+      .references(() => providerRecords.id),
+    symbol: text("symbol").notNull(),
+    fiscalPeriod: text("fiscal_period").notNull(),
+    announcementDate: text("announcement_date").notNull(),
+    announcementTiming: text("announcement_timing", {
+      enum: ["pre_market", "after_market", "during_market", "unknown"],
+    }).notNull(),
+    epsEstimate: real("eps_estimate"),
+    epsActual: real("eps_actual"),
+    epsSurprise: real("eps_surprise"),
+    revenueEstimate: real("revenue_estimate"),
+    revenueActual: real("revenue_actual"),
+    guidanceText: text("guidance_text").notNull().default(""),
+    sourceUrl: text("source_url").notNull(),
+  },
+  (table) => [
+    uniqueIndex("earnings_events_symbol_period_provider_unique").on(
+      table.symbol,
+      table.fiscalPeriod,
+      table.providerRecordId,
+    ),
+    index("earnings_events_symbol_date_idx").on(table.symbol, table.announcementDate),
+    index("earnings_events_provider_record_idx").on(table.providerRecordId),
+    check("earnings_events_symbol_nonempty", sql`length(${table.symbol}) > 0`),
+    check("earnings_events_period_nonempty", sql`length(${table.fiscalPeriod}) > 0`),
+    check("earnings_events_date_nonempty", sql`length(${table.announcementDate}) > 0`),
+    check("earnings_events_source_url_nonempty", sql`length(${table.sourceUrl}) > 0`),
+  ],
+);
+
+export const optionQuotes = sqliteTable(
+  "option_quotes",
+  {
+    id: text("id").primaryKey(),
+    providerRecordId: text("provider_record_id")
+      .notNull()
+      .references(() => providerRecords.id),
+    underlyingSymbol: text("underlying_symbol").notNull(),
+    contractSymbol: text("contract_symbol").notNull(),
+    expiration: text("expiration").notNull(),
+    strike: real("strike").notNull(),
+    optionType: text("option_type", { enum: ["call", "put"] }).notNull(),
+    quoteTimestamp: text("quote_timestamp").notNull(),
+    bid: real("bid").notNull(),
+    ask: real("ask").notNull(),
+    mid: real("mid").notNull(),
+    last: real("last"),
+    volume: integer("volume").notNull(),
+    openInterest: integer("open_interest").notNull(),
+    impliedVolatility: real("implied_volatility").notNull(),
+    underlyingPrice: real("underlying_price").notNull(),
+    delta: real("delta"),
+    gamma: real("gamma"),
+    theta: real("theta"),
+    vega: real("vega"),
+    liquidityFlagsJson: text("liquidity_flags_json").notNull().default("[]"),
+  },
+  (table) => [
+    uniqueIndex("option_quotes_contract_timestamp_provider_unique").on(
+      table.contractSymbol,
+      table.quoteTimestamp,
+      table.providerRecordId,
+    ),
+    index("option_quotes_underlying_expiration_idx").on(table.underlyingSymbol, table.expiration),
+    index("option_quotes_provider_record_idx").on(table.providerRecordId),
+    check("option_quotes_underlying_nonempty", sql`length(${table.underlyingSymbol}) > 0`),
+    check("option_quotes_contract_nonempty", sql`length(${table.contractSymbol}) > 0`),
+    check("option_quotes_expiration_nonempty", sql`length(${table.expiration}) > 0`),
+    check("option_quotes_timestamp_nonempty", sql`length(${table.quoteTimestamp}) > 0`),
+    check("option_quotes_strike_positive", sql`${table.strike} > 0`),
+    check("option_quotes_bid_nonnegative", sql`${table.bid} >= 0`),
+    check("option_quotes_ask_positive", sql`${table.ask} > 0`),
+    check("option_quotes_mid_positive", sql`${table.mid} > 0`),
+    check("option_quotes_last_nonnegative", sql`${table.last} IS NULL OR ${table.last} >= 0`),
+    check("option_quotes_volume_nonnegative", sql`${table.volume} >= 0`),
+    check("option_quotes_open_interest_nonnegative", sql`${table.openInterest} >= 0`),
+    check("option_quotes_iv_positive", sql`${table.impliedVolatility} > 0`),
+    check("option_quotes_underlying_price_positive", sql`${table.underlyingPrice} > 0`),
+    check(
+      "option_quotes_delta_range",
+      sql`${table.delta} IS NULL OR (${table.delta} >= -1 AND ${table.delta} <= 1)`,
+    ),
+    check("option_quotes_gamma_nonnegative", sql`${table.gamma} IS NULL OR ${table.gamma} >= 0`),
+    check("option_quotes_vega_nonnegative", sql`${table.vega} IS NULL OR ${table.vega} >= 0`),
+    check("option_quotes_ask_bid_order", sql`${table.ask} >= ${table.bid}`),
+    check(
+      "option_quotes_mid_bounds",
+      sql`${table.mid} >= ${table.bid} AND ${table.mid} <= ${table.ask}`,
+    ),
+    check(
+      "option_quotes_liquidity_flags_valid",
+      sql`
+        json_valid(${table.liquidityFlagsJson})
+        AND json_type(${table.liquidityFlagsJson}) = 'array'
+      `,
+    ),
+  ],
+);
+
 export const strategyDefinitions = sqliteTable("strategy_definitions", {
   id: text("id").primaryKey(),
   family: text("family").notNull(),

@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T18:35:25-04:00
+Last updated: 2026-05-28T18:49:04-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
-| Current phase | Pre-merge review fixes |
-| Current task | Security, QA, and architecture review blockers closed before moving to Milestone 3 |
-| Owner/agent | Codex acting as founding CTO / lead architect / security reviewer / quantitative research lead |
+| Current phase | Milestone 3: Provider interfaces and mock ingestion |
+| Current task | Provider contracts, deterministic mock providers, normalized ingestion tables, and first-pass data quality checks added |
+| Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / data quality reviewer |
 | Status | Completed |
 | Priority | High |
-| Category | Release readiness and safety validation |
+| Category | Provider ingestion and data quality |
 | Blockers | None |
-| Next step | Commit review fixes, merge the reviewed branch to `main` when clean, then begin Milestone 3 provider interfaces and mock ingestion planning |
-| Related docs/files | `.codex/config.toml`, `.codex/hooks/policy.py`, `.codex/hooks/tests/test_policy.py`, `.env.example`, `packages/core`, `packages/db`, `docs/status/` |
-| Validation required | Completed: root CI, hook policy tests, DB migration tests, core schema tests, JSON/TOML parses, whitespace check, secret scan, and live-trading surface scan |
+| Next step | Continue Milestone 3 with a DB-backed ingestion sink and provider-specific adapter stubs after this slice is committed |
+| Related docs/files | `packages/data`, `packages/db/migrations/0001_normalized_ingestion_tables.sql`, `packages/db/src/schema.ts`, `packages/db/test/migration.test.ts`, `docs/superpowers/plans/2026-05-28-milestone-3-provider-ingestion.md` |
+| Validation required | Completed: root CI, data ingestion tests, DB migration tests, typecheck, lint, format check, hook tests, audit, build, and API smoke |
 
 ## Status Vocabulary
 
