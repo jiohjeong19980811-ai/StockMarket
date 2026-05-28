@@ -1,6 +1,6 @@
 # Milestone 2 Domain And Database Design
 
-Last updated: 2026-05-28T17:05:00-04:00
+Last updated: 2026-05-28T17:22:33-04:00
 
 ## Goal
 
@@ -25,14 +25,15 @@ Subagent review for Milestone 2 produced two important constraints:
 
 ## Database Decision
 
-Use Drizzle ORM and Drizzle Kit as the TypeScript-first schema and migration stack.
+Use Drizzle ORM for TypeScript-first schema definitions and committed hand-reviewed SQL migrations for Milestone 2.
 
 Use SQLite through `@libsql/client` for the first local MVP implementation and CI migration tests.
 
 Reasoning:
 
 - Local SQLite/libSQL gives fast, deterministic migration validation without requiring a running database server.
-- Drizzle keeps schema definitions in TypeScript and can generate or validate SQL migrations.
+- Drizzle keeps schema definitions in TypeScript while committed SQL migrations keep the first schema auditable.
+- Drizzle Kit is deferred until an audit-clean install path is available; the current install path introduced moderate dev-dependency findings during implementation.
 - The schema must avoid SQLite-only shortcuts where reasonable: stable text IDs, ISO timestamp strings, explicit check constraints, normalized tables, JSON stored as text only where the first MVP does not need relational querying.
 - A future Postgres migration remains expected once ingestion volume, paid-provider licensing, deployment target, and operator workflows are clearer.
 
@@ -41,6 +42,7 @@ Rejected for this milestone:
 - Prisma as the first ORM, because Milestone 2 needs explicit SQL constraints and small auditable migrations more than a generated client abstraction.
 - A local Postgres dependency, because it adds operator setup and CI friction before the product has real ingestion.
 - DuckDB as the primary store, because it is more attractive for analytics than for an append-only application/audit system.
+- Drizzle Kit for this milestone, because dependency audit must stay clean before committing tooling.
 
 ## Scope
 
@@ -56,8 +58,8 @@ Implement the first persistence slice:
   - `strategy_definitions`
   - `strategy_versions`
   - `audit_logs`
-  - `recommendations`
-  - `recommendation_citations`
+- `recommendations`
+- `recommendation_citations`
 - A migration runner that can apply committed SQL migrations to a clean local SQLite/libSQL database.
 - Tests that prove migrations apply, constraints fail closed, duplicate provider records are rejected, and paper-trade recommendations require evidence/audit/risk fields.
 - API environment guardrail expansion for common broker/execution prefixes before provider work begins.
@@ -108,14 +110,16 @@ Every provider-derived normalized row should include lineage:
 - Entitlement/storage status.
 - Ingestion run ID.
 
-Every recommendation row should link to:
+Every recommendation row should include or link to:
 
 - Strategy version.
 - Audit log.
-- Citations in a child table.
+- A required primary citation title, URL, source, published timestamp, and retrieved timestamp.
+- Additional citations in a child table when more than one source supports the recommendation.
 - Data freshness decision.
 - Liquidity decision.
 - Evidence ID or backtest ID when decision is `paper_trade`.
+- Option risk/liquidity fields for non-stock instruments, with option `paper_trade` rows requiring historical options evidence.
 
 Every audit log row should capture:
 
@@ -150,7 +154,7 @@ Milestone 2 validation must include:
 - Core paper-trade eligibility tests.
 - API env guardrail tests.
 - Migration apply test against a clean local DB.
-- DB constraint tests for score bounds, evidence gates, citation requirements, and provider idempotency.
+- DB constraint tests for score bounds, evidence gates, primary citation requirements, option risk details, metadata guards, and provider idempotency.
 - Existing hook tests.
 - Root `npm.cmd run ci`.
 - Status JSON parse, whitespace check, and secret-pattern scan.

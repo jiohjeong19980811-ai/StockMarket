@@ -10,7 +10,9 @@ export const opportunityDecisions = [
 
 export type OpportunityDecision = (typeof opportunityDecisions)[number];
 
-export type InstrumentType = "stock" | "long_call" | "long_put" | "debit_spread";
+export const instrumentTypes = ["stock", "long_call", "long_put", "debit_spread"] as const;
+
+export type InstrumentType = (typeof instrumentTypes)[number];
 
 export const paperTradeMinimumLiquidityScore = 70;
 
@@ -26,6 +28,14 @@ export interface OptionsRiskDetails {
   maxLoss: number;
   expiration: string;
   strikeLogic: string;
+  bid: number;
+  ask: number;
+  mid: number;
+  volume: number;
+  openInterest: number;
+  impliedVolatility: number;
+  breakeven: number;
+  liquidityPass: boolean;
   spreadRisk: string;
   eventRisk: string;
   thetaRisk: string;
@@ -73,6 +83,16 @@ function isValidScore(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
 }
 
+function isFinitePositiveNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function isNonNegativeWholeNumber(value: unknown): value is number {
+  return (
+    typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value >= 0
+  );
+}
+
 function hasAuditRecord(recommendation: Recommendation): boolean {
   return (
     hasText(recommendation.operatorDecision?.auditLogId) &&
@@ -95,11 +115,18 @@ function hasValidOptionsRiskDetails(recommendation: Recommendation): boolean {
   const details = recommendation.optionsRiskDetails;
   return Boolean(
     details &&
-    typeof details.maxLoss === "number" &&
-    Number.isFinite(details.maxLoss) &&
-    details.maxLoss > 0 &&
+    isFinitePositiveNumber(details.maxLoss) &&
     hasText(details.expiration) &&
     hasText(details.strikeLogic) &&
+    isFinitePositiveNumber(details.bid) &&
+    isFinitePositiveNumber(details.ask) &&
+    details.ask >= details.bid &&
+    isFinitePositiveNumber(details.mid) &&
+    isNonNegativeWholeNumber(details.volume) &&
+    isNonNegativeWholeNumber(details.openInterest) &&
+    isFinitePositiveNumber(details.impliedVolatility) &&
+    isFinitePositiveNumber(details.breakeven) &&
+    details.liquidityPass === true &&
     hasText(details.spreadRisk) &&
     hasText(details.eventRisk) &&
     hasText(details.thetaRisk) &&

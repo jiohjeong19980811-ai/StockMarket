@@ -6,7 +6,7 @@
 
 **Architecture:** `packages/core` owns runtime domain validation and eligibility rules. `packages/db` owns Drizzle schema definitions, committed SQL migrations, a local libSQL migration runner, and DB constraint tests. `apps/api` keeps environment safety gates and receives expanded broker/execution-prefix blocking.
 
-**Tech Stack:** TypeScript, Zod, Drizzle ORM, Drizzle Kit, `@libsql/client`, Vitest, Fastify, npm workspaces.
+**Tech Stack:** TypeScript, Zod, Drizzle ORM, committed SQL migrations, `@libsql/client`, Vitest, Fastify, npm workspaces.
 
 ---
 
@@ -19,7 +19,6 @@
 - Modify `packages/core/test/recommendation.test.ts` for options field coverage.
 - Create `packages/core/test/schemas.test.ts` for runtime contract validation.
 - Modify `packages/db/package.json` to add Drizzle/libSQL dependencies and test/migration scripts.
-- Create `packages/db/drizzle.config.ts`.
 - Create `packages/db/src/schema.ts` for Drizzle table definitions.
 - Create `packages/db/src/migrate.ts` for local SQL migration execution.
 - Modify `packages/db/src/index.ts` to export schema/migration helpers.
@@ -43,10 +42,9 @@ Run:
 ```powershell
 npm.cmd install zod --workspace @stockmarket/core
 npm.cmd install drizzle-orm @libsql/client --workspace @stockmarket/db
-npm.cmd install drizzle-kit --workspace @stockmarket/db --save-dev
 ```
 
-Expected: `package-lock.json`, `packages/core/package.json`, and `packages/db/package.json` update without adding broker/trading packages.
+Expected: `package-lock.json`, `packages/core/package.json`, and `packages/db/package.json` update without adding broker/trading packages. Do not keep Drizzle Kit in this milestone unless `npm.cmd run audit:deps` remains clean.
 
 - [ ] **Step 2: Verify dependency audit**
 
@@ -125,7 +123,6 @@ Expected: all core tests pass.
 
 **Files:**
 - Modify: `packages/db/package.json`
-- Create: `packages/db/drizzle.config.ts`
 - Create: `packages/db/src/schema.ts`
 - Create: `packages/db/src/migrate.ts`
 - Modify: `packages/db/src/index.ts`
@@ -141,6 +138,10 @@ Create tests that:
 - Reject duplicate provider records for the same provider/dataset/provider record ID.
 - Reject recommendations with scores outside `0` to `100`.
 - Reject `paper_trade` recommendations without evidence ID.
+- Reject a recommendation without required primary citation timestamps.
+- Reject an options paper-trade recommendation without option risk details.
+- Accept a no-trade options recommendation with failed liquidity documented.
+- Reject metadata that looks like raw payloads or secret-bearing auth material.
 - Accept a watchlist recommendation with audit linkage and citation.
 
 Run:

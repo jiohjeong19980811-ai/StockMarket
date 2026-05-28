@@ -34,4 +34,32 @@ describe("API environment validation", () => {
       }),
     ).toThrow("Broker credential environment variables are prohibited in MVP");
   });
+
+  it("rejects common broker and execution credential prefixes without printing values", () => {
+    for (const blockedKey of [
+      "APCA_API_KEY_ID",
+      "TWS_ACCOUNT_ID",
+      "SCHWAB_CLIENT_SECRET",
+      "ORDER_API_KEY",
+      "TRADING_API_KEY",
+    ]) {
+      expect(() =>
+        loadEnv({
+          APP_ENV: "development",
+          API_PORT: "4000",
+          LIVE_TRADING_ENABLED: "false",
+          [blockedKey]: "do-not-print-this-value",
+        }),
+      ).toThrow(blockedKey);
+
+      expect(() =>
+        loadEnv({
+          APP_ENV: "development",
+          API_PORT: "4000",
+          LIVE_TRADING_ENABLED: "false",
+          [blockedKey]: "do-not-print-this-value",
+        }),
+      ).not.toThrow("do-not-print-this-value");
+    }
+  });
 });

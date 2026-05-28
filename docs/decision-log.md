@@ -110,9 +110,9 @@ Reason: Review fixes should be validated through one repeatable command before c
 
 ## 2026-05-28: Milestone 2 Persistence Stack
 
-Decision: Use Drizzle ORM and Drizzle Kit for TypeScript-first schema and migration work. Use SQLite/libSQL for the first local MVP implementation and CI migration tests, while keeping Postgres as the likely future system of record.
+Decision: Use Drizzle ORM for TypeScript-first schema definitions and committed hand-reviewed SQL migrations for Milestone 2. Use SQLite/libSQL for the first local MVP implementation and CI migration tests, while keeping Postgres as the likely future system of record. Defer Drizzle Kit until an audit-clean install path is available.
 
-Reason: Milestone 2 needs committed migrations, explicit constraints, fast local validation, and low setup friction. A future Postgres move should wait until ingestion volume, paid-provider licensing, and deployment needs are clearer.
+Reason: Milestone 2 needs committed migrations, explicit constraints, fast local validation, and low setup friction. The current Drizzle Kit install path introduced moderate dev-dependency audit findings, so a small local migration runner is safer for this milestone. A future Postgres move should wait until ingestion volume, paid-provider licensing, and deployment needs are clearer.
 
 ## 2026-05-28: Runtime Domain Validation
 

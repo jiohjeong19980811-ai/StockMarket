@@ -45,6 +45,24 @@ const baseRecommendation: Recommendation = {
   updatedAt: "2026-05-01T12:10:00Z",
 };
 
+const validOptionsRiskDetails = {
+  maxLoss: 250,
+  expiration: "2026-06-19",
+  strikeLogic: "Delta-targeted long call research candidate.",
+  bid: 2.4,
+  ask: 2.55,
+  mid: 2.475,
+  volume: 150,
+  openInterest: 1200,
+  impliedVolatility: 0.42,
+  breakeven: 102.5,
+  liquidityPass: true,
+  spreadRisk: "Bid/ask spread inside target threshold.",
+  eventRisk: "No earnings event before expiration.",
+  thetaRisk: "Theta decay reviewed before entry.",
+  historicalOptionsEvidenceId: "options_bt_123",
+};
+
 describe("recommendation contract", () => {
   it("keeps no-trade outcomes first class", () => {
     expect(opportunityDecisions).toEqual(["watchlist", "paper_trade", "avoid", "needs_more_data"]);
@@ -152,12 +170,61 @@ describe("recommendation contract", () => {
       evidenceStatus: "paper_trade_eligible",
       backtestRunId: "bt_456",
       optionsRiskDetails: {
+        ...validOptionsRiskDetails,
+        historicalOptionsEvidenceId: undefined,
+      },
+    };
+
+    expect(isPaperTradeEligible(recommendation)).toBe(false);
+  });
+
+  it("blocks options paper trades without contract-level liquidity fields", () => {
+    const recommendation: Recommendation = {
+      ...baseRecommendation,
+      instrumentType: "long_call",
+      strategyFamily: "options",
+      decision: "paper_trade",
+      evidenceStatus: "paper_trade_eligible",
+      backtestRunId: "bt_456",
+      optionsRiskDetails: {
         maxLoss: 250,
         expiration: "2026-06-19",
         strikeLogic: "Delta-targeted long call research candidate.",
-        spreadRisk: "Bid/ask spread above target threshold.",
-        eventRisk: "Earnings event occurs before expiration.",
-        thetaRisk: "Theta decay accelerates inside 30 DTE.",
+        spreadRisk: "Bid/ask spread inside target threshold.",
+        eventRisk: "No earnings event before expiration.",
+        thetaRisk: "Theta decay reviewed before entry.",
+        historicalOptionsEvidenceId: "options_bt_123",
+      } as unknown as Recommendation["optionsRiskDetails"],
+    };
+
+    expect(isPaperTradeEligible(recommendation)).toBe(false);
+  });
+
+  it("allows options paper trades only with historical evidence and passing liquidity details", () => {
+    const recommendation: Recommendation = {
+      ...baseRecommendation,
+      instrumentType: "long_call",
+      strategyFamily: "options",
+      decision: "paper_trade",
+      evidenceStatus: "paper_trade_eligible",
+      backtestRunId: "bt_456",
+      optionsRiskDetails: validOptionsRiskDetails,
+    };
+
+    expect(isPaperTradeEligible(recommendation)).toBe(true);
+  });
+
+  it("blocks options paper trades when liquidity fails", () => {
+    const recommendation: Recommendation = {
+      ...baseRecommendation,
+      instrumentType: "long_call",
+      strategyFamily: "options",
+      decision: "paper_trade",
+      evidenceStatus: "paper_trade_eligible",
+      backtestRunId: "bt_456",
+      optionsRiskDetails: {
+        ...validOptionsRiskDetails,
+        liquidityPass: false,
       },
     };
 
@@ -173,13 +240,8 @@ describe("recommendation contract", () => {
       evidenceStatus: "paper_trade_eligible",
       backtestRunId: "bt_456",
       optionsRiskDetails: {
+        ...validOptionsRiskDetails,
         maxLoss: 0,
-        expiration: "2026-06-19",
-        strikeLogic: "Delta-targeted long call research candidate.",
-        spreadRisk: "Bid/ask spread inside target threshold.",
-        eventRisk: "No earnings event before expiration.",
-        thetaRisk: "Theta decay reviewed before entry.",
-        historicalOptionsEvidenceId: "options_bt_123",
       },
     };
 
@@ -195,13 +257,8 @@ describe("recommendation contract", () => {
       evidenceStatus: "paper_trade_eligible",
       backtestRunId: "bt_456",
       optionsRiskDetails: {
+        ...validOptionsRiskDetails,
         maxLoss: Number.POSITIVE_INFINITY,
-        expiration: "2026-06-19",
-        strikeLogic: "Delta-targeted long call research candidate.",
-        spreadRisk: "Bid/ask spread inside target threshold.",
-        eventRisk: "No earnings event before expiration.",
-        thetaRisk: "Theta decay reviewed before entry.",
-        historicalOptionsEvidenceId: "options_bt_123",
       },
     };
 

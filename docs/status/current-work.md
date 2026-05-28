@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T17:05:00-04:00
+Last updated: 2026-05-28T17:22:33-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 2: Domain And Database Contracts |
-| Current task | Implement runtime domain schemas, initial database migrations, and audit constraints |
+| Current task | Runtime domain schemas and initial database migrations implemented |
 | Owner/agent | Codex acting as founding CTO / lead architect / security reviewer |
-| Status | In Progress |
+| Status | Completed |
 | Priority | High |
 | Category | Domain and persistence design |
 | Blockers | None |
-| Next step | Execute the Milestone 2 implementation plan and validate with focused tests plus `npm.cmd run ci` |
+| Next step | Begin Milestone 3 provider interfaces and mock ingestion planning |
 | Related docs/files | `docs/superpowers/specs/2026-05-28-milestone-2-domain-db-design.md`, `docs/superpowers/plans/2026-05-28-milestone-2-domain-db.md`, `packages/core`, `packages/db`, `apps/api/src/env.ts` |
-| Validation required | Required before completion: core schema tests, DB migration tests, API env tests, root CI, status JSON parse, whitespace check, and secret-pattern scan |
+| Validation required | Completed: aggregate CI after security-review fixes, status JSON parse, whitespace check, token-shaped secret scan, and live-trading safety scan with expected guardrail-only matches |
 
 ## Status Vocabulary
 

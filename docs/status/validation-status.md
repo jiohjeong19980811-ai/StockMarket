@@ -1,20 +1,20 @@
 # Validation Status
 
-Last updated: 2026-05-28T17:05:00-04:00
+Last updated: 2026-05-28T17:22:33-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 2 planning validation |
-| Current task | Domain/database design and implementation plan prepared |
+| Current phase | Milestone 2 implementation validation |
+| Current task | Runtime domain schemas and initial database migrations implemented |
 | Owner/agent | Codex founding CTO / QA reviewer / security reviewer |
-| Status | In Progress |
+| Status | Completed |
 | Priority | High |
 | Category | Validation |
 | Blockers | None |
-| Next step | Validate planning docs, commit them, then execute Milestone 2 implementation |
-| Related docs/files | `docs/superpowers/specs/2026-05-28-milestone-2-domain-db-design.md`, `docs/superpowers/plans/2026-05-28-milestone-2-domain-db.md`, `docs/status/` |
+| Next step | Commit M2 implementation and begin Milestone 3 provider-interface planning |
+| Related docs/files | `packages/core`, `packages/db`, `apps/api/src/env.ts`, `docs/status/` |
 
 ## Checks
 
@@ -80,6 +80,24 @@ Last updated: 2026-05-28T17:05:00-04:00
 | Milestone 2 planning whitespace check | Completed | No whitespace errors; only Git line-ending warnings on Windows working copy | `git diff --check` |
 | Milestone 2 planning unfinished-marker scan | Completed | No unfinished markers found in planning/status docs | `rg` unfinished-marker scan |
 | Milestone 2 planning secret-pattern scan | Completed | No token-shaped secret matches found in planning/status docs | stricter `rg` secret-pattern scan |
+| Milestone 2 dependency install | Completed | Added `zod`, `drizzle-orm`, and `@libsql/client`; removed Drizzle Kit after audit findings; final audit clean | `npm.cmd install`; `npm.cmd uninstall drizzle-kit`; `npm.cmd run audit:deps` |
+| Milestone 2 core contract tests | Completed | 20 core tests passed, including runtime schema, paper-trade schema gates, options liquidity gates, and no-trade options records with failed liquidity | `npm.cmd run test --workspace @stockmarket/core` |
+| Milestone 2 DB migration tests | Completed | 12 DB tests passed for clean migration, uniqueness, score checks, no generic metadata columns, citation requirements, options risk details, explicit NULL guards, nonempty evidence gates, and citation insert | `npm.cmd run test --workspace @stockmarket/db` |
+| Milestone 2 API env guardrail tests | Completed | 4 API env tests passed, including expanded broker/execution prefix rejection without value disclosure | `npm.cmd run test --workspace @stockmarket/api -- env` |
+| Milestone 2 full unit tests | Completed | 38 tests passed across API, web, core, and DB projects | `npm.cmd run test` |
+| Milestone 2 typecheck | Completed | TypeScript project references passed after Drizzle check helper fix | `npm.cmd run typecheck` |
+| Milestone 2 lint | Completed | ESLint passed | `npm.cmd run lint` |
+| Milestone 2 format check | Completed | Prettier check passed after formatting touched files | `npm.cmd run format:check` |
+| Milestone 2 dependency audit | Completed | npm reported 0 vulnerabilities after Drizzle Kit removal | `npm.cmd run audit:deps` |
+| Milestone 2 production build | Completed | API, web, and package builds passed | `npm.cmd run build` |
+| Milestone 2 API smoke | Completed | Built API health route returned expected response with live trading disabled | `npm.cmd run smoke:api` |
+| Milestone 2 aggregate CI | Completed | Typecheck, lint, format, 38 tests, hook tests, dependency audit, build, and API smoke passed after both security-review fix rounds | `npm.cmd run ci` |
+| Milestone 2 security review fixes | Completed | Added DB option-risk persistence gates, required primary citation fields, runtime paper-trade schema gates, no-trade options liquidity support, explicit SQLite NULL guards, nonempty evidence checks, and removal of generic metadata JSON columns | Security/compliance review handoff plus focused tests |
+| Milestone 2 status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after implementation status updates | `python -m json.tool docs/status/work-items.json` |
+| Milestone 2 whitespace check | Completed | No whitespace errors; only Git line-ending warnings on Windows working copy | `git diff --check` |
+| Milestone 2 secret-pattern scan | Completed | No token-shaped secret matches found | stricter `rg` secret-pattern scan |
+| Milestone 2 live-trading safety scan | Completed | Matches were expected hook/test/spec guardrail text only; no live order implementation exists | `rg` live-trading/order-surface scan |
+| Milestone 2 security re-review | Completed | Security/compliance reviewer reported no remaining blockers after explicit NULL/evidence guards and metadata column removal | Multi-agent `security-compliance` re-review |
 
 ## Rule
 

@@ -11,5 +11,7 @@
     "test": "vitest run",
     "lint": "eslint ."
   },
-  "dependencies": {}
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
 }

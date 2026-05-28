@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T17:05:00-04:00",
+  "lastUpdated": "2026-05-28T17:22:33-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,9 +11,9 @@
   ],
   "currentFocus": {
     "phase": "Milestone 2: Domain And Database Contracts",
-    "task": "Implement runtime domain schemas, initial database migrations, and audit constraints",
+    "task": "Runtime domain schemas and initial database migrations implemented",
     "owner": "Codex founding CTO / lead architect / security reviewer",
-    "status": "In Progress",
+    "status": "Completed",
     "priority": "High",
     "category": "Domain and persistence design"
   },
@@ -207,11 +207,11 @@
       "title": "Define domain and database contracts",
       "phase": "Milestone 2",
       "owner": "Codex founding CTO / lead architect / security reviewer",
-      "status": "In Progress",
+      "status": "Completed",
       "priority": "High",
       "category": "Domain and persistence design",
       "blockers": [],
-      "nextStep": "Execute the Milestone 2 implementation plan with Drizzle/libSQL migrations, runtime schemas, audit constraints, and safety tests.",
+      "nextStep": "Begin Milestone 3 provider interfaces and mock ingestion planning.",
       "relatedDocs": [
         "docs/architecture.md",
         "docs/implementation-plan.md",

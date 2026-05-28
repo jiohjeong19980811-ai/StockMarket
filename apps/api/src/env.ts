@@ -12,7 +12,7 @@ const envSchema = z.object({
 });
 
 const brokerCredentialKeyPattern =
-  /^(BROKER|ALPACA|TRADIER|IBKR|INTERACTIVE_BROKERS|LIVE_BROKER)_/i;
+  /^(BROKER|ALPACA|APCA|TRADIER|IBKR|INTERACTIVE_BROKERS|LIVE_BROKER|TWS|SCHWAB|ORDER|TRADING)_/i;
 
 export type ApiEnv = {
   APP_ENV: "development" | "test" | "production";
