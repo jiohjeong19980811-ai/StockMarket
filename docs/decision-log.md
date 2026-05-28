@@ -125,3 +125,9 @@ Reason: API and database boundaries need runtime validation for citations, times
 Decision: Do not store full raw provider, article, options-chain, or AI prompt payloads until provider terms and secret-redaction rules are reviewed. Store normalized facts, source references, timestamps, hashes, and allowed excerpts/summaries first.
 
 Reason: Market/news data licensing may restrict local storage or redistribution, and raw prompts or payloads may accidentally include secrets or untrusted instructions.
+
+## 2026-05-28: Codex Routine Command Autonomy
+
+Decision: Allow the project `PermissionRequest` hook to auto-approve routine in-repository commands for tests, builds, CI, hook validation, status/diff inspection, branch switching, commits, and lockfile-based local installs. Enable sandbox approval prompts and `auto_review` in the project Codex config.
+
+Reason: Subagents and the main Codex operator should not stall on normal project validation or local workflow commands. The autonomy boundary remains constrained by hard blocks for secrets, `.env` reads, destructive repository deletion, out-of-repository writes, live trading, broker order paths, dependency additions, and remote publication prompts.

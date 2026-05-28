@@ -11,7 +11,7 @@ Codex requires non-managed project hooks to be reviewed and trusted before they 
 - `SessionStart`: surfaces core project guidance and checks durable project memory files.
 - `UserPromptSubmit`: blocks secret-like prompt text, live-trading requests, risk-control bypass requests, and repo-out-of-scope requests.
 - `PreToolUse`: blocks dangerous shell or edit operations before they run.
-- `PermissionRequest`: denies clearly unsafe escalation requests and lets normal approvals handle non-blocked requests.
+- `PermissionRequest`: denies clearly unsafe escalation requests, auto-approves routine in-repository workflow commands, and lets normal approvals handle dependency additions, remote publication, or other non-blocked risky requests.
 - `PostToolUse`: detects meaningful repository changes and adds validation context.
 - `Stop`: reminds Codex to run/report validation, update docs, capture decisions, and refresh lightweight status files when phase, task, blocker, or validation state changes.
 - `SubagentStart`: injects project safety context into subagents.

@@ -66,10 +66,42 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(status, "block")
         self.assertIn("repository", reason)
 
-    def test_normal_permission_request_defers(self):
-        status, reason = classify_permission_request("npm install", "install dependencies")
-        self.assertEqual(status, "defer")
-        self.assertIsNone(reason)
+    def test_routine_project_permission_requests_are_allowed(self):
+        for command in [
+            "npm.cmd run test",
+            "npm.cmd run build",
+            "npm.cmd run ci",
+            "npm.cmd install",
+            "python -m unittest discover .codex/hooks/tests",
+            "git status --short --branch",
+            "git switch feature/milestone-3-provider-interfaces",
+            "git checkout -b feature/milestone-3-provider-interfaces",
+            "git commit -m \"docs: update status\"",
+        ]:
+            status, reason = classify_permission_request(command, "routine project command")
+            self.assertEqual(status, "allow")
+            self.assertIsNone(reason)
+
+    def test_dependency_addition_permission_requests_defer(self):
+        for command in [
+            "npm install zod",
+            "npm.cmd install zod",
+            "pnpm add zod",
+            "python -m pip install pandas",
+        ]:
+            status, reason = classify_permission_request(command, "add dependency")
+            self.assertEqual(status, "defer")
+            self.assertIsNone(reason)
+
+    def test_remote_publication_permission_requests_defer(self):
+        for command in [
+            "git push origin feature/codex-foundation-setup",
+            "gh pr create --fill",
+            "gh issue create --title \"MVP: data ingestion\"",
+        ]:
+            status, reason = classify_permission_request(command, "publish remote state")
+            self.assertEqual(status, "defer")
+            self.assertIsNone(reason)
 
     def test_broker_order_permission_is_blocked(self):
         status, reason = classify_permission_request("python broker.py submit_order", "place broker order")

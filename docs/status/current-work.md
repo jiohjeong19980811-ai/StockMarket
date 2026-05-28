@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T17:22:33-04:00
+Last updated: 2026-05-28T18:16:04-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 2: Domain And Database Contracts |
-| Current task | Runtime domain schemas and initial database migrations implemented |
-| Owner/agent | Codex acting as founding CTO / lead architect / security reviewer |
+| Current phase | Foundation maintenance: Codex permissions and hooks |
+| Current task | Routine in-repository command autonomy added while preserving safety guardrails |
+| Owner/agent | Codex acting as founding CTO / security reviewer / operator workflow owner |
 | Status | Completed |
 | Priority | High |
-| Category | Domain and persistence design |
+| Category | Codex workflow and safety |
 | Blockers | None |
-| Next step | Begin Milestone 3 provider interfaces and mock ingestion planning |
-| Related docs/files | `docs/superpowers/specs/2026-05-28-milestone-2-domain-db-design.md`, `docs/superpowers/plans/2026-05-28-milestone-2-domain-db.md`, `packages/core`, `packages/db`, `apps/api/src/env.ts` |
-| Validation required | Completed: aggregate CI after security-review fixes, status JSON parse, whitespace check, token-shaped secret scan, and live-trading safety scan with expected guardrail-only matches |
+| Next step | Review/trust changed hooks if Codex prompts, then begin Milestone 3 provider interfaces and mock ingestion planning |
+| Related docs/files | `.codex/config.toml`, `.codex/hooks/policy.py`, `.codex/hooks/permission_request.py`, `.codex/hooks/tests/test_policy.py`, `docs/codex-setup.md`, `docs/security.md` |
+| Validation required | Completed: hook policy tests, Codex TOML parse, hook JSON parse, deprecated `codex_hooks` assignment scan, and aggregate project CI |
 
 ## Status Vocabulary
 

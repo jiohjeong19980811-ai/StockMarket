@@ -33,11 +33,15 @@ This setup follows current OpenAI Codex documentation:
 The project profile is intentionally narrow:
 
 - Workspace writes are allowed.
+- Routine in-repository commands such as tests, builds, CI, local installs from the lockfile, status checks, branch switching, commits, and hook validation may be auto-approved by the `PermissionRequest` hook.
+- `approval_policy.granular.sandbox_approval` is enabled and `approvals_reviewer` is set to `auto_review` so normal sandbox prompts can be resolved without waiting on the operator when the hook policy allows them.
 - Common secret files are denied.
 - Network is allowlisted for OpenAI docs/API, GitHub, and package registries.
 - No broker, trading, or broad filesystem MCP servers are configured.
 
 Future market data provider domains should be added deliberately with a matching adapter and security review.
+
+Codex hooks use the canonical `[features] hooks = true` feature key. If Codex reports a deprecated `[features].codex_hooks` warning, check user, profile, system, or launch-flag configuration outside this repository; the project-local config does not use that deprecated key.
 
 ## Memory And Rules
 

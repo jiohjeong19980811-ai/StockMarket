@@ -1,7 +1,8 @@
 # Project-local Codex configuration. Codex loads this only after the project is trusted.
 # Keep this file free of secrets and machine-local provider/auth settings.
 
-approval_policy = { granular = { sandbox_approval = false, rules = true, mcp_elicitations = true, request_permissions = true, skill_approval = true } }
+approval_policy = { granular = { sandbox_approval = true, rules = true, mcp_elicitations = true, request_permissions = true, skill_approval = true } }
+approvals_reviewer = "auto_review"
 default_permissions = "stockmarket-workspace"
 
 [features]

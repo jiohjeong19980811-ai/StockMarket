@@ -20,6 +20,8 @@
 
 The project `.codex/config.toml` uses a workspace-scoped permission profile and denies common secret file patterns. It configures the OpenAI developer docs MCP server only. Do not add broad filesystem, browser, broker, or trading MCP servers without explicit operator approval.
 
+Routine in-repository work may be auto-approved by the `PermissionRequest` hook when it is limited to local tests, builds, CI, hook validation, status/diff inspection, branch switching, commits, or lockfile-based dependency installation. Dependency additions, remote publication, GitHub issue/PR creation, out-of-repository writes, secret access, and live-trading/order paths remain prompt-gated or blocked.
+
 ## Research Basis
 
 Security decisions are informed by OWASP LLM guidance, NIST AI RMF guidance, MCP security best practices, GitHub secret scanning guidance, SEC automated investment advice materials, and official options/crypto risk disclosures. See `docs/research/security-and-compliance.md`.

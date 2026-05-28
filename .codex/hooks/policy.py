@@ -48,6 +48,18 @@ BLOCK_COMMAND_PATTERNS = [
     (re.compile(r"(?i)\b(LIVE_TRADING_ENABLED\s*=\s*true|place_order|submit_order|create_order|/orders)\b"), "Live order or live trading paths are blocked during MVP."),
 ]
 
+ALLOW_PERMISSION_COMMAND_PATTERNS = [
+    re.compile(r"(?i)^\s*npm(?:\.cmd)?\s+run\b"),
+    re.compile(r"(?i)^\s*npm(?:\.cmd)?\s+(?:ci|install)(?:\s+--[A-Za-z0-9][^\s]*)*\s*$"),
+    re.compile(r"(?i)^\s*python(?:3)?\s+-m\s+(?:unittest|pytest|json\.tool|py_compile)\b"),
+    re.compile(r"(?i)^\s*git\s+(?:status|diff|log|show|branch)(?:\s|$)"),
+    re.compile(r"(?i)^\s*git\s+switch\b"),
+    re.compile(r"(?i)^\s*git\s+checkout\s+-b\b"),
+    re.compile(r"(?i)^\s*git\s+add\b"),
+    re.compile(r"(?i)^\s*git\s+commit\b"),
+    re.compile(r"(?i)^\s*git\s+merge\b"),
+]
+
 DELETE_REPO_PATTERNS = [
     re.compile(r"(?i)\b(rm|del|rd|rmdir|Remove-Item)\b.*(\.git|StockMarket)(?:\s|$)"),
 ]
@@ -121,6 +133,17 @@ def block(event_name: str, reason: str) -> None:
         )
     else:
         emit({"decision": "block", "reason": reason})
+
+
+def allow_permission_request() -> None:
+    emit(
+        {
+            "hookSpecificOutput": {
+                "hookEventName": "PermissionRequest",
+                "decision": {"behavior": "allow"},
+            }
+        }
+    )
 
 
 def add_context(event_name: str, message: str) -> None:
@@ -204,7 +227,13 @@ def classify_permission_request(command: str, description: str = "", cwd: str | 
     status, reason = classify_command(command + "\n" + (description or ""), cwd)
     if status == "block":
         return status, reason
+    if is_routine_project_permission_request(command):
+        return "allow", None
     return "defer", None
+
+
+def is_routine_project_permission_request(command: str) -> bool:
+    return any(pattern.search(command or "") for pattern in ALLOW_PERMISSION_COMMAND_PATTERNS)
 
 
 def classify_outside_repo_write(command: str, cwd: str | None) -> str | None:

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T17:22:33-04:00",
+  "lastUpdated": "2026-05-28T18:16:04-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -10,12 +10,12 @@
     "Deferred"
   ],
   "currentFocus": {
-    "phase": "Milestone 2: Domain And Database Contracts",
-    "task": "Runtime domain schemas and initial database migrations implemented",
-    "owner": "Codex founding CTO / lead architect / security reviewer",
+    "phase": "Foundation maintenance: Codex permissions and hooks",
+    "task": "Routine in-repository command autonomy added while preserving safety guardrails",
+    "owner": "Codex founding CTO / security reviewer / operator workflow owner",
     "status": "Completed",
     "priority": "High",
-    "category": "Domain and persistence design"
+    "category": "Codex workflow and safety"
   },
   "items": [
     {
@@ -46,7 +46,7 @@
       "priority": "High",
       "category": "Safety and workflow",
       "blockers": [],
-      "nextStep": "Review and trust hooks in Codex after changes.",
+      "nextStep": "Review and trust hooks in Codex after permission-policy changes.",
       "relatedDocs": [
         ".codex/hooks.json",
         ".codex/hooks/README.md",
@@ -170,6 +170,33 @@
         "Markdown/source review",
         "Status JSON parse",
         "Secret-pattern scan"
+      ]
+    },
+    {
+      "id": "M0-008",
+      "title": "Tune Codex routine command autonomy",
+      "phase": "Milestone 0",
+      "owner": "Codex founding CTO / security reviewer / operator workflow owner",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Codex workflow and safety",
+      "blockers": [],
+      "nextStep": "Review and trust changed hooks in Codex if prompted, then proceed to Milestone 3.",
+      "relatedDocs": [
+        ".codex/config.toml",
+        ".codex/hooks/policy.py",
+        ".codex/hooks/permission_request.py",
+        ".codex/hooks/tests/test_policy.py",
+        "docs/codex-setup.md",
+        "docs/security.md",
+        "docs/decision-log.md"
+      ],
+      "validationRequired": [
+        "Hook policy tests",
+        "Codex TOML parse",
+        "Hook JSON parse",
+        "Deprecated feature-key scan",
+        "Aggregate CI"
       ]
     },
     {

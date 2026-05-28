@@ -1,4 +1,4 @@
-from policy import block, classify_permission_request, command_from_event, load_event
+from policy import allow_permission_request, block, classify_permission_request, command_from_event, load_event
 
 
 def main() -> None:
@@ -9,6 +9,8 @@ def main() -> None:
     status, reason = classify_permission_request(command, description, event.get("cwd"))
     if status == "block":
         block("PermissionRequest", reason or "Permission request blocked by StockMarket policy.")
+    elif status == "allow":
+        allow_permission_request()
 
 
 if __name__ == "__main__":

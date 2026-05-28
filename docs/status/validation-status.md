@@ -1,26 +1,31 @@
 # Validation Status
 
-Last updated: 2026-05-28T17:22:33-04:00
+Last updated: 2026-05-28T18:16:04-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 2 implementation validation |
-| Current task | Runtime domain schemas and initial database migrations implemented |
-| Owner/agent | Codex founding CTO / QA reviewer / security reviewer |
+| Current phase | Foundation maintenance validation |
+| Current task | Routine in-repository Codex command autonomy added |
+| Owner/agent | Codex founding CTO / security reviewer / operator workflow owner |
 | Status | Completed |
 | Priority | High |
-| Category | Validation |
+| Category | Codex workflow validation |
 | Blockers | None |
-| Next step | Commit M2 implementation and begin Milestone 3 provider-interface planning |
-| Related docs/files | `packages/core`, `packages/db`, `apps/api/src/env.ts`, `docs/status/` |
+| Next step | Review/trust changed hooks if Codex prompts, then begin Milestone 3 provider-interface planning |
+| Related docs/files | `.codex/config.toml`, `.codex/hooks/policy.py`, `.codex/hooks/permission_request.py`, `.codex/hooks/tests/test_policy.py`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
-| Hook policy tests | Completed | 11 tests passed after latest hook test update | `python -m unittest discover .codex/hooks/tests` |
+| Hook policy tests | Completed | 13 tests passed after latest permission autonomy hook update | `python -m unittest discover .codex/hooks/tests` |
+| Codex permission autonomy hook tests | Completed | 13 tests passed; routine project permission requests allow, dependency additions and remote publication defer, broker order requests block | `python -m unittest discover .codex/hooks/tests` |
+| Codex permission config parse | Completed | `.codex/config.toml` and custom agent TOML files parsed successfully after enabling sandbox approval and auto review | Python `tomllib` parse |
+| Hook JSON parse after permission update | Completed | `.codex/hooks.json` parsed successfully | `python -m json.tool .codex/hooks.json` |
+| Deprecated hook feature-key assignment scan | Completed | No deprecated hook feature assignment found in project Codex config; project uses `[features] hooks = true` | `rg -n "codex_hooks\\s*=" .codex AGENTS.md package.json` |
+| Permission autonomy aggregate CI | Completed | Typecheck, lint, format, 38 unit tests, 13 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
 | Hook script compile | Completed | Hook Python scripts compiled successfully | `python -m py_compile .codex/hooks/*.py` equivalent |
 | Hook smoke test | Completed | `SessionStart` and `Stop` hooks returned expected context/reminders | Direct hook script execution with sample event |
 | Hook config parse | Completed | `.codex/hooks.json` parsed successfully | Python JSON parse |
