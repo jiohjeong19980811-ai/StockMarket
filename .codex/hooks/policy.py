@@ -32,12 +32,25 @@ REPO_SCOPE_PATTERNS = [
 ]
 
 ENV_FILE_READ_COMMAND_PATTERN = re.compile(r"(?i)\b(cat|type|gc|get-content)\b")
-ENV_FILE_PATH_PATTERN = re.compile(r"(?i)(?:^|[\s'\"=])(?:\./|\.\\)?\.env(?:\.[A-Za-z0-9_-]+)?(?=$|[\s'\";])")
+ENV_FILE_PATH_PATTERN = re.compile(
+    r"(?i)(?:^|[\s'\"=])(?:\./|\.\\)?\.env(?!\.example(?=$|[\s'\";]))(?:\.[A-Za-z0-9_-]+)?(?=$|[\s'\";])"
+)
+SECRET_FILE_PATH_PATTERNS = [
+    ENV_FILE_PATH_PATTERN,
+    re.compile(r"(?i)(?:^|[\s'\"=])(?:\./|\.\\)?secrets(?:[\\/]|$|[\s'\"])"),
+    re.compile(r"(?i)(?:^|[\s'\"=])(?:\./|\.\\)?data[\\/]private(?:[\\/]|$|[\s'\"])"),
+    re.compile(r"(?i)(?:^|[\s'\"=])[^'\"\s]*\.(?:pem|key|p12|pfx)(?=$|[\s'\";])"),
+]
 
 BLOCK_COMMAND_PATTERNS = [
     (re.compile(r"(?i)\brm\s+-rf\s+/(?:\s|$)"), "Refusing to recursively delete the filesystem root."),
     (re.compile(r"(?i)\b(git\s+config\s+--global)\b"), "Global git configuration changes require explicit human review."),
-    (re.compile(r"(?i)\b(cat|type|Get-Content)\s+(['\"]?)\.env(?:\.[A-Za-z0-9_-]+)?\2(?:\s|$)"), "Reading .env files is blocked to avoid secret exposure."),
+    (
+        re.compile(
+            r"(?i)\b(cat|type|Get-Content)\s+(['\"]?)\.env(?!\.example(?:\2|\s|$))(?:\.[A-Za-z0-9_-]+)?\2(?:\s|$)"
+        ),
+        "Reading .env files is blocked to avoid secret exposure.",
+    ),
     (re.compile(r"(?i)\b(Get-ChildItem|dir|ls)\s+Env:"), "Printing environment variables is blocked to avoid secret exposure."),
     (re.compile(r"(?i)\b(printenv|env)\b(?:\s|$)"), "Printing environment variables is blocked to avoid secret exposure."),
     (re.compile(r"(?i)\becho\s+(\$env:|\$)[A-Za-z0-9_]*(KEY|TOKEN|SECRET|PASSWORD)"), "Echoing secret-like environment variables is blocked."),
@@ -50,14 +63,11 @@ BLOCK_COMMAND_PATTERNS = [
 
 ALLOW_PERMISSION_COMMAND_PATTERNS = [
     re.compile(r"(?i)^\s*npm(?:\.cmd)?\s+run\b"),
-    re.compile(r"(?i)^\s*npm(?:\.cmd)?\s+(?:ci|install)(?:\s+--[A-Za-z0-9][^\s]*)*\s*$"),
+    re.compile(r"(?i)^\s*npm(?:\.cmd)?\s+ci(?:\s+--[A-Za-z0-9][^\s]*)*\s*$"),
     re.compile(r"(?i)^\s*python(?:3)?\s+-m\s+(?:unittest|pytest|json\.tool|py_compile)\b"),
     re.compile(r"(?i)^\s*git\s+(?:status|diff|log|show|branch)(?:\s|$)"),
     re.compile(r"(?i)^\s*git\s+switch\b"),
     re.compile(r"(?i)^\s*git\s+checkout\s+-b\b"),
-    re.compile(r"(?i)^\s*git\s+add\b"),
-    re.compile(r"(?i)^\s*git\s+commit\b"),
-    re.compile(r"(?i)^\s*git\s+merge\b"),
 ]
 
 DELETE_REPO_PATTERNS = [
@@ -206,6 +216,9 @@ def classify_command(command: str, cwd: str | None = None) -> tuple[str, str | N
     for pattern in DELETE_REPO_PATTERNS:
         if pattern.search(text):
             return "block", "Deleting the repository or .git metadata is blocked."
+    secret_file_reason = find_secret_file_path_issue(text)
+    if secret_file_reason:
+        return "block", secret_file_reason
     if ENV_FILE_READ_COMMAND_PATTERN.search(text) and ENV_FILE_PATH_PATTERN.search(text):
         return "block", "Reading .env files is blocked to avoid secret exposure."
     for pattern, reason in BLOCK_COMMAND_PATTERNS:
@@ -221,6 +234,13 @@ def classify_command(command: str, cwd: str | None = None) -> tuple[str, str | N
     if outside_reason:
         return "block", outside_reason
     return "allow", None
+
+
+def find_secret_file_path_issue(text: str) -> str | None:
+    for pattern in SECRET_FILE_PATH_PATTERNS:
+        if pattern.search(text or ""):
+            return "Access to secret-like files is blocked."
+    return None
 
 
 def classify_permission_request(command: str, description: str = "", cwd: str | None = None) -> tuple[str, str | None]:
@@ -243,15 +263,34 @@ def classify_outside_repo_write(command: str, cwd: str | None) -> str | None:
     root = repo_root(cwd)
     if root is None:
         return None
-    for raw_path in find_absolute_windows_paths(command):
+    for raw_path in find_write_target_paths(command):
         try:
-            candidate = Path(raw_path).resolve()
+            candidate = resolve_command_path(raw_path, cwd).resolve()
         except OSError:
             continue
         if candidate == root or root in candidate.parents:
             continue
         return f"Writing outside the repository is blocked: {raw_path}"
     return None
+
+
+def find_write_target_paths(text: str) -> list[str]:
+    candidates: list[str] = []
+    candidates.extend(find_absolute_windows_paths(text))
+    candidates.extend(re.findall(r"(?<![\w.])\.\.[\\/][^\s'\"|<>]+", text or ""))
+    candidates.extend(re.findall(r"['\"](\.\.[\\/][^'\"]+)['\"]", text or ""))
+    candidates.extend(re.findall(r"(?<![\w.])~[\\/][^\s'\"|<>]+", text or ""))
+    candidates.extend(re.findall(r"['\"](~[\\/][^'\"]+)['\"]", text or ""))
+    return candidates
+
+
+def resolve_command_path(raw_path: str, cwd: str | None) -> Path:
+    if raw_path.startswith(("~\\", "~/")):
+        return Path(raw_path).expanduser()
+    path = Path(raw_path)
+    if path.is_absolute():
+        return path
+    return Path(cwd or os.getcwd()) / path
 
 
 def find_absolute_windows_paths(text: str) -> list[str]:

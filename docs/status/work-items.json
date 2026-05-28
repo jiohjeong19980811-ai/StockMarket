@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T18:16:04-04:00",
+  "lastUpdated": "2026-05-28T18:35:25-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -10,12 +10,12 @@
     "Deferred"
   ],
   "currentFocus": {
-    "phase": "Foundation maintenance: Codex permissions and hooks",
-    "task": "Routine in-repository command autonomy added while preserving safety guardrails",
-    "owner": "Codex founding CTO / security reviewer / operator workflow owner",
+    "phase": "Pre-merge review fixes",
+    "task": "Security, QA, and architecture review blockers closed before moving to Milestone 3",
+    "owner": "Codex founding CTO / lead architect / security reviewer / quantitative research lead",
     "status": "Completed",
     "priority": "High",
-    "category": "Codex workflow and safety"
+    "category": "Release readiness and safety validation"
   },
   "items": [
     {
@@ -259,6 +259,36 @@
         "Lint",
         "Unit tests",
         "Build"
+      ]
+    },
+    {
+      "id": "M2-002",
+      "title": "Close pre-merge security, QA, and architecture review blockers",
+      "phase": "Milestone 2",
+      "owner": "Codex founding CTO / lead architect / security reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Release readiness and safety validation",
+      "blockers": [],
+      "nextStep": "Commit the review fixes, merge the reviewed branch to main when clean, then start Milestone 3 provider interfaces and mock ingestion.",
+      "relatedDocs": [
+        ".codex/config.toml",
+        ".codex/hooks/policy.py",
+        ".codex/hooks/tests/test_policy.py",
+        ".env.example",
+        "packages/core",
+        "packages/db",
+        "docs/status/current-work.md",
+        "docs/status/validation-status.md"
+      ],
+      "validationRequired": [
+        "Root CI",
+        "Hook policy tests",
+        "Core schema tests",
+        "DB migration tests",
+        "JSON/TOML parse",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
       ]
     }
   ]

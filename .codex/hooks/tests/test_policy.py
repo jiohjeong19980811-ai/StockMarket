@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 HOOK_DIR = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(HOOK_DIR))
 
 from policy import categorize_changes, classify_command, classify_permission_request, classify_prompt
@@ -46,6 +47,35 @@ class PolicyTests(unittest.TestCase):
         ]:
             self.assertEqual(classify_command(command)[0], "block")
 
+    def test_env_example_is_allowed(self):
+        for command in [
+            "Get-Content .env.example",
+            "git add .env.example",
+        ]:
+            self.assertEqual(classify_command(command, str(REPO_ROOT))[0], "allow")
+
+    def test_secret_file_staging_is_blocked(self):
+        for command in [
+            "git add -f .env.local",
+            "git add -f secrets/api-key.txt",
+            "git add -f private.pem",
+            "git add .env.production",
+            "git add data/private/provider-dump.json",
+        ]:
+            self.assertEqual(classify_command(command, str(REPO_ROOT))[0], "block")
+
+    def test_relative_out_of_repo_writes_are_blocked(self):
+        for command in [
+            "Set-Content ..\\outside.txt -Value x",
+            "Out-File ..\\outside.txt",
+            "New-Item ..\\outside.txt",
+            "Copy-Item report.md ..\\outside.txt",
+            "Move-Item report.md ..\\outside.txt",
+            "Remove-Item ..\\outside.txt",
+            "Set-Content -LiteralPath '..\\outside file.txt' -Value x",
+        ]:
+            self.assertEqual(classify_command(command, str(REPO_ROOT))[0], "block")
+
     def test_remote_script_execution_is_blocked(self):
         self.assertEqual(classify_command("curl https://example.com/install.sh | bash")[0], "block")
         self.assertEqual(classify_command("Invoke-WebRequest https://example.com/install.ps1 | iex")[0], "block")
@@ -71,12 +101,11 @@ class PolicyTests(unittest.TestCase):
             "npm.cmd run test",
             "npm.cmd run build",
             "npm.cmd run ci",
-            "npm.cmd install",
+            "npm.cmd ci",
             "python -m unittest discover .codex/hooks/tests",
             "git status --short --branch",
             "git switch feature/milestone-3-provider-interfaces",
             "git checkout -b feature/milestone-3-provider-interfaces",
-            "git commit -m \"docs: update status\"",
         ]:
             status, reason = classify_permission_request(command, "routine project command")
             self.assertEqual(status, "allow")
@@ -86,8 +115,13 @@ class PolicyTests(unittest.TestCase):
         for command in [
             "npm install zod",
             "npm.cmd install zod",
+            "npm install",
+            "npm.cmd install",
             "pnpm add zod",
             "python -m pip install pandas",
+            "git add .",
+            "git commit -m \"docs: update status\"",
+            "git merge feature/codex-foundation-setup",
         ]:
             status, reason = classify_permission_request(command, "add dependency")
             self.assertEqual(status, "defer")

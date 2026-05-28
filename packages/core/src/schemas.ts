@@ -8,7 +8,7 @@ import {
 import { evidenceStatuses, strategyFamilies } from "./strategy.js";
 
 const nonemptyString = z.string().trim().min(1);
-const isoTimestamp = nonemptyString;
+const isoTimestamp = z.string().trim().datetime();
 const score = z.number().finite().min(0).max(100);
 const positiveFiniteNumber = z.number().finite().positive();
 const nonNegativeWholeNumber = z.number().finite().int().nonnegative();

@@ -238,6 +238,14 @@ export const recommendations = sqliteTable(
     ),
     check("recommendations_liquidity_score_range", sql`${table.liquidityScore} BETWEEN 0 AND 100`),
     check(
+      "recommendations_invalidation_conditions_valid",
+      sql`
+        json_valid(${table.invalidationConditionsJson})
+        AND json_type(${table.invalidationConditionsJson}) = 'array'
+        AND json_array_length(${table.invalidationConditionsJson}) > 0
+      `,
+    ),
+    check(
       "recommendations_option_details_required",
       sql`
         ${table.instrumentType} = 'stock'
@@ -271,6 +279,7 @@ export const recommendations = sqliteTable(
         )
         AND ${table.freshnessStatus} = 'fresh'
         AND ${table.liquidityDecision} = 'pass'
+        AND ${table.liquidityScore} >= 70
         AND ${table.riskDecision} = 'pass'
         AND (
           ${table.instrumentType} = 'stock'

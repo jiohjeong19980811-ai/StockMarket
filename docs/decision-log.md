@@ -126,8 +126,14 @@ Decision: Do not store full raw provider, article, options-chain, or AI prompt p
 
 Reason: Market/news data licensing may restrict local storage or redistribution, and raw prompts or payloads may accidentally include secrets or untrusted instructions.
 
+## 2026-05-28: Migration Integrity Gate
+
+Decision: Store SHA-256 checksums for applied SQL migrations and apply each migration plus its tracking row through a single libSQL batch transaction.
+
+Reason: The MVP database must reject modified historical migrations and avoid partially applied schema changes before provider ingestion or paper-trading evidence depends on persisted data.
+
 ## 2026-05-28: Codex Routine Command Autonomy
 
-Decision: Allow the project `PermissionRequest` hook to auto-approve routine in-repository commands for tests, builds, CI, hook validation, status/diff inspection, branch switching, commits, and lockfile-based local installs. Enable sandbox approval prompts and `auto_review` in the project Codex config.
+Decision: Allow the project `PermissionRequest` hook to auto-approve routine in-repository commands for tests, builds, CI, hook validation, status/diff inspection, branch switching, and `npm ci`. Enable sandbox approval prompts in the project Codex config, but keep dependency additions, commits, merges, and remote publication out of the routine auto-allow path.
 
 Reason: Subagents and the main Codex operator should not stall on normal project validation or local workflow commands. The autonomy boundary remains constrained by hard blocks for secrets, `.env` reads, destructive repository deletion, out-of-repository writes, live trading, broker order paths, dependency additions, and remote publication prompts.

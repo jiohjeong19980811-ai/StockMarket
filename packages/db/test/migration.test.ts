@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createLocalClient, runMigrations } from "../src/index.js";
 import type { Client } from "@libsql/client";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 const now = "2026-05-01T12:00:00Z";
 
@@ -119,8 +122,62 @@ describe("database migrations", () => {
   });
 
   it("applies all migrations to a clean local database", async () => {
-    const result = await client.execute("SELECT name FROM schema_migrations ORDER BY name");
+    const result = await client.execute(
+      "SELECT name, checksum FROM schema_migrations ORDER BY name",
+    );
     expect(result.rows.map((row) => row.name)).toEqual(["0000_initial_research_schema.sql"]);
+    expect(result.rows[0]?.checksum).toEqual(expect.stringMatching(/^[a-f0-9]{64}$/));
+  });
+
+  it("rejects modified migration files after they have been applied", async () => {
+    const migrationDirectory = await mkdtemp(join(tmpdir(), "stockmarket-migrations-"));
+    const migrationPath = join(migrationDirectory, "0000_test.sql");
+    const migrationClient = await createLocalClient();
+
+    try {
+      await writeFile(
+        migrationPath,
+        "CREATE TABLE checksum_test (id TEXT PRIMARY KEY, value TEXT NOT NULL);",
+      );
+      await runMigrations(migrationClient, migrationDirectory);
+
+      await writeFile(
+        migrationPath,
+        "CREATE TABLE checksum_test (id TEXT PRIMARY KEY, value TEXT NOT NULL, extra TEXT);",
+      );
+
+      await expect(runMigrations(migrationClient, migrationDirectory)).rejects.toThrow(
+        /checksum mismatch/i,
+      );
+    } finally {
+      migrationClient.close();
+      await rm(migrationDirectory, { recursive: true, force: true });
+    }
+  });
+
+  it("rolls back a migration when one statement fails", async () => {
+    const migrationDirectory = await mkdtemp(join(tmpdir(), "stockmarket-migrations-"));
+    const migrationPath = join(migrationDirectory, "0000_test.sql");
+    const migrationClient = await createLocalClient();
+
+    try {
+      await writeFile(
+        migrationPath,
+        [
+          "CREATE TABLE rollback_test (id TEXT PRIMARY KEY);",
+          "CREATE TABLE rollback_test (id TEXT PRIMARY KEY);",
+        ].join("\n"),
+      );
+
+      await expect(runMigrations(migrationClient, migrationDirectory)).rejects.toThrow();
+      const result = await migrationClient.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'rollback_test'",
+      );
+      expect(result.rows).toHaveLength(0);
+    } finally {
+      migrationClient.close();
+      await rm(migrationDirectory, { recursive: true, force: true });
+    }
   });
 
   it("stores instruments with symbol and exchange uniqueness", async () => {
@@ -244,6 +301,36 @@ describe("database migrations", () => {
         paper_trade_evidence_id: "",
       }),
     ).rejects.toThrow();
+  });
+
+  it("rejects paper-trade recommendations below the liquidity score threshold", async () => {
+    await seedRecommendationDependencies();
+
+    await expect(
+      insertRecommendation({
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        backtest_run_id: "bt_123",
+        liquidity_score: 69,
+        liquidity_decision: "pass",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects recommendations without valid non-empty invalidation conditions", async () => {
+    await seedRecommendationDependencies();
+
+    for (const invalidationConditionsJson of ["[]", "", "not-json"]) {
+      await expect(
+        insertRecommendation({
+          id: `rec_invalidations_${invalidationConditionsJson.length}`,
+          decision: "paper_trade",
+          evidence_status: "paper_trade_eligible",
+          backtest_run_id: "bt_123",
+          invalidation_conditions_json: invalidationConditionsJson,
+        }),
+      ).rejects.toThrow();
+    }
   });
 
   it("rejects options paper trades without option risk details", async () => {

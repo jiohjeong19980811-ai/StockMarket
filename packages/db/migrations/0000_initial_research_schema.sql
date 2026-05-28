@@ -112,7 +112,11 @@ CREATE TABLE recommendations (
   bull_case TEXT NOT NULL CHECK (length(bull_case) > 0),
   bear_case TEXT NOT NULL CHECK (length(bear_case) > 0),
   downside_scenario TEXT NOT NULL CHECK (length(downside_scenario) > 0),
-  invalidation_conditions_json TEXT NOT NULL,
+  invalidation_conditions_json TEXT NOT NULL CHECK (
+    json_valid(invalidation_conditions_json)
+    AND json_type(invalidation_conditions_json) = 'array'
+    AND json_array_length(invalidation_conditions_json) > 0
+  ),
   why_system_might_be_wrong TEXT NOT NULL CHECK (length(why_system_might_be_wrong) > 0),
   primary_citation_title TEXT NOT NULL CHECK (length(primary_citation_title) > 0),
   primary_citation_url TEXT NOT NULL CHECK (length(primary_citation_url) > 0),
@@ -173,6 +177,7 @@ CREATE TABLE recommendations (
       AND (length(coalesce(backtest_run_id, '')) > 0 OR length(coalesce(paper_trade_evidence_id, '')) > 0)
       AND freshness_status = 'fresh'
       AND liquidity_decision = 'pass'
+      AND liquidity_score >= 70
       AND risk_decision = 'pass'
       AND (
         instrument_type = 'stock'

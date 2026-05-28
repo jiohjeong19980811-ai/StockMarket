@@ -1,31 +1,39 @@
 # Validation Status
 
-Last updated: 2026-05-28T18:16:04-04:00
+Last updated: 2026-05-28T18:35:25-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Foundation maintenance validation |
-| Current task | Routine in-repository Codex command autonomy added |
-| Owner/agent | Codex founding CTO / security reviewer / operator workflow owner |
+| Current phase | Pre-merge review validation |
+| Current task | Security, QA, and architecture review blockers closed before moving to Milestone 3 |
+| Owner/agent | Codex founding CTO / lead architect / security reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Codex workflow validation |
+| Category | Release readiness and safety validation |
 | Blockers | None |
-| Next step | Review/trust changed hooks if Codex prompts, then begin Milestone 3 provider-interface planning |
-| Related docs/files | `.codex/config.toml`, `.codex/hooks/policy.py`, `.codex/hooks/permission_request.py`, `.codex/hooks/tests/test_policy.py`, `docs/status/` |
+| Next step | Commit review fixes, merge the reviewed branch to `main` when clean, then begin Milestone 3 provider-interface planning |
+| Related docs/files | `.codex/config.toml`, `.codex/hooks/policy.py`, `.codex/hooks/tests/test_policy.py`, `.env.example`, `packages/core`, `packages/db`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
-| Hook policy tests | Completed | 13 tests passed after latest permission autonomy hook update | `python -m unittest discover .codex/hooks/tests` |
-| Codex permission autonomy hook tests | Completed | 13 tests passed; routine project permission requests allow, dependency additions and remote publication defer, broker order requests block | `python -m unittest discover .codex/hooks/tests` |
-| Codex permission config parse | Completed | `.codex/config.toml` and custom agent TOML files parsed successfully after enabling sandbox approval and auto review | Python `tomllib` parse |
-| Hook JSON parse after permission update | Completed | `.codex/hooks.json` parsed successfully | `python -m json.tool .codex/hooks.json` |
+| Pre-merge review aggregate CI | Completed | Typecheck, lint, format, 43 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
+| Pre-merge core schema regression | Completed | 7 core schema tests passed, including malformed ISO timestamp rejection | `npm.cmd run test --workspace @stockmarket/core -- schemas` |
+| Pre-merge DB migration and gate regression | Completed | 16 DB migration tests passed, including checksum tamper detection, transactional rollback, nonempty invalidation conditions, and paper-trade liquidity threshold | `npm.cmd run test --workspace @stockmarket/db -- migration` |
+| Pre-merge hook policy regression | Completed | 16 hook policy tests passed, including secret-file staging blocks, `.env.example` allowance, narrowed auto-allow rules, and relative out-of-repo write blocks | `python -m unittest discover .codex/hooks/tests` |
+| Pre-merge JSON/TOML parse | Completed | `docs/status/work-items.json`, `.codex/hooks.json`, `.codex/config.toml`, and custom agent TOML files parsed successfully | `python -m json.tool`; Python `tomllib` |
+| Pre-merge whitespace check | Completed | No whitespace errors; only Git line-ending warnings on Windows working copy | `git diff --check` |
+| Pre-merge secret-pattern scan | Completed | No secret-shaped tokens found in changed files | Strict changed-file scan |
+| Pre-merge live-trading surface scan | Completed | Matches in app/package code were the API broker/env guardrail and its test only | `rg` live-trading/order-surface scan over `apps`, `packages`, and `.env.example` |
 | Deprecated hook feature-key assignment scan | Completed | No deprecated hook feature assignment found in project Codex config; project uses `[features] hooks = true` | `rg -n "codex_hooks\\s*=" .codex AGENTS.md package.json` |
-| Permission autonomy aggregate CI | Completed | Typecheck, lint, format, 38 unit tests, 13 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
+| Hook policy tests | Completed | 16 tests passed after latest permission autonomy and review-blocker hook update | `python -m unittest discover .codex/hooks/tests` |
+| Codex permission autonomy hook tests | Completed | 16 tests passed; routine project permission requests allow, dependency additions, commits, merges, and remote publication defer, broker order requests block | `python -m unittest discover .codex/hooks/tests` |
+| Codex permission config parse | Completed | `.codex/config.toml` and custom agent TOML files parsed successfully after enabling sandbox approval for hook-resolved routine prompts | Python `tomllib` parse |
+| Hook JSON parse after permission update | Completed | `.codex/hooks.json` parsed successfully | `python -m json.tool .codex/hooks.json` |
+| Permission autonomy aggregate CI | Completed | Typecheck, lint, format, 43 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
 | Hook script compile | Completed | Hook Python scripts compiled successfully | `python -m py_compile .codex/hooks/*.py` equivalent |
 | Hook smoke test | Completed | `SessionStart` and `Stop` hooks returned expected context/reminders | Direct hook script execution with sample event |
 | Hook config parse | Completed | `.codex/hooks.json` parsed successfully | Python JSON parse |
@@ -86,17 +94,17 @@ Last updated: 2026-05-28T18:16:04-04:00
 | Milestone 2 planning unfinished-marker scan | Completed | No unfinished markers found in planning/status docs | `rg` unfinished-marker scan |
 | Milestone 2 planning secret-pattern scan | Completed | No token-shaped secret matches found in planning/status docs | stricter `rg` secret-pattern scan |
 | Milestone 2 dependency install | Completed | Added `zod`, `drizzle-orm`, and `@libsql/client`; removed Drizzle Kit after audit findings; final audit clean | `npm.cmd install`; `npm.cmd uninstall drizzle-kit`; `npm.cmd run audit:deps` |
-| Milestone 2 core contract tests | Completed | 20 core tests passed, including runtime schema, paper-trade schema gates, options liquidity gates, and no-trade options records with failed liquidity | `npm.cmd run test --workspace @stockmarket/core` |
-| Milestone 2 DB migration tests | Completed | 12 DB tests passed for clean migration, uniqueness, score checks, no generic metadata columns, citation requirements, options risk details, explicit NULL guards, nonempty evidence gates, and citation insert | `npm.cmd run test --workspace @stockmarket/db` |
+| Milestone 2 core contract tests | Completed | 21 core tests passed, including runtime schema, strict ISO timestamp parsing, paper-trade schema gates, options liquidity gates, and no-trade options records with failed liquidity | `npm.cmd run test --workspace @stockmarket/core` |
+| Milestone 2 DB migration tests | Completed | 16 DB tests passed for clean migration, checksum integrity, transactional rollback, uniqueness, score checks, no generic metadata columns, citation requirements, nonempty invalidation conditions, liquidity threshold gates, options risk details, explicit NULL guards, nonempty evidence gates, and citation insert | `npm.cmd run test --workspace @stockmarket/db` |
 | Milestone 2 API env guardrail tests | Completed | 4 API env tests passed, including expanded broker/execution prefix rejection without value disclosure | `npm.cmd run test --workspace @stockmarket/api -- env` |
-| Milestone 2 full unit tests | Completed | 38 tests passed across API, web, core, and DB projects | `npm.cmd run test` |
+| Milestone 2 full unit tests | Completed | 43 tests passed across API, web, core, and DB projects | `npm.cmd run test` |
 | Milestone 2 typecheck | Completed | TypeScript project references passed after Drizzle check helper fix | `npm.cmd run typecheck` |
 | Milestone 2 lint | Completed | ESLint passed | `npm.cmd run lint` |
 | Milestone 2 format check | Completed | Prettier check passed after formatting touched files | `npm.cmd run format:check` |
 | Milestone 2 dependency audit | Completed | npm reported 0 vulnerabilities after Drizzle Kit removal | `npm.cmd run audit:deps` |
 | Milestone 2 production build | Completed | API, web, and package builds passed | `npm.cmd run build` |
 | Milestone 2 API smoke | Completed | Built API health route returned expected response with live trading disabled | `npm.cmd run smoke:api` |
-| Milestone 2 aggregate CI | Completed | Typecheck, lint, format, 38 tests, hook tests, dependency audit, build, and API smoke passed after both security-review fix rounds | `npm.cmd run ci` |
+| Milestone 2 aggregate CI | Completed | Typecheck, lint, format, 43 tests, 16 hook tests, dependency audit, build, and API smoke passed after security, QA, and architecture review fixes | `npm.cmd run ci` |
 | Milestone 2 security review fixes | Completed | Added DB option-risk persistence gates, required primary citation fields, runtime paper-trade schema gates, no-trade options liquidity support, explicit SQLite NULL guards, nonempty evidence checks, and removal of generic metadata JSON columns | Security/compliance review handoff plus focused tests |
 | Milestone 2 status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after implementation status updates | `python -m json.tool docs/status/work-items.json` |
 | Milestone 2 whitespace check | Completed | No whitespace errors; only Git line-ending warnings on Windows working copy | `git diff --check` |

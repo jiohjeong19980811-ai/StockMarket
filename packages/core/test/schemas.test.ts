@@ -77,6 +77,46 @@ describe("recommendation runtime schema", () => {
     ).toThrow();
   });
 
+  it("rejects malformed ISO timestamps", () => {
+    const malformedTimestampCases: Recommendation[] = [
+      {
+        ...validRecommendation,
+        sourceCitations: [
+          {
+            ...validRecommendation.sourceCitations[0],
+            publishedAt: "not-a-timestamp",
+          },
+        ],
+      },
+      {
+        ...validRecommendation,
+        dataFreshness: {
+          ...validRecommendation.dataFreshness,
+          asOf: "2026-05-01",
+        },
+      },
+      {
+        ...validRecommendation,
+        operatorDecision: {
+          ...validRecommendation.operatorDecision,
+          decidedAt: "soon",
+        },
+      },
+      {
+        ...validRecommendation,
+        createdAt: "not-a-timestamp",
+      },
+      {
+        ...validRecommendation,
+        updatedAt: "not-a-timestamp",
+      },
+    ];
+
+    for (const recommendation of malformedTimestampCases) {
+      expect(() => recommendationSchema.parse(recommendation)).toThrow();
+    }
+  });
+
   it("rejects options contracts without liquidity fields", () => {
     expect(() =>
       recommendationSchema.parse({

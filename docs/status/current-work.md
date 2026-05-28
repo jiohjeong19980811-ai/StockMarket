@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T18:16:04-04:00
+Last updated: 2026-05-28T18:35:25-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
-| Current phase | Foundation maintenance: Codex permissions and hooks |
-| Current task | Routine in-repository command autonomy added while preserving safety guardrails |
-| Owner/agent | Codex acting as founding CTO / security reviewer / operator workflow owner |
+| Current phase | Pre-merge review fixes |
+| Current task | Security, QA, and architecture review blockers closed before moving to Milestone 3 |
+| Owner/agent | Codex acting as founding CTO / lead architect / security reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Codex workflow and safety |
+| Category | Release readiness and safety validation |
 | Blockers | None |
-| Next step | Review/trust changed hooks if Codex prompts, then begin Milestone 3 provider interfaces and mock ingestion planning |
-| Related docs/files | `.codex/config.toml`, `.codex/hooks/policy.py`, `.codex/hooks/permission_request.py`, `.codex/hooks/tests/test_policy.py`, `docs/codex-setup.md`, `docs/security.md` |
-| Validation required | Completed: hook policy tests, Codex TOML parse, hook JSON parse, deprecated `codex_hooks` assignment scan, and aggregate project CI |
+| Next step | Commit review fixes, merge the reviewed branch to `main` when clean, then begin Milestone 3 provider interfaces and mock ingestion planning |
+| Related docs/files | `.codex/config.toml`, `.codex/hooks/policy.py`, `.codex/hooks/tests/test_policy.py`, `.env.example`, `packages/core`, `packages/db`, `docs/status/` |
+| Validation required | Completed: root CI, hook policy tests, DB migration tests, core schema tests, JSON/TOML parses, whitespace check, secret scan, and live-trading surface scan |
 
 ## Status Vocabulary
 
