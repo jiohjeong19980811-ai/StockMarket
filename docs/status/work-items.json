@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T16:20:28-04:00",
+  "lastUpdated": "2026-05-28T16:45:00-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -10,12 +10,12 @@
     "Deferred"
   ],
   "currentFocus": {
-    "phase": "Milestone 1: Project Scaffold",
-    "task": "npm-workspaces TypeScript scaffold completed",
-    "owner": "Codex founding CTO / lead architect",
-    "status": "Needs Review",
+    "phase": "Milestone 2: Domain And Database Contracts",
+    "task": "Define persisted research contracts, audit trail, and migration approach",
+    "owner": "Codex founding CTO / lead architect / security reviewer",
+    "status": "Planned",
     "priority": "High",
-    "category": "Application scaffold implementation"
+    "category": "Domain and persistence design"
   },
   "items": [
     {
@@ -177,11 +177,11 @@
       "title": "Begin main application scaffold",
       "phase": "Milestone 1",
       "owner": "Architect Agent, Data Engineering Agent, UI/UX Agent",
-      "status": "Needs Review",
+      "status": "Completed",
       "priority": "High",
       "category": "Application implementation",
       "blockers": [],
-      "nextStep": "Review scaffold, then begin Milestone 2 domain/database contracts.",
+      "nextStep": "Begin Milestone 2 domain/database contracts with schema, audit, and risk-control requirements.",
       "relatedDocs": [
         "docs/implementation-plan.md",
         "docs/product-roadmap.md",
@@ -196,6 +196,36 @@
         "Stack decision",
         "Implementation plan validation",
         "Scaffold validation commands",
+        "Type check",
+        "Lint",
+        "Unit tests",
+        "Build"
+      ]
+    },
+    {
+      "id": "M2-001",
+      "title": "Define domain and database contracts",
+      "phase": "Milestone 2",
+      "owner": "Codex founding CTO / lead architect / security reviewer",
+      "status": "Planned",
+      "priority": "High",
+      "category": "Domain and persistence design",
+      "blockers": [],
+      "nextStep": "Choose the migration/local database approach, then implement persisted research contracts with auditability and risk gates.",
+      "relatedDocs": [
+        "docs/architecture.md",
+        "docs/implementation-plan.md",
+        "docs/product-roadmap.md",
+        "docs/risk-and-compliance.md",
+        "docs/backtesting-and-validation.md",
+        "packages/core",
+        "packages/db"
+      ],
+      "validationRequired": [
+        "Milestone 2 implementation plan",
+        "Migration approach decision",
+        "Schema/type tests",
+        "Audit trail tests",
         "Type check",
         "Lint",
         "Unit tests",

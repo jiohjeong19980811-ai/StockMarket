@@ -1,5 +1,5 @@
 import fastify from "fastify";
-import type { ApiEnv } from "./env";
+import type { ApiEnv } from "./env.js";
 
 export function buildServer(env: ApiEnv) {
   const server = fastify({

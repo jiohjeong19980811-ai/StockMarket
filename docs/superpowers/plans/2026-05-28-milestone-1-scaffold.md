@@ -844,8 +844,8 @@ Create `apps/web/package.json`:
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build",
-    "dev": "vite --host 127.0.0.1",
-    "preview": "vite preview --host 127.0.0.1",
+    "dev": "vite --host 127.0.0.1 --port 3001 --strictPort",
+    "preview": "vite preview --host 127.0.0.1 --port 3001 --strictPort",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "lint": "eslint ."

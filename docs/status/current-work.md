@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T16:20:28-04:00
+Last updated: 2026-05-28T16:45:00-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 1: Project Scaffold |
-| Current task | npm-workspaces TypeScript scaffold completed |
-| Owner/agent | Codex acting as founding CTO / lead architect |
-| Status | Needs Review |
+| Current phase | Milestone 2: Domain And Database Contracts |
+| Current task | Define persisted research contracts, audit trail, and migration approach |
+| Owner/agent | Codex acting as founding CTO / lead architect / security reviewer |
+| Status | Planned |
 | Priority | High |
-| Category | Application scaffold implementation |
+| Category | Domain and persistence design |
 | Blockers | None |
-| Next step | Review scaffold, then begin Milestone 2 domain/database contracts |
+| Next step | Commit Milestone 1 review fixes, then plan Milestone 2 schema/contracts before implementation |
 | Related docs/files | `package.json`, `apps/api`, `apps/web`, `packages/`, `docs/superpowers/plans/2026-05-28-milestone-1-scaffold.md`, `docs/status/work-items.json` |
-| Validation required | Completed: typecheck, unit tests, lint, format check, build, hook tests, status JSON parse, HTTP UI smoke on port 3001; Browser plugin had no active backend for screenshot |
+| Validation required | Milestone 1 review completed: `npm.cmd run ci`, `python -m json.tool docs/status/work-items.json`, `git diff --check`, API smoke, dependency audit, and secret-pattern scan |
 
 ## Status Vocabulary
 

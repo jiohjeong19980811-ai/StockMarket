@@ -1,19 +1,19 @@
 # Validation Status
 
-Last updated: 2026-05-28T16:20:28-04:00
+Last updated: 2026-05-28T16:45:00-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 1 scaffold validation |
-| Current task | npm-workspaces TypeScript scaffold validated |
-| Owner/agent | Codex founding CTO / QA reviewer |
+| Current phase | Milestone 1 review validation |
+| Current task | Scaffold review fixes validated and ready to commit |
+| Owner/agent | Codex founding CTO / QA reviewer / security reviewer |
 | Status | Completed |
 | Priority | High |
 | Category | Validation |
 | Blockers | None |
-| Next step | Commit scaffold validation status and prepare scaffold review |
+| Next step | Commit scaffold review fixes, then begin Milestone 2 planning |
 | Related docs/files | `package.json`, `apps/api`, `apps/web`, `packages/`, `docs/status/` |
 
 ## Checks
@@ -50,7 +50,7 @@ Last updated: 2026-05-28T16:20:28-04:00
 | Milestone 1 plan ASCII scan | Completed | No non-ASCII characters found | `rg "[^\\x00-\\x7F]"` over plan and status docs |
 | Milestone 1 dependency install | Completed | npm installed workspace dependencies and reported 0 vulnerabilities | `npm.cmd install` |
 | Milestone 1 typecheck | Completed | TypeScript project references passed | `npm.cmd run typecheck` |
-| Milestone 1 unit tests | Completed | 8 tests passed across core, API, and web projects; run escalated because sandbox blocked Vitest config reads on Windows | `npm.cmd run test` |
+| Milestone 1 unit tests | Completed | 16 tests passed across core, API, and web projects; run escalated because sandbox blocked Vitest config reads on Windows | `npm.cmd run test` |
 | Milestone 1 lint | Completed | ESLint passed after nested `dist` directories were ignored | `npm.cmd run lint` |
 | Milestone 1 format check | Completed | Prettier check passed for scaffold code/config files | `npm.cmd run format:check` |
 | Milestone 1 build | Completed | API, web, and package builds passed; run escalated because sandbox blocked Vite config reads on Windows | `npm.cmd run build` |
@@ -64,6 +64,14 @@ Last updated: 2026-05-28T16:20:28-04:00
 | Milestone 1 secret-pattern scan | Completed | No secret-shaped tokens found in scaffold files, docs, hooks, or package files | `rg` secret-pattern scan |
 | Milestone 1 safety scan | Completed | Matches were expected guardrails or plan/spec safety-scan text; no live order implementation exists | `rg` live-trading/order-surface scan |
 | Milestone 1 ASCII scan | Completed | No non-ASCII characters found in scaffold and status files | `rg "[^\\x00-\\x7F]"` over changed scaffold/status files |
+| Milestone 1 review ESM runtime regression | Completed | Built API/core ESM imports load under Node after switching Node packages to NodeNext-compatible imports | `node -e "import('./packages/core/dist/index.js')"` and API server import/injection smoke |
+| Milestone 1 review broker env rejection | Completed | API rejects broker credential-style environment variables such as `ALPACA_API_KEY` in MVP | `npm.cmd run test --workspace @stockmarket/api -- env` |
+| Milestone 1 review `.env.*` hook bypass regression | Completed | Read commands for `.env.local`, `.env.production`, and `.env.test` variants are blocked | `python -m unittest discover .codex/hooks/tests -k test_env_reading_is_blocked` |
+| Milestone 1 review eligibility gates | Completed | Paper-trade eligibility now requires fresh data, audit record, score bounds, liquidity threshold, narratives, finite options max loss, and options evidence fields | `npm.cmd run test --workspace @stockmarket/core -- recommendation` |
+| Milestone 1 aggregate CI | Completed | Typecheck, lint, format, unit tests, hook tests, dependency audit, build, and API smoke all passed | `npm.cmd run ci` |
+| Milestone 1 review dependency audit | Completed | npm reported 0 vulnerabilities after registry-access retry | `npm.cmd run audit:deps` |
+| Milestone 1 review API smoke | Completed | Built API health route returned expected response with live trading disabled | `npm.cmd run smoke:api` |
+| Milestone 1 review secret-pattern scan | Completed | No secret-shaped tokens or broker credential assignments found; scan returned no matches | `rg` secret-pattern scan |
 
 ## Rule
 

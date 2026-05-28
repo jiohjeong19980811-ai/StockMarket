@@ -83,3 +83,27 @@ Reason: The repo needs a source package named `packages/data` for provider contr
 Decision: Run the StockMarket web app on strict local port `3001` instead of `3000`.
 
 Reason: Another local UI is already using `http://127.0.0.1:3000`. A dedicated strict port avoids ambiguous smoke tests and prevents accidentally reviewing the wrong app.
+
+## 2026-05-28: Python Virtual Environment Policy
+
+Decision: Do not create a Python virtual environment for the current scaffold because Python hook scripts use only the standard library. If future hooks, validation scripts, notebooks, or data tools add Python dependencies, use a repo-local `.venv`.
+
+Reason: The application scaffold is Node/TypeScript today. A `.venv` becomes useful when Python dependencies exist, and `.gitignore` already excludes `.venv/` so local environments stay out of source control.
+
+## 2026-05-28: Node Runtime Module Resolution
+
+Decision: Compile Node-targeted packages and the API with `NodeNext` module resolution and explicit `.js` source import specifiers.
+
+Reason: TypeScript's bundler-style extensionless imports can pass typecheck but fail when built files are run directly by Node ESM. The API and shared packages must be runnable after `npm.cmd run build`.
+
+## 2026-05-28: MVP Broker Credential Guardrail
+
+Decision: Reject broker credential-shaped environment variables such as Alpaca, Tradier, IBKR, or generic broker keys at API startup during the MVP.
+
+Reason: The product is paper-trading-first. Even unused broker credentials create unnecessary risk and could blur the boundary between research workflows and live execution.
+
+## 2026-05-28: CI Gate
+
+Decision: Add a root `ci` script that runs typecheck, lint, format check, unit tests, hook tests, dependency audit, production build, and API smoke validation.
+
+Reason: Review fixes should be validated through one repeatable command before commits, future PRs, or milestone transitions.

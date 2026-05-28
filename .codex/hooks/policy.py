@@ -31,6 +31,9 @@ REPO_SCOPE_PATTERNS = [
     re.compile(r"(?i)\b(entire machine|whole disk|all drives|outside (the )?repo|outside (the )?repository)\b"),
 ]
 
+ENV_FILE_READ_COMMAND_PATTERN = re.compile(r"(?i)\b(cat|type|gc|get-content)\b")
+ENV_FILE_PATH_PATTERN = re.compile(r"(?i)(?:^|[\s'\"=])(?:\./|\.\\)?\.env(?:\.[A-Za-z0-9_-]+)?(?=$|[\s'\";])")
+
 BLOCK_COMMAND_PATTERNS = [
     (re.compile(r"(?i)\brm\s+-rf\s+/(?:\s|$)"), "Refusing to recursively delete the filesystem root."),
     (re.compile(r"(?i)\b(git\s+config\s+--global)\b"), "Global git configuration changes require explicit human review."),
@@ -180,6 +183,8 @@ def classify_command(command: str, cwd: str | None = None) -> tuple[str, str | N
     for pattern in DELETE_REPO_PATTERNS:
         if pattern.search(text):
             return "block", "Deleting the repository or .git metadata is blocked."
+    if ENV_FILE_READ_COMMAND_PATTERN.search(text) and ENV_FILE_PATH_PATTERN.search(text):
+        return "block", "Reading .env files is blocked to avoid secret exposure."
     for pattern, reason in BLOCK_COMMAND_PATTERNS:
         if pattern.search(text):
             return "block", reason

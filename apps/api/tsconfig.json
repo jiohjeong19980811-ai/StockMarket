@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.node.json",
   "compilerOptions": {
     "composite": true,
     "declaration": true,
@@ -9,5 +9,5 @@
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/core" }]
+  "references": []
 }

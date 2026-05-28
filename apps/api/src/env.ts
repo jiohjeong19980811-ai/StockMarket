@@ -11,6 +11,9 @@ const envSchema = z.object({
     ),
 });
 
+const brokerCredentialKeyPattern =
+  /^(BROKER|ALPACA|TRADIER|IBKR|INTERACTIVE_BROKERS|LIVE_BROKER)_/i;
+
 export type ApiEnv = {
   APP_ENV: "development" | "test" | "production";
   API_PORT: number;
@@ -18,6 +21,16 @@ export type ApiEnv = {
 };
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): ApiEnv {
+  const brokerCredentialKeys = Object.entries(source)
+    .filter(([key, value]) => brokerCredentialKeyPattern.test(key) && Boolean(value))
+    .map(([key]) => key);
+
+  if (brokerCredentialKeys.length > 0) {
+    throw new Error(
+      `Broker credential environment variables are prohibited in MVP: ${brokerCredentialKeys.join(", ")}`,
+    );
+  }
+
   const parsed = envSchema.parse(source);
   if (parsed.LIVE_TRADING_ENABLED) {
     throw new Error("LIVE_TRADING_ENABLED must remain false in MVP");

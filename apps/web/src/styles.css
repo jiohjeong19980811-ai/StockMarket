@@ -92,3 +92,22 @@ h1 {
   line-height: 1.5;
   margin: 0;
 }
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 16px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .status-pill {
+    align-self: flex-start;
+  }
+}

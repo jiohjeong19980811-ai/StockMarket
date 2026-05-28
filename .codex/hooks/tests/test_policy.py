@@ -30,9 +30,14 @@ class PolicyTests(unittest.TestCase):
     def test_env_reading_is_blocked(self):
         for command in [
             "cat .env",
+            "cat ./.env.local",
             "cat .env.local",
             "type .env.production",
+            "type .\\.env.production",
+            "gc .env.test",
             "Get-Content .env",
+            "Get-Content -LiteralPath .env.local",
+            "Get-Content -Raw .env.production",
             "Get-Content .env.development",
             "Get-Content .env.test",
             "Get-ChildItem Env:",

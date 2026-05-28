@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildServer } from "../src/server";
+import { buildServer } from "../src/server.js";
 
 describe("health route", () => {
   it("returns service health without trading endpoints", async () => {

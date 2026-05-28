@@ -1,3 +1,3 @@
-export * from "./recommendation";
-export * from "./risk";
-export * from "./strategy";
+export * from "./recommendation.js";
+export * from "./risk.js";
+export * from "./strategy.js";

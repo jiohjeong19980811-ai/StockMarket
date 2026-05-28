@@ -1,5 +1,5 @@
-import { loadEnv } from "./env";
-import { buildServer } from "./server";
+import { loadEnv } from "./env.js";
+import { buildServer } from "./server.js";
 
 const env = loadEnv();
 const server = buildServer(env);

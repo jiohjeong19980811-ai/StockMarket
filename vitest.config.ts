@@ -6,9 +6,9 @@ export default defineConfig({
     projects: [
       {
         test: {
-          name: "core",
+          name: "packages",
           environment: "node",
-          include: ["packages/core/test/**/*.test.ts"],
+          include: ["packages/*/test/**/*.test.ts"],
         },
       },
       {
