@@ -10,6 +10,8 @@ secrets/
 
 # Local data and generated artifacts
 data/
+!packages/data/
+!packages/data/**
 storage/
 *.sqlite
 *.sqlite3
