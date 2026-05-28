@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T18:49:04-04:00",
+  "lastUpdated": "2026-05-28T18:54:25-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,7 +11,7 @@
   ],
   "currentFocus": {
     "phase": "Milestone 3: Provider interfaces and mock ingestion",
-    "task": "Provider contracts, deterministic mock providers, normalized ingestion tables, and first-pass data quality checks added",
+    "task": "DB-backed ingestion sink added for provider batches with transactional persistence and rollback tests",
     "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
     "status": "Completed",
     "priority": "High",
@@ -311,6 +311,34 @@
       "validationRequired": [
         "Provider contract tests",
         "Data quality ingestion tests",
+        "DB migration tests",
+        "Type check",
+        "Lint",
+        "Format check",
+        "Root CI",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M3-002",
+      "title": "Persist provider ingestion batches transactionally",
+      "phase": "Milestone 3",
+      "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Provider ingestion and data quality",
+      "blockers": [],
+      "nextStep": "Continue Milestone 3 with provider-specific adapter stubs and provider configuration docs.",
+      "relatedDocs": [
+        "packages/db/src/ingestion-sink.ts",
+        "packages/db/test/ingestion-sink.test.ts",
+        "packages/data/src/ingestion.ts",
+        "packages/data/src/types.ts",
+        "packages/db/migrations/0001_normalized_ingestion_tables.sql"
+      ],
+      "validationRequired": [
+        "DB ingestion sink tests",
         "DB migration tests",
         "Type check",
         "Lint",

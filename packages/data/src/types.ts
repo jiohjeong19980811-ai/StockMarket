@@ -45,6 +45,7 @@ export interface OptionsChainRequest {
 export interface ProviderPriceBar {
   metadata: ProviderMetadata;
   symbol: string;
+  interval?: BarInterval;
   timestamp: string;
   open: number;
   high: number;

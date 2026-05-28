@@ -35,6 +35,7 @@ const defaultPriceBars: ProviderPriceBar[] = [
   {
     metadata: metadata("mock-market-data", "MSFT-2026-05-01"),
     symbol: "MSFT",
+    interval: "1d",
     timestamp: "2026-05-01T20:00:00.000Z",
     open: 100,
     high: 105,
@@ -47,6 +48,7 @@ const defaultPriceBars: ProviderPriceBar[] = [
   {
     metadata: metadata("mock-market-data", "MSFT-2026-05-02"),
     symbol: "MSFT",
+    interval: "1d",
     timestamp: "2026-05-02T20:00:00.000Z",
     open: 104,
     high: 108,

@@ -1,26 +1,28 @@
 # Validation Status
 
-Last updated: 2026-05-28T18:49:04-04:00
+Last updated: 2026-05-28T18:54:25-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 3 provider ingestion validation |
-| Current task | Provider contracts, deterministic mock providers, normalized ingestion tables, and first-pass data quality checks added |
+| Current task | DB-backed ingestion sink added for provider batches with transactional persistence and rollback tests |
 | Owner/agent | Codex founding CTO / lead architect / principal engineer / data quality reviewer |
 | Status | Completed |
 | Priority | High |
 | Category | Provider ingestion and data quality |
 | Blockers | None |
-| Next step | Commit the Milestone 3 provider-ingestion slice, then continue with a DB-backed ingestion sink and provider-specific adapter stubs |
-| Related docs/files | `packages/data`, `packages/db/migrations/0001_normalized_ingestion_tables.sql`, `packages/db/src/schema.ts`, `packages/db/test/migration.test.ts`, `docs/superpowers/plans/2026-05-28-milestone-3-provider-ingestion.md`, `docs/status/` |
+| Next step | Commit the DB-backed ingestion sink slice, then continue with provider-specific adapter stubs and provider configuration docs |
+| Related docs/files | `packages/data`, `packages/db/src/ingestion-sink.ts`, `packages/db/test/ingestion-sink.test.ts`, `packages/db/migrations/0001_normalized_ingestion_tables.sql`, `docs/superpowers/plans/2026-05-28-milestone-3-provider-ingestion.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
-| Milestone 3 aggregate CI | Completed | Typecheck, lint, format, 54 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
+| Milestone 3 DB ingestion sink tests | Completed | 3 tests passed for transactional price batch persistence, data quality event persistence, and rollback on duplicate normalized news inserts | `npm.cmd run test --workspace @stockmarket/db -- ingestion-sink` |
+| Milestone 3 DB package tests | Completed | 23 tests passed across migration and ingestion-sink suites | `npm.cmd run test --workspace @stockmarket/db` |
+| Milestone 3 aggregate CI | Completed | Typecheck, lint, format, 57 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
 | Milestone 3 data ingestion tests | Completed | 7 tests passed for provider-neutral mock providers, no broker execution methods, content hashes, missing timestamp flags, duplicate news flags, earnings date flags, and options liquidity/spread flags | `npm.cmd run test --workspace @stockmarket/data -- ingestion` |
 | Milestone 3 DB migration tests | Completed | 20 tests passed, including normalized price/news/earnings/options tables, provider lineage constraints, duplicate news rejection, and unsafe market-data rejection | `npm.cmd run test --workspace @stockmarket/db -- migration` |
 | Pre-merge review aggregate CI | Completed | Typecheck, lint, format, 43 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
