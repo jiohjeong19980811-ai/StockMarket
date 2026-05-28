@@ -1,6 +1,6 @@
 # Validation Status
 
-Last updated: 2026-05-28T15:39:46-04:00
+Last updated: 2026-05-28T16:20:28-04:00
 
 ## Current State
 
@@ -55,7 +55,8 @@ Last updated: 2026-05-28T15:39:46-04:00
 | Milestone 1 format check | Completed | Prettier check passed for scaffold code/config files | `npm.cmd run format:check` |
 | Milestone 1 build | Completed | API, web, and package builds passed; run escalated because sandbox blocked Vite config reads on Windows | `npm.cmd run build` |
 | Milestone 1 hook regression | Completed | 11 hook tests passed | `python -m unittest discover .codex/hooks/tests` |
-| Milestone 1 HTTP UI smoke | Completed | Vite dev server returned HTTP 200 at `http://127.0.0.1:3000` | `Invoke-WebRequest http://127.0.0.1:3000` |
+| Milestone 1 HTTP UI smoke | Completed | Vite dev server returned HTTP 200 at `http://127.0.0.1:3001` | `Invoke-WebRequest http://127.0.0.1:3001` |
+| Milestone 1 web port adjustment | Completed | StockMarket web moved from port 3000 to strict port 3001 to avoid another local UI | `apps/web/vite.config.ts` and `apps/web/package.json` |
 | Milestone 1 browser smoke | Skipped | Browser plugin loaded, but no browser backends were available in this session | Browser backend list returned `[]` |
 | Milestone 1 status JSON parse | Completed | `docs/status/work-items.json` parsed successfully | `python -m json.tool docs/status/work-items.json` |
 | Milestone 1 whitespace check | Completed | No whitespace errors; only Git line-ending warnings on Windows working copy | `git diff --check` |

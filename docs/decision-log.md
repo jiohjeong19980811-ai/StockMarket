@@ -77,3 +77,9 @@ Reason: The installed Vitest version marks workspace files as deprecated. A root
 Decision: Keep generated/local market data ignored with `data/`, but explicitly unignore `packages/data/`.
 
 Reason: The repo needs a source package named `packages/data` for provider contracts. The ignore rule should protect local datasets without hiding application source code.
+
+## 2026-05-28: Web Dev Port
+
+Decision: Run the StockMarket web app on strict local port `3001` instead of `3000`.
+
+Reason: Another local UI is already using `http://127.0.0.1:3000`. A dedicated strict port avoids ambiguous smoke tests and prevents accidentally reviewing the wrong app.

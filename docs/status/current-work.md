@@ -1,6 +1,6 @@
 # Current Work Status
 
-Last updated: 2026-05-28T15:39:46-04:00
+Last updated: 2026-05-28T16:20:28-04:00
 
 ## Current Focus
 
@@ -15,7 +15,7 @@ Last updated: 2026-05-28T15:39:46-04:00
 | Blockers | None |
 | Next step | Review scaffold, then begin Milestone 2 domain/database contracts |
 | Related docs/files | `package.json`, `apps/api`, `apps/web`, `packages/`, `docs/superpowers/plans/2026-05-28-milestone-1-scaffold.md`, `docs/status/work-items.json` |
-| Validation required | Completed: typecheck, unit tests, lint, format check, build, hook tests, status JSON parse, HTTP UI smoke; Browser plugin had no active backend for screenshot |
+| Validation required | Completed: typecheck, unit tests, lint, format check, build, hook tests, status JSON parse, HTTP UI smoke on port 3001; Browser plugin had no active backend for screenshot |
 
 ## Status Vocabulary
 
