@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-05-28T13:57:54-04:00",
+  "statusVocabulary": [
+    "Planned",
+    "In Progress",
+    "Blocked",
+    "Needs Review",
+    "Completed",
+    "Deferred"
+  ],
+  "currentFocus": {
+    "phase": "Milestone 0: Foundation Setup",
+    "task": "Session startup context policy added; foundation ready for operator review",
+    "owner": "Codex founding CTO / lead architect",
+    "status": "Needs Review",
+    "priority": "High",
+    "category": "Foundation review"
+  },
+  "items": [
+    {
+      "id": "M0-001",
+      "title": "Create repo-level Codex setup",
+      "phase": "Milestone 0",
+      "owner": "Codex founding CTO / lead architect",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Codex setup",
+      "blockers": [],
+      "nextStep": "Keep AGENTS.md and Codex docs updated as architecture decisions change.",
+      "relatedDocs": [
+        "AGENTS.md",
+        "docs/codex-setup.md"
+      ],
+      "validationRequired": [
+        "TOML/JSON validation",
+        "Skill validation"
+      ]
+    },
+    {
+      "id": "M0-002",
+      "title": "Add Codex lifecycle hooks",
+      "phase": "Milestone 0",
+      "owner": "Security / Compliance Agent",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Safety and workflow",
+      "blockers": [],
+      "nextStep": "Review and trust hooks in Codex after changes.",
+      "relatedDocs": [
+        ".codex/hooks.json",
+        ".codex/hooks/README.md",
+        "docs/security.md"
+      ],
+      "validationRequired": [
+        "Hook policy tests",
+        "Hook configuration parse"
+      ]
+    },
+    {
+      "id": "M0-003",
+      "title": "Add lightweight project status tracking",
+      "phase": "Milestone 0",
+      "owner": "CEO / Product Lead Agent",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Roadmap visibility",
+      "blockers": [],
+      "nextStep": "Keep status files updated when phase, blocker, or validation state changes.",
+      "relatedDocs": [
+        "docs/status/current-work.md",
+        "docs/status/work-items.json",
+        "docs/status/research-progress.md",
+        "docs/status/validation-status.md"
+      ],
+      "validationRequired": [
+        "JSON parse",
+        "Docs review"
+      ]
+    },
+    {
+      "id": "M0-004",
+      "title": "Complete structured external research",
+      "phase": "Milestone 0",
+      "owner": "Market Research Agent, Architect Agent, Security / Compliance Agent",
+      "status": "Completed",
+      "priority": "High",
+      "category": "External research",
+      "blockers": [],
+      "nextStep": "Use docs/research/recommendation-summary.md to guide implementation decisions.",
+      "relatedDocs": [
+        "docs/research/"
+      ],
+      "validationRequired": [
+        "Source links present",
+        "License notes captured",
+        "Use now / consider later / avoid decisions"
+      ]
+    },
+    {
+      "id": "M0-005",
+      "title": "Update architecture from research findings",
+      "phase": "Milestone 0",
+      "owner": "Architect Agent",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Architecture",
+      "blockers": [],
+      "nextStep": "Run validation and prepare Milestone 0 for operator review.",
+      "relatedDocs": [
+        "docs/architecture.md",
+        "docs/product-roadmap.md",
+        "docs/data-sources.md",
+        "docs/risk-and-compliance.md",
+        "docs/security.md",
+        "docs/agent-team.md"
+      ],
+      "validationRequired": [
+        "Docs review",
+        "Decision log update"
+      ]
+    },
+    {
+      "id": "M0-006",
+      "title": "Add minimal session startup context policy",
+      "phase": "Milestone 0",
+      "owner": "Codex founding CTO / lead architect",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Codex workflow",
+      "blockers": [],
+      "nextStep": "Keep this policy in AGENTS.md and SessionStart hook aligned as repo setup evolves.",
+      "relatedDocs": [
+        "AGENTS.md",
+        ".codex/hooks/session_start.py",
+        "docs/status/current-work.md",
+        "docs/status/work-items.json",
+        "docs/open-questions.md",
+        "docs/decision-log.md"
+      ],
+      "validationRequired": [
+        "Hook policy tests",
+        "JSON/TOML parse",
+        "Status JSON parse"
+      ]
+    },
+    {
+      "id": "M1-001",
+      "title": "Begin main application scaffold",
+      "phase": "Milestone 1",
+      "owner": "Architect Agent, Data Engineering Agent, UI/UX Agent",
+      "status": "Deferred",
+      "priority": "High",
+      "category": "Application implementation",
+      "blockers": [
+        "Foundation setup is ready for operator review before main application implementation."
+      ],
+      "nextStep": "Start only after Milestone 0 is reviewed.",
+      "relatedDocs": [
+        "docs/implementation-plan.md",
+        "docs/product-roadmap.md"
+      ],
+      "validationRequired": [
+        "Stack decision",
+        "Scaffold validation commands"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Review"
+  short_description: "Check secrets, permissions, and MCP."
+  default_prompt: "Use this skill to check secrets handling, MCP boundaries, environment variables, and prohibited broker actions."

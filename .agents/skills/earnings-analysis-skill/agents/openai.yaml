@@ -1,0 +1,4 @@
+interface:
+  display_name: "Earnings Analysis"
+  short_description: "Review earnings catalysts and event risk."
+  default_prompt: "Use this skill to assess earnings catalysts with source timestamps, historical evidence, and downside scenarios."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Market Research"
+  short_description: "Research news, catalysts, and context."
+  default_prompt: "Use this skill to produce sourced market research with timestamps, uncertainty, and no financial-advice claims."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Dashboard Review"
+  short_description: "Review dashboard operator workflows."
+  default_prompt: "Use this skill to evaluate dashboards for scanability, risk visibility, citations, freshness, and operator decisions."

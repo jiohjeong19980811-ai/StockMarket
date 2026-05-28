@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backtesting"
+  short_description: "Review strategy evidence and assumptions."
+  default_prompt: "Use this skill to evaluate strategy evidence, assumptions, sample quality, and promotion gates before recommendations."

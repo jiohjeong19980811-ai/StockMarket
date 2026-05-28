@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Quality"
+  short_description: "Validate freshness, lineage, and gaps."
+  default_prompt: "Use this skill to review ingestion outputs, timestamps, source coverage, and data quality flags."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Report"
+  short_description: "Prepare daily research reports."
+  default_prompt: "Use this skill to compose a daily research report with citations, risk, confidence, changes since prior run, and operator actions."

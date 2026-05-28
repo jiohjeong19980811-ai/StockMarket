@@ -1,0 +1,4 @@
+interface:
+  display_name: "Risk Review"
+  short_description: "Enforce risk controls and no-trade rules."
+  default_prompt: "Use this skill to enforce research-only output, options risk warnings, no-live-trading boundaries, and kill-switch readiness."

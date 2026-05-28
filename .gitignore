@@ -1,0 +1,45 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# Local data and generated artifacts
+data/
+storage/
+*.sqlite
+*.sqlite3
+*.db
+*.duckdb
+*.parquet
+*.csv
+*.log
+reports/generated/
+
+# Dependency and build outputs
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+.cache/
+coverage/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paper Trading Review"
+  short_description: "Review simulated trades and lessons."
+  default_prompt: "Use this skill to inspect paper trades and verify thesis, risk controls, exits, and auditability."

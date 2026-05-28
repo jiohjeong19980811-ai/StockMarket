@@ -1,0 +1,4 @@
+interface:
+  display_name: "Options Analysis"
+  short_description: "Review options chains, IV, and liquidity."
+  default_prompt: "Use this skill to analyze options candidates with liquidity filters, risk, expiration, strike logic, and no-trade conditions."

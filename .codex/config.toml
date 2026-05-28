@@ -1,0 +1,55 @@
+# Project-local Codex configuration. Codex loads this only after the project is trusted.
+# Keep this file free of secrets and machine-local provider/auth settings.
+
+approval_policy = { granular = { sandbox_approval = false, rules = true, mcp_elicitations = true, request_permissions = true, skill_approval = true } }
+default_permissions = "stockmarket-workspace"
+
+[features]
+hooks = true
+
+[agents]
+max_threads = 6
+max_depth = 1
+job_max_runtime_seconds = 1800
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+enabled = true
+required = false
+default_tools_approval_mode = "approve"
+tool_timeout_sec = 60
+
+[permissions.stockmarket-workspace.workspace_roots]
+"." = true
+
+[permissions.stockmarket-workspace.filesystem]
+":minimal" = "read"
+
+[permissions.stockmarket-workspace.filesystem.":workspace_roots"]
+"." = "write"
+".env" = "deny"
+".env.local" = "deny"
+".env.development" = "deny"
+".env.production" = "deny"
+".env.test" = "deny"
+"**/*.pem" = "deny"
+"**/*.key" = "deny"
+"**/*.p12" = "deny"
+"**/*.pfx" = "deny"
+"secrets" = "deny"
+"data/private" = "deny"
+
+[permissions.stockmarket-workspace.network]
+enabled = true
+
+[permissions.stockmarket-workspace.network.domains]
+"developers.openai.com" = "allow"
+"platform.openai.com" = "allow"
+"api.openai.com" = "allow"
+"github.com" = "allow"
+"api.github.com" = "allow"
+"raw.githubusercontent.com" = "allow"
+"objects.githubusercontent.com" = "allow"
+"registry.npmjs.org" = "allow"
+"pypi.org" = "allow"
+"files.pythonhosted.org" = "allow"
