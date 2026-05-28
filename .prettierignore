@@ -1,0 +1,7 @@
+node_modules
+dist
+build
+coverage
+docs
+.agents
+.codex/hooks/__pycache__

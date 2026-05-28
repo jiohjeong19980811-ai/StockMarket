@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@stockmarket/core": ["packages/core/src/index.ts"],
+      "@stockmarket/data": ["packages/data/src/index.ts"],
+      "@stockmarket/db": ["packages/db/src/index.ts"],
+      "@stockmarket/scoring": ["packages/scoring/src/index.ts"],
+      "@stockmarket/backtesting": ["packages/backtesting/src/index.ts"],
+      "@stockmarket/paper-trading": ["packages/paper-trading/src/index.ts"],
+      "@stockmarket/agents": ["packages/agents/src/index.ts"]
+    }
+  }
+}

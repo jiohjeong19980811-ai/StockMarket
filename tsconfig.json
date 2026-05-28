@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/data" },
+    { "path": "./packages/db" },
+    { "path": "./packages/scoring" },
+    { "path": "./packages/backtesting" },
+    { "path": "./packages/paper-trading" },
+    { "path": "./packages/agents" },
+    { "path": "./apps/api" },
+    { "path": "./apps/web" }
+  ]
+}

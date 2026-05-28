@@ -72,18 +72,13 @@ Create `package.json`:
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^7.0.0",
     "eslint-plugin-react-refresh": "^0.4.0",
-    "fastify": "^5.0.0",
     "globals": "^16.0.0",
     "jsdom": "^27.0.0",
     "prettier": "^3.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tsx": "^4.0.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.0.0",
     "vite": "^7.0.0",
-    "vitest": "^3.0.0",
-    "zod": "^4.0.0"
+    "vitest": "^3.0.0"
   }
 }
 ```
@@ -265,7 +260,13 @@ Create `packages/core/package.json`:
     "test": "vitest run",
     "lint": "eslint ."
   },
-  "dependencies": {}
+  "dependencies": {
+    "fastify": "^5.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  }
 }
 ```
 
@@ -822,7 +823,9 @@ Create `apps/web/package.json`:
     "lint": "eslint ."
   },
   "dependencies": {
-    "@stockmarket/core": "0.1.0"
+    "@stockmarket/core": "0.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }
 ```
