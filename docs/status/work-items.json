@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T14:57:38-04:00",
+  "lastUpdated": "2026-05-28T15:04:02-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -10,12 +10,12 @@
     "Deferred"
   ],
   "currentFocus": {
-    "phase": "Milestone 0: Foundation Setup",
-    "task": ".env.* hook coverage gap fixed; foundation ready for operator review",
+    "phase": "Milestone 1: Project Scaffold",
+    "task": "Milestone 1 stack design selected and documented",
     "owner": "Codex founding CTO / lead architect",
-    "status": "Needs Review",
+    "status": "In Progress",
     "priority": "High",
-    "category": "Research and foundation review"
+    "category": "Application scaffold planning"
   },
   "items": [
     {
@@ -177,20 +177,23 @@
       "title": "Begin main application scaffold",
       "phase": "Milestone 1",
       "owner": "Architect Agent, Data Engineering Agent, UI/UX Agent",
-      "status": "Deferred",
+      "status": "In Progress",
       "priority": "High",
       "category": "Application implementation",
-      "blockers": [
-        "Foundation setup and quant strategy addendum are ready for operator review before main application implementation."
-      ],
-      "nextStep": "Start only after Milestone 0 is reviewed.",
+      "blockers": [],
+      "nextStep": "Write Milestone 1 scaffold implementation plan, then create npm-workspaces TypeScript scaffold.",
       "relatedDocs": [
         "docs/implementation-plan.md",
-        "docs/product-roadmap.md"
+        "docs/product-roadmap.md",
+        "docs/superpowers/specs/2026-05-28-milestone-1-scaffold-design.md"
       ],
       "validationRequired": [
         "Stack decision",
-        "Scaffold validation commands"
+        "Scaffold validation commands",
+        "Type check",
+        "Lint",
+        "Unit tests",
+        "Build"
       ]
     }
   ]

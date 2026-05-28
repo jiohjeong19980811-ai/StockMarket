@@ -49,6 +49,8 @@ Use `docs/research/recommendation-summary.md` as the current CEO/CTO decision su
 
 Use `docs/research/quant-strategies.md` as the current strategy research addendum. The first strategy work should test liquid stock/ETF hypotheses before options, ML, stat-arb, or crypto. Strategy families should appear in the product as research categories, not as guaranteed-return products.
 
+Milestone 1 stack decision: use npm workspaces with TypeScript, Fastify for `apps/api`, Vite React for `apps/web`, and shared workspace packages under `packages/`. This keeps setup compatible with the local environment and preserves the modular architecture.
+
 Initial provider evaluation should focus on:
 
 - Polygon.io for market and options data.

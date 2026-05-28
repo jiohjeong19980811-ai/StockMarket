@@ -14,8 +14,6 @@
 
 ## Architecture
 
-- Which TypeScript/Node framework should power `apps/api`?
-- Which web framework should power `apps/web`?
 - Which migration tool should be adopted?
 - How should AI-generated research summaries be versioned and evaluated?
 - What minimum trade count, out-of-sample period, and paper-trading sample should be required before a strategy becomes `paper trade` eligible?

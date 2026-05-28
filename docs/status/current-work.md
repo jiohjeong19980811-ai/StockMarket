@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T14:57:38-04:00
+Last updated: 2026-05-28T15:04:02-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 0: Foundation Setup |
-| Current task | `.env.*` hook coverage gap fixed; foundation ready for operator review |
+| Current phase | Milestone 1: Project Scaffold |
+| Current task | Milestone 1 stack design selected and documented |
 | Owner/agent | Codex acting as founding CTO / lead architect |
-| Status | Needs Review |
+| Status | In Progress |
 | Priority | High |
-| Category | Research and foundation review |
+| Category | Application scaffold planning |
 | Blockers | None |
-| Next step | Operator review, then commit/push when approved |
-| Related docs/files | `.codex/hooks/policy.py`, `.codex/hooks/tests/test_policy.py`, `.codex/config.toml`, `docs/status/work-items.json`, `docs/status/validation-status.md` |
-| Validation required | Completed: hook regression test, full hook tests, hook syntax check, JSON/TOML parse, direct `.env.*` classification check |
+| Next step | Write Milestone 1 scaffold implementation plan, then scaffold apps/packages |
+| Related docs/files | `docs/superpowers/specs/2026-05-28-milestone-1-scaffold-design.md`, `docs/product-roadmap.md`, `docs/decision-log.md`, `docs/open-questions.md`, `docs/status/work-items.json` |
+| Validation required | Pending: design doc review, status JSON parse, implementation plan |
 
 ## Status Vocabulary
 
