@@ -30,7 +30,11 @@ class PolicyTests(unittest.TestCase):
     def test_env_reading_is_blocked(self):
         for command in [
             "cat .env",
+            "cat .env.local",
+            "type .env.production",
             "Get-Content .env",
+            "Get-Content .env.development",
+            "Get-Content .env.test",
             "Get-ChildItem Env:",
             "echo $API_KEY",
             "echo $env:BROKER_SECRET",

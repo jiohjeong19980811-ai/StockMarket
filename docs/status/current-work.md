@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T13:57:54-04:00
+Last updated: 2026-05-28T14:57:38-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 0: Foundation Setup |
-| Current task | Session startup context policy added; foundation remains ready for operator review |
+| Current task | `.env.*` hook coverage gap fixed; foundation ready for operator review |
 | Owner/agent | Codex acting as founding CTO / lead architect |
 | Status | Needs Review |
 | Priority | High |
-| Category | Foundation review |
+| Category | Research and foundation review |
 | Blockers | None |
 | Next step | Operator review, then commit/push when approved |
-| Related docs/files | `AGENTS.md`, `.codex/hooks/session_start.py`, `docs/status/current-work.md`, `docs/status/work-items.json`, `docs/open-questions.md`, `docs/decision-log.md` |
-| Validation required | Completed: hook tests, JSON/TOML validation, status JSON parse |
+| Related docs/files | `.codex/hooks/policy.py`, `.codex/hooks/tests/test_policy.py`, `.codex/config.toml`, `docs/status/work-items.json`, `docs/status/validation-status.md` |
+| Validation required | Completed: hook regression test, full hook tests, hook syntax check, JSON/TOML parse, direct `.env.*` classification check |
 
 ## Status Vocabulary
 

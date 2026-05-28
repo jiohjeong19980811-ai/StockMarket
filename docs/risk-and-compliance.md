@@ -47,6 +47,10 @@ From day one, the system must enforce:
 - Source citation requirements.
 - Downside scenario requirements.
 - Operator decision logging.
+- Strategy evidence gates before `paper trade` eligibility.
+- Paper-only exposure limits and drawdown pause rules.
+- Options max-loss, breakeven, IV, liquidity, event, and theta checks.
+- Cost/slippage/spread stress tests before strategy promotion.
 
 ## Codex Hook Guardrails
 
@@ -77,6 +81,40 @@ Every opportunity must include:
 - Suggested paper position sizing framework.
 - Max loss for options where applicable.
 - Final decision: `watchlist`, `paper trade`, `avoid`, or `needs more data`.
+- Strategy family and strategy version.
+- Backtest or paper-trade evidence run ID when available.
+- Liquidity pass/fail and data freshness pass/fail.
+
+## Quant Strategy Risk Controls
+
+MVP strategy risk stance:
+
+- Test first: liquid stock/ETF PEAD, earnings surprise continuation, momentum, volatility-adjusted mean reversion, news-confirmed watchlist signals, value/quality context, and portfolio risk overlays.
+- Defer: options recommendations until historical options chains and realistic fill modeling exist; sector rotation until portfolio risk views exist; pairs/stat-arb until short/borrow assumptions can be safely modeled; ML until deterministic baselines and validation gates exist; crypto until a future research-only phase.
+- Avoid: live trading, broker order placement, margin, leverage, naked options, short volatility, 0DTE, HFT, market making, crypto execution, and strategies dependent on optimistic fills or ignored costs.
+
+Initial paper-only default limits should be conservative and revisited after paper-trade evidence:
+
+- Max risk per idea: 0.25%-0.50% of paper equity.
+- Max single-name notional exposure: 5%.
+- Max sector exposure: 20%.
+- Max correlated cluster exposure: 15%.
+- Max aggregate options premium at risk: 2%-3%.
+- Max daily paper loss pause: 1%-2%.
+
+Initial liquidity defaults:
+
+- Stocks: price above $5 and average daily dollar volume above $20M.
+- Options: each leg should have open interest at least 500, volume at least 100, and bid/ask spread no wider than 10% of mid or an explicit dollar cap.
+
+Hard no-trade gates:
+
+- Missing citations, source timestamps, provider lineage, downside, invalidation, risk score, confidence score, or final decision.
+- Stale data or provider disagreement that materially affects the thesis.
+- Options without bid/ask, IV, volume, open interest, expiration, strike, max loss, breakeven, event risk, and theta risk.
+- Earnings/event uncertainty when the strategy depends on event timing.
+- Backtest evidence based on lookahead, survivorship bias, insufficient sample, or unmodeled transaction costs.
+- Options proxy analysis presented as real options evidence.
 
 ## Promotion Gates
 
@@ -88,6 +126,10 @@ A strategy can move from research candidate to recommended paper-trade candidate
 - Liquidity and risk filters pass.
 - The downside case is documented.
 - The risk manager does not block it.
+- Out-of-sample or walk-forward validation exists when the strategy has been tuned.
+- Parameter trials and rejected variants are tracked.
+- Cost, spread, slippage, and liquidity assumptions survive sensitivity checks.
+- Options strategies use contract-level historical chain data, not underlying-only proxies.
 
 No strategy can move to live trading until a future phase adds production-grade backtesting, paper-trading performance, broker sandbox integration, approval workflow, kill switch, max daily loss, max position sizing, full audit logs, and explicit operator approval.
 

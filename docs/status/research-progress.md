@@ -1,6 +1,6 @@
 # Research Progress
 
-Last updated: 2026-05-28T13:54:38-04:00
+Last updated: 2026-05-28T14:27:40-04:00
 
 ## Summary
 
@@ -12,7 +12,7 @@ Last updated: 2026-05-28T13:54:38-04:00
 | Priority | High |
 | Category | Research and architecture decisions |
 | Blockers | None |
-| Next step | Use research summary to guide application implementation after validation/operator review |
+| Next step | Use research summary and quant strategy addendum to guide application implementation after validation/operator review |
 | Validation required | Completed: source links, license notes, and CEO/CTO decisions documented |
 
 ## Research Files
@@ -27,6 +27,7 @@ Last updated: 2026-05-28T13:54:38-04:00
 | `docs/research/ui-patterns.md` | Completed | Financial dashboard and research-console UI patterns |
 | `docs/research/agent-memory-strategy.md` | Completed | Durable project memory and agent handoff approach |
 | `docs/research/security-and-compliance.md` | Completed | Security, secrets, audit, AI, and trading-risk references |
+| `docs/research/quant-strategies.md` | Completed | Strategy categories, failure modes, data needs, validation gates, risk controls, and CEO/CTO decisions |
 | `docs/research/recommendation-summary.md` | Completed | CEO/CTO final decisions and implementation priorities |
 
 ## Required Decision Categories

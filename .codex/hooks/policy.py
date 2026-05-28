@@ -34,7 +34,7 @@ REPO_SCOPE_PATTERNS = [
 BLOCK_COMMAND_PATTERNS = [
     (re.compile(r"(?i)\brm\s+-rf\s+/(?:\s|$)"), "Refusing to recursively delete the filesystem root."),
     (re.compile(r"(?i)\b(git\s+config\s+--global)\b"), "Global git configuration changes require explicit human review."),
-    (re.compile(r"(?i)\b(cat|type|Get-Content)\s+(['\"]?)\.env(\2)(?:\s|$)"), "Reading .env files is blocked to avoid secret exposure."),
+    (re.compile(r"(?i)\b(cat|type|Get-Content)\s+(['\"]?)\.env(?:\.[A-Za-z0-9_-]+)?\2(?:\s|$)"), "Reading .env files is blocked to avoid secret exposure."),
     (re.compile(r"(?i)\b(Get-ChildItem|dir|ls)\s+Env:"), "Printing environment variables is blocked to avoid secret exposure."),
     (re.compile(r"(?i)\b(printenv|env)\b(?:\s|$)"), "Printing environment variables is blocked to avoid secret exposure."),
     (re.compile(r"(?i)\becho\s+(\$env:|\$)[A-Za-z0-9_]*(KEY|TOKEN|SECRET|PASSWORD)"), "Echoing secret-like environment variables is blocked."),

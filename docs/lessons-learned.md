@@ -9,3 +9,4 @@
 - Required financial safety rules should live in checked-in project files, not only in local Codex memories.
 - External quant projects are most useful as architecture and validation references during MVP; direct integration too early would add licensing, complexity, and live-trading surface area.
 - Project status visibility can start as simple docs and JSON files; a UI should wait until the operator workflow exists.
+- Secret-file hook rules need tests for filename variants such as `.env.local`, `.env.production`, and `.env.test`, not only the exact `.env` basename.

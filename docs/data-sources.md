@@ -21,6 +21,17 @@ Use provider interfaces and adapters. Do not spread vendor-specific code across 
 | Crypto prices | Future research expansion | Coinbase, Kraken, CoinGecko, CoinMarketCap |
 | Broker paper trading | Future simulated order routing | Alpaca paper, Tradier sandbox, Interactive Brokers paper |
 
+## Quant Strategy Data Requirements
+
+Strategy research requires point-in-time data discipline:
+
+- Price history must include adjusted and, when needed, unadjusted OHLCV, corporate actions, delistings, universe membership, volume, liquidity, and split/dividend handling.
+- Earnings data must include announcement date, announcement time, after-hours/pre-market flag, actuals, estimates, surprise, guidance, and provider/source timestamp.
+- Fundamentals must include fiscal period, filing date, acceptance timestamp when available, restatement/amendment handling, and SEC EDGAR links where possible.
+- News and sentiment must include source URL, publisher, published timestamp, retrieval timestamp, licensing/storage status, duplicate detection, and model/version metadata when AI is used.
+- Options chains must include point-in-time bid, ask, last, mark/mid, volume, open interest, IV, Greeks when available, strike, expiration, style, multiplier, deliverable, underlying price, quote timestamp, and stale/inverted quote flags.
+- Strategy backtests must record data provider, retrieval timestamp, provider timestamp, normalization version, quality gaps, and whether the dataset is survivorship-bias-free.
+
 ## Provider Interface Requirements
 
 Each adapter must define:

@@ -105,6 +105,14 @@ Before marking implementation tasks complete, run the relevant checks and report
 - Keep MCP access least-privilege. Do not configure broker, trading, or broad filesystem MCP servers without explicit approval.
 - Project-local `.codex/config.toml` is conservative by default and should remain focused on workspace-scoped access.
 
+## Main Codex Operator Responsibility
+
+The main Codex agent is the primary operator and final decision-maker for this repository. It acts as founding CTO, lead architect, principal engineer, product manager, security reviewer, quantitative research lead, operator workflow owner, and team orchestrator.
+
+Subagents and skills are specialized contributors, not independent decision-makers. The main Codex agent is responsible for choosing subagents/skills, defining scope, preventing duplicate work, reviewing handoffs, resolving conflicts, making final architecture/product/risk decisions, updating roadmap and status files, and keeping all work inside project safety boundaries.
+
+The main Codex agent may make autonomous project decisions as long as the non-negotiable safety boundaries are respected. Do not wait for operator approval unless a boundary is reached, an action is destructive, credentials or external access are involved, or the task explicitly asks for approval.
+
 ## Session Startup Context Policy
 
 At the start of a new Codex session, use minimal context loading. Do not read or summarize the whole repository by default.

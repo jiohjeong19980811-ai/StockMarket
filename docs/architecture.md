@@ -37,6 +37,8 @@ This is the preferred structure for the first implementation. If a future framew
 The external research phase is summarized in `docs/research/recommendation-summary.md`. Current decisions:
 
 - Custom-build MVP domain contracts, provider adapters, scoring, risk controls, paper-trading ledger, audit logs, and the initial backtesting harness.
+- Add a strategy registry and evidence-gate layer so strategy families remain testable hypotheses rather than undocumented ranking logic.
+- First MVP strategy families should be liquid stock/ETF earnings drift, earnings surprise continuation, momentum, volatility-adjusted mean reversion, news-confirmed watchlist signals, and value/quality context. Options, sector rotation, pairs/stat-arb, ML, and crypto are deferred until their data and risk requirements are met.
 - Use external quant projects such as QuantConnect LEAN, Qlib, vectorbt, Zipline Reloaded, Backtrader, and QuantStats as references or later benchmark integrations, not MVP foundations.
 - Avoid direct dependencies with AGPL or unclear license obligations until a license review is complete.
 - Prefer provider adapters over MCP or direct third-party access for market/news/broker data.
@@ -51,7 +53,8 @@ flowchart LR
   Providers["Market, news, earnings, options, fundamentals providers"] --> Ingestion["Ingestion adapters"]
   Ingestion --> Quality["Data quality and freshness checks"]
   Quality --> DB["Application database"]
-  DB --> Scoring["Explainable scoring engine"]
+  DB --> Strategies["Strategy registry and evidence gates"]
+  Strategies --> Scoring["Explainable scoring engine"]
   Scoring --> Risk["Risk manager and no-trade filters"]
   Risk --> Recs["Recommendations and daily report"]
   Recs --> UI["Operator dashboard"]
@@ -91,6 +94,7 @@ Use migrations from day one. The schema should cover:
 - Sentiment results.
 - Fundamental metrics.
 - Daily scores and signal components.
+- Strategy definitions, strategy versions, and evidence gates.
 - Recommendations.
 - Paper trades.
 - Backtest runs and strategy definitions.
@@ -117,9 +121,29 @@ The scoring engine produces component scores and explanations, not just a final 
 
 Each score must expose inputs, timestamps, assumptions, and reasons. Missing or stale data should lower confidence or produce `needs more data`.
 
+### Strategy Registry And Evidence Gates
+
+The strategy registry defines which hypothesis generated or influenced a recommendation. It should store strategy family, strategy version, eligible instruments, required data, entry/exit rule references, allowed decision outputs, validation status, and promotion state.
+
+Initial families:
+
+- Earnings.
+- Momentum.
+- Mean reversion.
+- Volatility.
+- Options.
+- News / sentiment.
+- Value / quality.
+- Sector / macro.
+- Portfolio risk.
+
+MVP promotion state should be conservative: `research only`, `watchlist eligible`, `paper trade eligible`, `avoid`, or `needs more data`. A strategy cannot become `paper trade eligible` without reproducible backtest or paper-trade evidence. Options strategies cannot become `paper trade eligible` from underlying-only proxy analysis.
+
 ### Options Analysis
 
 Options analysis must evaluate expiration, strike logic, bid/ask spread, volume, open interest, implied volatility, realized volatility, expected move, breakeven, event risk, theta risk, max loss, and whether a spread is safer than a long call or put. Illiquid, wide-spread, event-exposed, or overpriced contracts should default to avoid.
+
+Allowed MVP options research structures are long calls, long puts, and debit spreads only after historical chain data supports realistic fill and liquidity analysis. Naked short options, undefined-risk spreads, short volatility, 0DTE, margin-dependent strategies, and broker order placement remain prohibited.
 
 ### Research API
 
@@ -133,6 +157,7 @@ The API should expose typed endpoints for:
 - Recommendation detail and audit trail.
 - Paper-trading actions.
 - Backtest results.
+- Strategy evidence and validation status.
 - Data freshness and system health.
 
 No API route should place real-money trades in the MVP.
@@ -147,6 +172,7 @@ The UI is an operator console, not a marketing site. It should be dense, scan-fr
 - Options chain summary.
 - Risk panel.
 - Backtest and paper-trade evidence.
+- Strategy family, validation status, and promotion state.
 - Source citations and timestamps.
 - Data freshness status.
 - Audit log.

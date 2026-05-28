@@ -1,10 +1,35 @@
 # External Research Recommendation Summary
 
-Last updated: 2026-05-28T13:51:18-04:00
+Last updated: 2026-05-28T14:27:40-04:00
 
 ## Executive Decision
 
 Proceed with a custom, modular MVP focused on research, explainability, paper trading, and auditability. Use external repositories and frameworks as references, not as the core product foundation. Do not implement live trading, broker order placement, crypto trading, autonomous portfolio management, or guaranteed-return language.
+
+Quant strategy research has been added in `docs/research/quant-strategies.md`. Strategy families are hypotheses only. No strategy should be shown as guaranteed profitable, promoted as passive income, or allowed to produce `paper trade` candidates without reproducible backtesting or paper-trading evidence.
+
+## Quant Strategy Decisions
+
+Test first in MVP:
+
+- Stock-only post-earnings announcement drift and earnings surprise continuation with strict event timestamp rules.
+- Liquid stock/ETF momentum and relative strength with capped turnover.
+- Volatility-adjusted mean reversion on large liquid stocks/ETFs only.
+- News and sentiment as catalyst/watchlist context, not as a standalone trade generator.
+- Value and quality as context for confidence and risk, not as standalone short-term timing.
+- Portfolio and risk overlays: max paper position size, sector exposure limits, drawdown guard, stale-data gate, and `no good trades today`.
+
+Defer:
+
+- Options recommendations until historical options chains, bid/ask, IV, Greeks, open interest, volume, and realistic fill assumptions are available.
+- Sector rotation until sector/macro data and portfolio-risk views exist.
+- Pairs/stat-arb until shorting, borrow, and portfolio risk can be modeled without implying live trading.
+- ML strategy research until deterministic baselines, feature lineage, trial tracking, and walk-forward validation exist.
+- Crypto research until the equities/options MVP is stable; crypto execution remains out of scope.
+
+Avoid in MVP:
+
+- Naked options, short volatility, 0DTE, market making, HFT, margin, leverage, broker order placement, crypto exchange execution, and any strategy that depends on optimistic fills or ignored costs.
 
 ## Top 10 Repositories
 
@@ -55,6 +80,8 @@ Proceed with a custom, modular MVP focused on research, explainability, paper tr
 - Provider adapter architecture with mock providers.
 - Postgres-style relational schema with migrations when implementation begins.
 - Custom scoring, risk, recommendation, paper-trading, audit, and initial backtesting contracts.
+- Strategy registry fields and evidence gates for earnings, momentum, mean reversion, volatility, options, news/sentiment, value/quality, sector/macro, and portfolio risk.
+- MVP strategy tests limited to liquid stock/ETF strategies until options-chain evidence is available.
 - Official sources where available: SEC EDGAR for filings and FRED for macro data.
 - Lightweight status files under `docs/status/`.
 
@@ -66,6 +93,7 @@ Proceed with a custom, modular MVP focused on research, explainability, paper tr
 - Cboe DataShop or premium options datasets for serious historical options research.
 - TradingView Lightweight Charts, TanStack Table, shadcn/ui, and Recharts for UI implementation.
 - QuantConnect LEAN, vectorbt, Qlib, Zipline Reloaded, or QuantStats for benchmark comparison or advanced research workflows.
+- PyPortfolioOpt or cvxportfolio for later portfolio-construction references after MVP risk controls are proven.
 - OpenAI Agents SDK or LangGraph if runtime agent orchestration becomes a product feature.
 
 ## Avoid
@@ -78,6 +106,8 @@ Proceed with a custom, modular MVP focused on research, explainability, paper tr
 - Black-box scores without component explanations.
 - Recommendations without timestamps, source citations, downside scenarios, and risk/confidence scores.
 - Heavy autonomous-agent memory systems before audit logs and deterministic workflows exist.
+- Options recommendations from underlying-only proxy backtests.
+- Strategies selected from broad parameter sweeps without trial tracking, out-of-sample validation, and overfitting skepticism.
 
 ## Security Risks To Avoid
 
@@ -108,6 +138,9 @@ Proceed with a custom, modular MVP focused on research, explainability, paper tr
 - Explainable scoring engine.
 - Risk manager and no-trade filters.
 - Options liquidity, IV/RV, expiration, and max-loss analysis.
+- Strategy registry and evidence gates.
+- Event-study rules for earnings and news catalysts.
+- Point-in-time validation checks for fundamentals, earnings, news, and options.
 - Paper-trading ledger.
 - MVP backtesting harness and metrics.
 - Audit logs and operator workflow.
@@ -146,7 +179,8 @@ Proceed with a custom, modular MVP focused on research, explainability, paper tr
 4. Add provider interfaces and mock providers.
 5. Add ticker/price ingestion and data freshness checks.
 6. Add news, earnings, fundamentals, and options ingestion adapters.
-7. Add explainable scoring and risk/no-trade filters.
-8. Add daily opportunity generation and audit logs.
-9. Add operator dashboard and ticker/opportunity detail pages.
-10. Add paper-trading ledger and basic backtesting harness.
+7. Add strategy registry, evidence gates, and point-in-time backtest contracts.
+8. Add explainable scoring and risk/no-trade filters.
+9. Add daily opportunity generation and audit logs.
+10. Add operator dashboard and ticker/opportunity detail pages.
+11. Add paper-trading ledger and basic backtesting harness.

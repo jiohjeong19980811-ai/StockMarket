@@ -47,3 +47,15 @@ Reason: The MVP requires explainable evidence gates and stored assumptions more 
 Decision: New Codex sessions should load only `AGENTS.md`, current status files, open questions, decision log when relevant, and task-specific files. Broad repo scans are opt-in only.
 
 Reason: The project needs continuity without wasting context on unrelated docs, app directories, generated files, or future packages.
+
+## 2026-05-28: Main Codex Operator Responsibility
+
+Decision: The main Codex agent owns final orchestration and decision-making for this repository. Subagents and skills provide scoped research, review, critique, and validation, but the main agent resolves conflicts and updates roadmap, architecture, risk, and status docs.
+
+Reason: The project needs a single accountable operator to keep setup, research, risk controls, and implementation sequencing aligned while still benefiting from specialized agent review.
+
+## 2026-05-28: Quant Strategy Research Priorities
+
+Decision: Add `docs/research/quant-strategies.md` as a dedicated strategy research addendum. MVP testing starts with liquid stock/ETF strategies: PEAD, earnings surprise continuation, momentum, volatility-adjusted mean reversion, news-confirmed watchlist signals, value/quality context, and portfolio risk overlays. Options, sector rotation, pairs/stat-arb, ML, and crypto are deferred until their data, validation, and risk controls are strong enough.
+
+Reason: Strategy research must understand proven categories, failure modes, backtesting traps, and risk controls without copying strategies or implying guaranteed returns. Options require historical chain data and realistic fills before they can generate paper-trade candidates.

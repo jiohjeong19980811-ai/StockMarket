@@ -16,6 +16,8 @@ Capabilities:
 - Basic ticker and price ingestion.
 - News, earnings, and options ingestion.
 - Explainable scoring skeleton.
+- Strategy registry and evidence gates for earnings, momentum, mean reversion, volatility, options, news/sentiment, value/quality, sector/macro, and portfolio risk.
+- Initial MVP strategy tests focused on liquid stock/ETF hypotheses: PEAD, earnings surprise continuation, momentum, volatility-adjusted mean reversion, news-confirmed watchlist signals, and value/quality context.
 - Daily opportunity generation.
 - Dashboard shell with top opportunities.
 - Ticker and opportunity detail pages.
@@ -36,12 +38,16 @@ Acceptance criteria:
 - Operator can paper trade a recommendation.
 - Paper-trade performance is visible.
 - Backtesting framework exists.
+- Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.
+- Options strategies remain research/manual review only until historical options chains and realistic fill assumptions are available.
 - Secrets are protected.
 - Tests and validation commands pass.
 
 ## Research-Informed Direction
 
 Use `docs/research/recommendation-summary.md` as the current CEO/CTO decision summary. The MVP should custom-build the core research contracts, provider interfaces, scoring, risk gates, paper-trading ledger, audit logs, and initial backtesting harness. Heavy quant platforms, runtime agent frameworks, broker integrations, and crypto trading are deferred until the research product proves reliability through validation and paper trading.
+
+Use `docs/research/quant-strategies.md` as the current strategy research addendum. The first strategy work should test liquid stock/ETF hypotheses before options, ML, stat-arb, or crypto. Strategy families should appear in the product as research categories, not as guaranteed-return products.
 
 Initial provider evaluation should focus on:
 
@@ -64,6 +70,8 @@ Capabilities:
 - Alerting.
 - Advanced options strategies, with spreads preferred where risk is better defined.
 - Earnings-specific models.
+- Sector rotation and long-only factor/quality strategy evaluation.
+- Options strategy evaluation with historical chain data, realistic bid/ask fills, and defined-risk structures only.
 - Sentiment trend tracking.
 - Better report automation.
 - External backtest comparison against at least one mature framework.
@@ -109,27 +117,29 @@ Required before any live trading:
 2. Codex lifecycle hooks, hook documentation, and hook tests.
 3. Lightweight project status files for current work, work items, research progress, and validation state.
 4. Structured external research phase.
-5. Architecture and risk documentation updates from research.
-6. Database schema and migrations.
-7. Provider interfaces.
-8. Basic ticker and price ingestion.
-9. News ingestion.
-10. Earnings ingestion.
-11. Options-chain ingestion.
-12. Scoring engine skeleton.
-13. Daily opportunity generation.
-14. Backend API.
-15. UI dashboard shell.
-16. Ticker detail page.
-17. Opportunity detail page.
-18. Paper-trading module.
-19. Backtesting framework.
-20. Risk manager module.
-21. Daily report generation.
-22. Alerts and monitoring.
-23. Security hardening.
-24. Regression testing.
-25. Documentation cleanup.
+5. Quant strategy research addendum.
+6. Architecture and risk documentation updates from research.
+7. Database schema and migrations.
+8. Provider interfaces.
+9. Basic ticker and price ingestion.
+10. News ingestion.
+11. Earnings ingestion.
+12. Options-chain ingestion.
+13. Strategy registry and evidence gate contracts.
+14. Scoring engine skeleton.
+15. Daily opportunity generation.
+16. Backend API.
+17. UI dashboard shell.
+18. Ticker detail page.
+19. Opportunity detail page.
+20. Paper-trading module.
+21. Backtesting framework.
+22. Risk manager module.
+23. Daily report generation.
+24. Alerts and monitoring.
+25. Security hardening.
+26. Regression testing.
+27. Documentation cleanup.
 
 ## Project Status Visibility
 

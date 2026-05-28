@@ -18,8 +18,14 @@ The framework should support:
 - Debit spread signals when options data supports it.
 - Earnings run-up strategies.
 - Post-earnings drift strategies.
+- Earnings surprise continuation strategies.
+- Liquid equity/ETF momentum and relative strength strategies.
+- Volatility-adjusted mean-reversion strategies.
 - News sentiment strategies.
+- Value and quality context signals.
+- Sector and macro context strategies after MVP.
 - Volatility mispricing strategies.
+- Portfolio risk overlays and no-trade gates.
 
 ## Required Inputs
 
@@ -39,6 +45,9 @@ Each backtest must define:
 - Liquidity filters.
 - Market regime labels if available.
 - Survivorship-bias controls when possible.
+- Parameter grid and rejected variants.
+- Data availability rules for event timestamps.
+- Strategy family and strategy version.
 
 ## Required Metrics
 
@@ -58,6 +67,9 @@ Track:
 - Performance by market regime.
 - Performance around earnings.
 - Slippage, spread, and fee sensitivity.
+- Benchmark-relative return.
+- Turnover and exposure.
+- Evidence quality status.
 
 ## Validation Gates
 
@@ -65,13 +77,37 @@ A strategy cannot produce `paper trade` candidates unless:
 
 - The backtest run is stored and reproducible.
 - The assumptions are visible.
+- The parameter trials and rejected variants are recorded.
 - Trade count is large enough or the sample-size limitation is flagged.
 - Liquidity filters match live recommendation filters.
 - Results are not based on lookahead bias.
+- Point-in-time data is used for earnings, fundamentals, news, analyst revisions, and options chains.
+- The strategy has out-of-sample or walk-forward validation when there is any tuning.
+- Costs are stress-tested at baseline, 2x, and 3x estimated fees/spreads/slippage.
 - Data freshness and source quality are acceptable.
 - The risk manager does not block the strategy.
 
 After MVP, selected strategies should be compared against at least one external framework or independent implementation to catch implementation-risk differences.
+
+Promotion blockers:
+
+- Missing source timestamps or provider lineage.
+- Underlying-only proxy analysis presented as a real options backtest.
+- Midpoint options fills without conservative bid/ask and failed-fill sensitivity.
+- Strategy chosen from many variants without multiple-testing disclosure or Deflated-Sharpe/PBO-style skepticism.
+- Insufficient trade count without a visible warning.
+- Liquidity filters weaker than the production recommendation filters.
+- Any assumption requiring live trading, margin, broker order placement, or naked options selling.
+
+## Quant Strategy Validation Notes
+
+- Earnings strategies must align trades to the first realistic tradable time after the announcement. Same-bar or revised-data leakage blocks promotion.
+- Momentum strategies must include turnover, crash/reversal regime performance, sector concentration, and volatility-regime slices.
+- Mean-reversion strategies must include stop/invalidation rules and crisis-period stress tests because losses can grow when the signal is really a trend break.
+- News and sentiment strategies must use publish timestamps, retrieval timestamps, deduplication, source licensing, and model/prompt versions when AI is used.
+- Value and quality strategies require filing-date and restatement handling; period-end dates alone are not enough.
+- Sector rotation requires macro release timing rules, benchmark comparisons, and concentration caps.
+- Pairs/stat-arb, ML strategies, and crypto strategies are research-only until stronger data, validation, and risk controls exist.
 
 ## Options Backtesting Notes
 
@@ -84,6 +120,8 @@ Options backtesting requires extra caution:
 - Undefined max gain/loss structures must be avoided in MVP.
 
 If historical options data is unavailable, label results as proxy analysis and require paper-trading evidence before ranking highly.
+
+Options strategies cannot produce `paper trade` candidates from underlying-only proxy results. Contract-level historical chains must include bid, ask, volume, open interest, IV, expiration, strike, multiplier, underlying price, and source timestamps. Initial options research should stay limited to long calls, long puts, and debit spreads with defined max loss; naked short options, short volatility, credit spreads, and 0DTE are out of MVP scope.
 
 ## Paper Trading Feedback Loop
 
