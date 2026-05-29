@@ -1,6 +1,6 @@
 # Validation Status
 
-Last updated: 2026-05-29T13:50:21-04:00
+Last updated: 2026-05-29T13:54:19-04:00
 
 ## Current State
 
@@ -9,12 +9,12 @@ Last updated: 2026-05-29T13:50:21-04:00
 | Current phase | Milestone 7 backtesting validation |
 | Current task | Add durable stock backtest run persistence |
 | Owner/agent | Codex founding CTO / lead architect / principal engineer / security reviewer / risk reviewer / QA reviewer |
-| Status | Planned |
+| Status | In Progress |
 | Priority | High |
 | Category | Backtesting validation evidence |
 | Blockers | None |
-| Next step | Create the M7-002 branch and add a plan for durable backtest-run persistence. |
-| Related docs/files | `packages/backtesting/src/index.ts`, `packages/backtesting/test/backtesting.test.ts`, `packages/db`, `docs/backtesting-and-validation.md`, `docs/status/` |
+| Next step | Add failing migration tests for durable backtest-run persistence. |
+| Related docs/files | `packages/backtesting/src/index.ts`, `packages/backtesting/test/backtesting.test.ts`, `packages/db`, `docs/backtesting-and-validation.md`, `docs/superpowers/plans/2026-05-29-milestone-7-backtest-persistence.md`, `docs/status/` |
 
 ## Checks
 
