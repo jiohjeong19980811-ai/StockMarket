@@ -10,6 +10,14 @@ const baseStockInput: ScoringInput = {
   evidenceStatus: "paper_trade_eligible",
   evidenceGate: "verified",
   evidenceIds: ["backtest-run-1"],
+  evidenceReview: {
+    resolver: "db_recommendation_evidence_resolver",
+    recommendationId: "score-AAPL-momentum-1",
+    evidenceGate: "verified",
+    evidenceIds: ["backtest-run-1"],
+    reasonCodes: [],
+    resolvedAt: "2026-05-28T20:05:00.000Z",
+  },
   dataFreshness: {
     status: "fresh",
     asOf: "2026-05-28T20:00:00.000Z",
@@ -115,7 +123,7 @@ describe("scoreOpportunity", () => {
   it("keeps raw evidence IDs at watchlist until evidence is resolved as verified", () => {
     const result = scoreOpportunity(
       inputWith({
-        evidenceGate: "needs_more_data",
+        evidenceReview: undefined,
         evidenceIds: ["backtest-run-1"],
       }),
     );

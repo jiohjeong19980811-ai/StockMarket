@@ -323,3 +323,21 @@ Reason: A raw evidence ID or stale stored `ready_for_review` flag is not enough 
 Decision: Require resolver-backed evidence review provenance in the core paper-trade eligibility contract and strengthen DB evidence gates so paper-trade recommendations and persisted paper-trade rows require verified, coherent, cohort-compatible backtest or paper-trade evidence.
 
 Reason: Caller-controlled `verified` flags are not evidence. The paper-trading path must prove that referenced evidence was resolved, that in-memory evidence IDs exactly match the resolver review, and that database writes cannot bypass freshness, assumption, metric, cost-sensitivity, ticker-sample, and paper-only safety checks.
+
+## 2026-05-29: All-Referenced Evidence Gate Semantics
+
+Decision: Treat paper-trade eligibility as an all-referenced-evidence gate. A recommendation that references both backtest and paper-trade evidence is blocked unless every referenced item verifies; verified paper-trade evidence must also trace back to a source recommendation whose own evidence gate remains verified.
+
+Reason: A valid evidence item should not mask a missing, unsafe, stale, or source-unverified item. Recommendation scoring, resolver detail, DB recommendation triggers, and DB paper-trade triggers must share the same conservative semantics before a simulated trade can be created.
+
+## 2026-05-29: Backtest Evidence Type Parity And Non-Circular Paper Evidence
+
+Decision: Align DB evidence gates with resolver type semantics by rejecting SQLite-coerced JSON metrics, assumptions, notes, citations, non-finite JSON numeric values, Julian-only timestamp strings, timezone-naive timestamp text, malformed UTC suffix variants, and calendar-invalid UTC normalization. Paper-trade evidence must be non-circular and source-backed by same-cohort verified backtest evidence; a recommendation cannot replace its original backtest reference with its own closed paper trade or a paper trade whose source recommendation has drifted into another cohort.
+
+Reason: SQLite and JavaScript can coerce numeric strings, non-string citation values, non-finite numeric JSON, Julian timestamp strings, timezone-naive timestamp text, whitespace/control-character UTC suffix variants, and calendar-invalid UTC strings in comparisons or parser normalization that should not count as verified evidence. Paper-trade evidence should represent an outcome from a prior verified setup in the same cohort, not stale flags, source-record drift, or self-referential proof.
+
+## 2026-05-29: Exact-Set Cost Sensitivity Evidence
+
+Decision: Require stored stock backtest cost sensitivity evidence to contain exactly one valid 1x, 2x, and 3x stress row, with no duplicate, extra, malformed, or non-finite stress entries. Stored assumption multipliers must match the same exact set.
+
+Reason: A backtest can otherwise carry valid required stress rows plus ambiguous duplicate or malformed extras while still verifying. Cost-stress evidence used for paper-trade eligibility must be unambiguous before it can support a simulated trade decision.

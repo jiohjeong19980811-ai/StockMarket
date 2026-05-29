@@ -497,6 +497,111 @@ describe("recommendation evidence resolver", () => {
     expect(detail.reasonCodes).toContain("backtest_evidence_unsafe");
   });
 
+  it("blocks ready backtest rows with timezone-naive timestamps", async () => {
+    const result = await persistBacktestEvidence();
+    await execute(
+      `UPDATE backtest_runs
+       SET period_end = ?,
+         freshness_as_of = ?,
+         source_citations_json = ?
+       WHERE id = ?`,
+      [
+        "2026-05-28 20:00:00",
+        "2026-05-29 20:00:00",
+        '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-05-28 19:55:00","retrievedAt":"2026-05-28 20:00:00"}]',
+        result.id,
+      ],
+    );
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id, "watchlist");
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("backtest_evidence_unsafe");
+  });
+
+  it("blocks ready backtest rows with calendar-invalid UTC timestamps", async () => {
+    const invalidRows = [
+      {
+        id: "bt_invalid_calendar_timestamp",
+        periodEnd: "2026-02-31T20:00:00Z",
+        freshnessAsOf: "2026-03-04T20:00:00Z",
+        citationsJson:
+          '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-02-31T19:55:00Z","retrievedAt":"2026-03-04T20:00:00Z"}]',
+      },
+      {
+        id: "bt_invalid_hour_timestamp",
+        periodEnd: "2026-05-28T24:00:00Z",
+        freshnessAsOf: "2026-05-29T01:00:00Z",
+        citationsJson:
+          '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-05-28T24:00:00Z","retrievedAt":"2026-05-29T01:00:00Z"}]',
+      },
+    ];
+
+    for (const row of invalidRows) {
+      const result = await persistBacktestEvidence(stockBacktestInput({ id: row.id }));
+      await execute(
+        `UPDATE backtest_runs
+         SET period_end = ?,
+           freshness_as_of = ?,
+           source_citations_json = ?
+         WHERE id = ?`,
+        [row.periodEnd, row.freshnessAsOf, row.citationsJson, result.id],
+      );
+      await seedRecommendation(`rec_${row.id}`, "MSFT", null, result.id, "watchlist");
+
+      const detail = await getRecommendationEvidenceDetail(client, `rec_${row.id}`);
+
+      expect(detail.evidenceGate).toBe("blocked");
+      expect(detail.reasonCodes).toContain("backtest_evidence_unsafe");
+    }
+  });
+
+  it("blocks ready backtest rows with ambiguous cost sensitivity rows", async () => {
+    const invalidMetrics = [
+      {
+        id: "bt_extra_malformed_cost_sensitivity",
+        costSensitivity: [
+          { multiplier: 1, netReturnPct: 18.2815, averageReturnPct: 4.499, profitFactor: 3.8793 },
+          { multiplier: 2, netReturnPct: 17.1444, averageReturnPct: 4.2479, profitFactor: 3.6141 },
+          { multiplier: 3, netReturnPct: 16.0154, averageReturnPct: 3.9969, profitFactor: 3.3685 },
+          { multiplier: 4, netReturnPct: Infinity, averageReturnPct: 3.9969, profitFactor: 3.3685 },
+        ],
+      },
+      {
+        id: "bt_duplicate_cost_sensitivity",
+        costSensitivity: [
+          { multiplier: 1, netReturnPct: 18.2815, averageReturnPct: 4.499, profitFactor: 3.8793 },
+          { multiplier: 2, netReturnPct: 17.1444, averageReturnPct: 4.2479, profitFactor: 3.6141 },
+          { multiplier: 3, netReturnPct: 16.0154, averageReturnPct: 3.9969, profitFactor: 3.3685 },
+          { multiplier: 2, netReturnPct: -50, averageReturnPct: -12.5, profitFactor: null },
+        ],
+      },
+    ];
+
+    for (const row of invalidMetrics) {
+      const result = await persistBacktestEvidence(stockBacktestInput({ id: row.id }));
+      const stored = await execute("SELECT metrics_json FROM backtest_runs WHERE id = ?", [
+        result.id,
+      ]);
+      const metricsJson = stored.rows[0]?.metrics_json;
+      expect(typeof metricsJson).toBe("string");
+      const metrics = JSON.parse(metricsJson as string) as Record<string, unknown>;
+      await execute(
+        `UPDATE backtest_runs
+         SET metrics_json = ?
+         WHERE id = ?`,
+        [JSON.stringify({ ...metrics, costSensitivity: row.costSensitivity }), result.id],
+      );
+      await seedRecommendation(`rec_${row.id}`, "MSFT", null, result.id, "watchlist");
+
+      const detail = await getRecommendationEvidenceDetail(client, `rec_${row.id}`);
+
+      expect(detail.evidenceGate).toBe("blocked");
+      expect(detail.reasonCodes).toContain("backtest_evidence_unsafe");
+    }
+  });
+
   it("keeps ticker-level backtest evidence unresolved when the ticker sample is too small", async () => {
     const baseInput = stockBacktestInput();
     const input = stockBacktestInput({
@@ -580,9 +685,133 @@ describe("recommendation evidence resolver", () => {
     });
   });
 
+  it("blocks paper-trade evidence whose source recommendation lost verified evidence status", async () => {
+    await seedClosedEvidencePaperTrade();
+    await execute("DROP TRIGGER recommendations_verified_evidence_gate_update");
+    await execute("UPDATE recommendations SET evidence_gate = ? WHERE id = ?", [
+      "needs_more_data",
+      "rec_source_1",
+    ]);
+    await seedRecommendation(
+      "rec_candidate_1",
+      "MSFT",
+      "paper_trade_evidence_1",
+      undefined,
+      "watchlist",
+    );
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("paper_trade_evidence_source_unverified");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "paper_trade",
+      id: "paper_trade_evidence_1",
+      status: "blocked",
+      reasonCodes: ["paper_trade_evidence_source_unverified"],
+    });
+  });
+
+  it("blocks paper-trade evidence whose source backing evidence no longer verifies", async () => {
+    await seedClosedEvidencePaperTrade();
+    await execute(
+      `UPDATE backtest_runs
+       SET metrics_json = ?
+       WHERE id = ?`,
+      [
+        '{"tradeCount":"4","winRatePct":75,"averageReturnPct":4.499,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":18.2815,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685}]}',
+        "backtest_run_source",
+      ],
+    );
+    await seedRecommendation(
+      "rec_candidate_1",
+      "MSFT",
+      "paper_trade_evidence_1",
+      undefined,
+      "watchlist",
+    );
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("paper_trade_evidence_source_unverified");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "paper_trade",
+      id: "paper_trade_evidence_1",
+      status: "blocked",
+      reasonCodes: ["paper_trade_evidence_source_unverified"],
+    });
+  });
+
+  it("blocks paper-trade evidence whose source recommendation cohort diverged after close", async () => {
+    await seedClosedEvidencePaperTrade();
+    const aaplTrades = stockBacktestInput().trades.map((trade) => ({
+      ...trade,
+      ticker: "AAPL",
+      id: `aapl-${trade.id}`,
+    }));
+    const aaplBacktest = await persistBacktestEvidence(
+      stockBacktestInput({ id: "backtest_run_source_aapl", trades: aaplTrades }),
+    );
+    await execute(
+      `UPDATE recommendations
+       SET ticker = ?,
+         backtest_run_id = ?
+       WHERE id = ?`,
+      ["AAPL", aaplBacktest.id, "rec_source_1"],
+    );
+    await seedRecommendation(
+      "rec_candidate_1",
+      "MSFT",
+      "paper_trade_evidence_1",
+      undefined,
+      "watchlist",
+    );
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("paper_trade_evidence_source_unverified");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "paper_trade",
+      id: "paper_trade_evidence_1",
+      status: "blocked",
+      reasonCodes: ["paper_trade_evidence_source_unverified"],
+    });
+  });
+
+  it("blocks self-referential paper-trade evidence", async () => {
+    await seedClosedEvidencePaperTrade();
+    await execute("DROP TRIGGER recommendations_verified_evidence_gate_update");
+    await execute(
+      `UPDATE recommendations
+       SET backtest_run_id = NULL,
+         paper_trade_evidence_id = ?
+       WHERE id = ?`,
+      ["paper_trade_evidence_1", "rec_source_1"],
+    );
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_source_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("paper_trade_evidence_source_unverified");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "paper_trade",
+      id: "paper_trade_evidence_1",
+      status: "blocked",
+      reasonCodes: ["paper_trade_evidence_source_unverified"],
+    });
+  });
+
   it("blocks missing backtest evidence while preserving verified paper evidence", async () => {
     await seedClosedEvidencePaperTrade();
-    await seedRecommendation("rec_candidate_1", "MSFT", "paper_trade_evidence_1", "backtest_run_1");
+    await seedRecommendation(
+      "rec_candidate_1",
+      "MSFT",
+      "paper_trade_evidence_1",
+      "backtest_run_1",
+      "watchlist",
+    );
 
     const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
 

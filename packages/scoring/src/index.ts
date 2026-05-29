@@ -1,6 +1,7 @@
 import type {
   DataFreshness,
   EvidenceGate,
+  EvidenceReviewRecord,
   InstrumentType,
   OpportunityDecision,
   OptionsRiskDetails,
@@ -71,6 +72,7 @@ export interface ScoringInput {
   evidenceStatus: EvidenceStatus;
   evidenceGate: EvidenceGate;
   evidenceIds: string[];
+  evidenceReview?: EvidenceReviewRecord;
   dataFreshness: DataFreshness;
   sourceCitations: SourceCitation[];
   componentSignals: ComponentSignal[];
@@ -474,11 +476,37 @@ function hasValidOptionsRiskDetails(details: OptionsRiskDetails | undefined): bo
   );
 }
 
+function hasVerifiedEvidenceReview(input: ScoringInput): boolean {
+  const reviewEvidenceIds = Array.isArray(input.evidenceReview?.evidenceIds)
+    ? input.evidenceReview.evidenceIds
+    : [];
+  const uniqueInputEvidenceIds = new Set(input.evidenceIds);
+  const uniqueReviewEvidenceIds = new Set(reviewEvidenceIds);
+
+  return Boolean(
+    input.evidenceGate === "verified" &&
+    input.evidenceReview &&
+    input.evidenceReview.resolver === "db_recommendation_evidence_resolver" &&
+    input.evidenceReview.recommendationId === input.id &&
+    input.evidenceReview.evidenceGate === "verified" &&
+    Array.isArray(input.evidenceReview.reasonCodes) &&
+    input.evidenceReview.reasonCodes.length === 0 &&
+    hasText(input.evidenceReview.resolvedAt) &&
+    Number.isFinite(Date.parse(input.evidenceReview.resolvedAt)) &&
+    input.evidenceIds.length > 0 &&
+    uniqueInputEvidenceIds.size === input.evidenceIds.length &&
+    reviewEvidenceIds.length === input.evidenceIds.length &&
+    uniqueReviewEvidenceIds.size === reviewEvidenceIds.length &&
+    reviewEvidenceIds.every((evidenceId) => hasText(evidenceId)) &&
+    input.evidenceIds.every((evidenceId) => uniqueReviewEvidenceIds.has(evidenceId)),
+  );
+}
+
 function hasPaperEvidence(input: ScoringInput): boolean {
   return (
     input.evidenceStatus === "paper_trade_eligible" &&
     input.evidenceGate === "verified" &&
-    input.evidenceIds.length > 0
+    hasVerifiedEvidenceReview(input)
   );
 }
 

@@ -555,6 +555,277 @@ describe("database migrations", () => {
     expect(result.rows[0]?.evidence_gate).toBe("verified");
   });
 
+  it("rejects verified recommendations unless every referenced evidence item verifies", async () => {
+    await seedRecommendationDependencies();
+    await insertBacktestRun({ id: "bt_verified" });
+    await insertBacktestTradeRows("bt_verified");
+
+    await expect(
+      insertRecommendation({
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        backtest_run_id: "bt_verified",
+        paper_trade_evidence_id: "missing_paper_trade_evidence",
+        evidence_gate: "verified",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects verified recommendations when backtest rows fail resolver-only checks", async () => {
+    await seedRecommendationDependencies();
+    await insertBacktestRun({
+      id: "bt_trade_count_mismatch",
+      trade_count: 5,
+      metrics_json:
+        '{"tradeCount":5,"winRatePct":75,"averageReturnPct":4.499,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":18.2815,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685}]}',
+    });
+    await insertBacktestTradeRows("bt_trade_count_mismatch");
+    await insertBacktestRun({
+      id: "bt_bad_citation",
+      source_citations_json:
+        '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-05-28T20:00:00.000Z","retrievedAt":"2026-05-28T19:55:00.000Z"}]',
+    });
+    await insertBacktestTradeRows("bt_bad_citation");
+
+    for (const backtestRunId of ["bt_trade_count_mismatch", "bt_bad_citation"]) {
+      await expect(
+        insertRecommendation({
+          id: `rec_${backtestRunId}`,
+          decision: "paper_trade",
+          evidence_status: "paper_trade_eligible",
+          backtest_run_id: backtestRunId,
+          evidence_gate: "verified",
+        }),
+      ).rejects.toThrow();
+    }
+  });
+
+  it("rejects verified recommendations when backtest JSON uses resolver-incompatible types", async () => {
+    await seedRecommendationDependencies();
+
+    const stringMetricJson =
+      '{"tradeCount":"4","winRatePct":75,"averageReturnPct":4.499,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":18.2815,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685}]}';
+    const stringAssumptionJson = JSON.stringify({
+      slippageBps: "5",
+      spreadBps: 10,
+      feePerTrade: 1,
+      minTradesForReview: 4,
+      minAverageDailyDollarVolume: 20_000_000,
+      pointInTimeData: true,
+      survivorshipBiasControl: true,
+      lookaheadBiasControl: true,
+      rejectedParameterSets: 2,
+      costStressMultipliers: [1, 2, 3],
+      notes: ["Mock run uses adjusted close values and conservative cost stress."],
+    });
+    const integerBooleanAssumptionJson = JSON.stringify({
+      slippageBps: 5,
+      spreadBps: 10,
+      feePerTrade: 1,
+      minTradesForReview: 4,
+      minAverageDailyDollarVolume: 20_000_000,
+      pointInTimeData: 1,
+      survivorshipBiasControl: 1,
+      lookaheadBiasControl: 1,
+      rejectedParameterSets: 2,
+      costStressMultipliers: [1, 2, 3],
+      notes: ["Boolean assumptions must be real JSON booleans."],
+    });
+    const numericCitationJson =
+      '[{"title":123,"url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-05-28T19:55:00.000Z","retrievedAt":"2026-05-28T20:00:00.000Z"}]';
+
+    const invalidRows = [
+      { id: "bt_string_metric", metrics_json: stringMetricJson },
+      { id: "bt_string_assumption", assumptions_json: stringAssumptionJson },
+      { id: "bt_integer_booleans", assumptions_json: integerBooleanAssumptionJson },
+      { id: "bt_numeric_citation", source_citations_json: numericCitationJson },
+    ];
+
+    for (const row of invalidRows) {
+      await insertBacktestRun(row);
+      await insertBacktestTradeRows(row.id);
+
+      await expect(
+        insertRecommendation({
+          id: `rec_${row.id}`,
+          decision: "paper_trade",
+          evidence_status: "paper_trade_eligible",
+          backtest_run_id: row.id,
+          evidence_gate: "verified",
+        }),
+      ).rejects.toThrow();
+    }
+  });
+
+  it("rejects verified recommendations when backtest JSON uses non-finite numeric values", async () => {
+    await seedRecommendationDependencies();
+
+    const nonFiniteMetricJson =
+      '{"tradeCount":4,"winRatePct":75,"averageReturnPct":1e999,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":18.2815,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685}]}';
+    const nonFiniteCostSensitivityJson =
+      '{"tradeCount":4,"winRatePct":75,"averageReturnPct":4.499,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":1e999,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685}]}';
+    const nonFiniteAssumptionJson =
+      '{"slippageBps":5,"spreadBps":1e999,"feePerTrade":1,"minTradesForReview":4,"minAverageDailyDollarVolume":20000000,"pointInTimeData":true,"survivorshipBiasControl":true,"lookaheadBiasControl":true,"rejectedParameterSets":2,"costStressMultipliers":[1,2,3],"notes":["Non-finite assumption values must not verify."]}';
+    const nonFiniteCostStressJson =
+      '{"slippageBps":5,"spreadBps":10,"feePerTrade":1,"minTradesForReview":4,"minAverageDailyDollarVolume":20000000,"pointInTimeData":true,"survivorshipBiasControl":true,"lookaheadBiasControl":true,"rejectedParameterSets":2,"costStressMultipliers":[1,2,3,1e999],"notes":["Cost stress multipliers must be finite."]}';
+
+    const invalidRows = [
+      { id: "bt_nonfinite_metric", metrics_json: nonFiniteMetricJson },
+      { id: "bt_nonfinite_cost_sensitivity", metrics_json: nonFiniteCostSensitivityJson },
+      { id: "bt_nonfinite_assumption", assumptions_json: nonFiniteAssumptionJson },
+      { id: "bt_nonfinite_cost_stress", assumptions_json: nonFiniteCostStressJson },
+    ];
+
+    for (const row of invalidRows) {
+      await insertBacktestRun(row);
+      await insertBacktestTradeRows(row.id);
+
+      await expect(
+        insertRecommendation({
+          id: `rec_${row.id}`,
+          decision: "paper_trade",
+          evidence_status: "paper_trade_eligible",
+          backtest_run_id: row.id,
+          evidence_gate: "verified",
+        }),
+      ).rejects.toThrow();
+    }
+  });
+
+  it("rejects verified recommendations when cost sensitivity has extra malformed or duplicate rows", async () => {
+    await seedRecommendationDependencies();
+
+    const costSensitivityWithExtraMalformedRow =
+      '{"tradeCount":4,"winRatePct":75,"averageReturnPct":4.499,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":18.2815,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685},{"multiplier":4,"netReturnPct":1e999,"averageReturnPct":3.9969,"profitFactor":3.3685}]}';
+    const costSensitivityWithDuplicateRow =
+      '{"tradeCount":4,"winRatePct":75,"averageReturnPct":4.499,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":18.2815,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685},{"multiplier":2,"netReturnPct":-50,"averageReturnPct":-12.5,"profitFactor":null}]}';
+
+    const invalidRows = [
+      {
+        id: "bt_extra_malformed_cost_sensitivity",
+        metrics_json: costSensitivityWithExtraMalformedRow,
+      },
+      { id: "bt_duplicate_cost_sensitivity", metrics_json: costSensitivityWithDuplicateRow },
+    ];
+
+    for (const row of invalidRows) {
+      await insertBacktestRun(row);
+      await insertBacktestTradeRows(row.id);
+
+      await expect(
+        insertRecommendation({
+          id: `rec_${row.id}`,
+          decision: "paper_trade",
+          evidence_status: "paper_trade_eligible",
+          backtest_run_id: row.id,
+          evidence_gate: "verified",
+        }),
+      ).rejects.toThrow();
+    }
+  });
+
+  it("rejects verified recommendations when backtest timestamps only pass SQLite julian parsing", async () => {
+    await seedRecommendationDependencies();
+
+    await insertBacktestRun({
+      id: "bt_julian_timestamps",
+      period_end: "2461189.3333333335",
+      freshness_as_of: "2461189.3333333335",
+      source_citations_json:
+        '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2461189.329861111","retrievedAt":"2461189.3333333335"}]',
+    });
+    await insertBacktestTradeRows("bt_julian_timestamps");
+
+    await expect(
+      insertRecommendation({
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        backtest_run_id: "bt_julian_timestamps",
+        evidence_gate: "verified",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects verified recommendations when backtest timestamps mix timezone-naive and UTC text", async () => {
+    await seedRecommendationDependencies();
+
+    await insertBacktestRun({
+      id: "bt_timezone_naive_timestamps",
+      period_end: "2026-05-28 20:00:00",
+      freshness_as_of: "2026-05-28T22:00:00.000Z",
+      source_citations_json:
+        '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-05-28 20:00:00","retrievedAt":"2026-05-28T22:00:00.000Z"}]',
+    });
+    await insertBacktestTradeRows("bt_timezone_naive_timestamps");
+
+    await expect(
+      insertRecommendation({
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        backtest_run_id: "bt_timezone_naive_timestamps",
+        evidence_gate: "verified",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects verified recommendations when backtest timestamps contain whitespace before UTC suffix", async () => {
+    await seedRecommendationDependencies();
+
+    await insertBacktestRun({
+      id: "bt_whitespace_utc_timestamps",
+      period_end: "2026-05-28T20:00:00 Z",
+      freshness_as_of: "2026-05-28T22:00:00 Z",
+      source_citations_json:
+        '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-05-28T19:55:00 Z","retrievedAt":"2026-05-28T20:00:00 Z"}]',
+    });
+    await insertBacktestTradeRows("bt_whitespace_utc_timestamps");
+
+    await expect(
+      insertRecommendation({
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        backtest_run_id: "bt_whitespace_utc_timestamps",
+        evidence_gate: "verified",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects verified recommendations when backtest timestamps use calendar-invalid UTC text", async () => {
+    await seedRecommendationDependencies();
+
+    const invalidRows = [
+      {
+        id: "bt_invalid_calendar_timestamp",
+        period_end: "2026-02-31T20:00:00Z",
+        freshness_as_of: "2026-03-04T20:00:00Z",
+        source_citations_json:
+          '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-02-31T19:55:00Z","retrievedAt":"2026-03-04T20:00:00Z"}]',
+      },
+      {
+        id: "bt_invalid_hour_timestamp",
+        period_end: "2026-05-28T24:00:00Z",
+        freshness_as_of: "2026-05-29T01:00:00Z",
+        source_citations_json:
+          '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-05-28T24:00:00Z","retrievedAt":"2026-05-29T01:00:00Z"}]',
+      },
+    ];
+
+    for (const row of invalidRows) {
+      await insertBacktestRun(row);
+      await insertBacktestTradeRows(row.id);
+
+      await expect(
+        insertRecommendation({
+          id: `rec_${row.id}`,
+          decision: "paper_trade",
+          evidence_status: "paper_trade_eligible",
+          backtest_run_id: row.id,
+          evidence_gate: "verified",
+        }),
+      ).rejects.toThrow();
+    }
+  });
+
   it("rejects caller-verified recommendations when backtest evidence has unsafe assumptions or timestamps", async () => {
     await seedRecommendationDependencies();
     await insertBacktestRun({
@@ -631,6 +902,143 @@ describe("database migrations", () => {
     );
 
     await expect(insertPaperTrade()).rejects.toThrow();
+  });
+
+  it("rejects paper-trade evidence when source backing evidence no longer verifies", async () => {
+    await seedPaperTradeDependencies();
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "audit_paper_trade_close_1",
+        "paper_trade_closed",
+        "system",
+        "paper-trading",
+        now,
+        "paper_trade",
+        "paper_trade_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+    await insertPaperTrade({
+      status: "closed",
+      exit_audit_log_id: "audit_paper_trade_close_1",
+      closed_at: "2026-05-06T20:00:00Z",
+      exit_price: 430,
+      exit_reason: "Profit target review hit.",
+      lessons_learned: "Follow-through appeared before the time stop.",
+      updated_at: "2026-05-06T20:00:00Z",
+    });
+    await execute(
+      `UPDATE backtest_runs
+       SET metrics_json = ?
+       WHERE id = ?`,
+      [
+        '{"tradeCount":"4","winRatePct":75,"averageReturnPct":4.499,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":18.2815,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685}]}',
+        "bt_123",
+      ],
+    );
+
+    await expect(
+      insertRecommendation({
+        id: "rec_candidate_paper_evidence",
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        paper_trade_evidence_id: "paper_trade_1",
+        evidence_gate: "verified",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects paper-trade evidence when source recommendation cohort diverges after close", async () => {
+    await seedPaperTradeDependencies();
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "audit_paper_trade_close_1",
+        "paper_trade_closed",
+        "system",
+        "paper-trading",
+        now,
+        "paper_trade",
+        "paper_trade_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+    await insertPaperTrade({
+      status: "closed",
+      exit_audit_log_id: "audit_paper_trade_close_1",
+      closed_at: "2026-05-06T20:00:00Z",
+      exit_price: 430,
+      exit_reason: "Profit target review hit.",
+      lessons_learned: "Follow-through appeared before the time stop.",
+      updated_at: "2026-05-06T20:00:00Z",
+    });
+    await insertBacktestRun({ id: "bt_aapl" });
+    await insertBacktestTradeRows("bt_aapl", "AAPL");
+    await execute(
+      `UPDATE recommendations
+       SET ticker = ?,
+         backtest_run_id = ?,
+         updated_at = ?
+       WHERE id = ?`,
+      ["AAPL", "bt_aapl", now, "rec_1"],
+    );
+
+    await expect(
+      insertRecommendation({
+        id: "rec_candidate_diverged_source",
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        paper_trade_evidence_id: "paper_trade_1",
+        evidence_gate: "verified",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects recommendations that use their own closed paper trade as evidence", async () => {
+    await seedPaperTradeDependencies();
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "audit_paper_trade_close_1",
+        "paper_trade_closed",
+        "system",
+        "paper-trading",
+        now,
+        "paper_trade",
+        "paper_trade_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+    await insertPaperTrade({
+      status: "closed",
+      exit_audit_log_id: "audit_paper_trade_close_1",
+      closed_at: "2026-05-06T20:00:00Z",
+      exit_price: 430,
+      exit_reason: "Profit target review hit.",
+      lessons_learned: "Follow-through appeared before the time stop.",
+      updated_at: "2026-05-06T20:00:00Z",
+    });
+
+    await expect(
+      execute(
+        `UPDATE recommendations
+         SET backtest_run_id = NULL,
+           paper_trade_evidence_id = ?,
+           updated_at = ?
+         WHERE id = ?`,
+        ["paper_trade_1", now, "rec_1"],
+      ),
+    ).rejects.toThrow();
   });
 
   it("accepts normalized ingestion rows linked to provider records", async () => {

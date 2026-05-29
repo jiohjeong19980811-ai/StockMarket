@@ -11,6 +11,7 @@ export type RecommendationEvidenceReason =
   | "backtest_evidence_unsafe"
   | "paper_trade_evidence_missing"
   | "paper_trade_evidence_not_closed"
+  | "paper_trade_evidence_source_unverified"
   | "paper_trade_evidence_unsafe"
   | "paper_trade_evidence_cohort_mismatch";
 
@@ -166,8 +167,32 @@ function isFiniteNumberValue(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+const REQUIRED_COST_STRESS_MULTIPLIERS = [1, 2, 3] as const;
+
+const UTC_TIMESTAMP_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{3}))?Z$/;
+
 function hasValidIsoTimestamp(value: unknown): value is string {
-  return typeof value === "string" && Number.isFinite(Date.parse(value));
+  if (typeof value !== "string") {
+    return false;
+  }
+  const match = UTC_TIMESTAMP_PATTERN.exec(value);
+  if (match === null) {
+    return false;
+  }
+  const [, year, month, day, hour, minute, second] = match;
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) {
+    return false;
+  }
+  const date = new Date(parsed);
+  return (
+    date.getUTCFullYear() === Number(year) &&
+    date.getUTCMonth() + 1 === Number(month) &&
+    date.getUTCDate() === Number(day) &&
+    date.getUTCHours() === Number(hour) &&
+    date.getUTCMinutes() === Number(minute) &&
+    date.getUTCSeconds() === Number(second)
+  );
 }
 
 function hasValidBacktestCitation(value: unknown): boolean {
@@ -192,10 +217,9 @@ function hasValidBacktestCitation(value: unknown): boolean {
 function includesRequiredCostStress(value: unknown): boolean {
   return (
     Array.isArray(value) &&
-    [1, 2, 3].every((required) =>
-      value.some((item) => isFiniteNumberValue(item) && item === required),
-    ) &&
-    value.every((item) => isFiniteNumberValue(item) && item > 0)
+    value.length === REQUIRED_COST_STRESS_MULTIPLIERS.length &&
+    REQUIRED_COST_STRESS_MULTIPLIERS.every((required) => value.includes(required)) &&
+    value.every((item) => REQUIRED_COST_STRESS_MULTIPLIERS.includes(item as 1 | 2 | 3))
   );
 }
 
@@ -243,16 +267,26 @@ function hasValidCostSensitivity(value: unknown): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
-  return [1, 2, 3].every((requiredMultiplier) =>
-    value.some(
-      (item) =>
-        isRecord(item) &&
-        item.multiplier === requiredMultiplier &&
-        isFiniteNumberValue(item.netReturnPct) &&
-        isFiniteNumberValue(item.averageReturnPct) &&
-        hasValidProfitFactor(item.profitFactor),
-    ),
-  );
+  if (value.length !== REQUIRED_COST_STRESS_MULTIPLIERS.length) {
+    return false;
+  }
+
+  const seen = new Set<number>();
+  for (const item of value) {
+    if (
+      !isRecord(item) ||
+      !REQUIRED_COST_STRESS_MULTIPLIERS.includes(item.multiplier as 1 | 2 | 3) ||
+      seen.has(item.multiplier as number) ||
+      !isFiniteNumberValue(item.netReturnPct) ||
+      !isFiniteNumberValue(item.averageReturnPct) ||
+      !hasValidProfitFactor(item.profitFactor)
+    ) {
+      return false;
+    }
+    seen.add(item.multiplier as number);
+  }
+
+  return seen.size === REQUIRED_COST_STRESS_MULTIPLIERS.length;
 }
 
 function hasCoherentStoredMetrics(
@@ -372,18 +406,32 @@ async function resolvePaperTradeEvidence(
   client: Client,
   evidenceId: string,
   recommendation: {
+    id: string;
     ticker: string;
     instrumentType: string;
     strategyVersionId: string;
   },
 ): Promise<{ item: RecommendationEvidenceItem; auditIds: string[] }> {
   const result = await client.execute({
-    sql: `SELECT id, ticker, instrument_type, strategy_version_id, mode, status,
-        operator_approval_audit_log_id, entry_audit_log_id, exit_audit_log_id,
-        live_trading_enabled, broker_execution, simulated_entry_price, quantity,
-        closed_at, exit_price
+    sql: `SELECT paper_trades.id, paper_trades.ticker, paper_trades.instrument_type,
+        paper_trades.strategy_version_id, paper_trades.mode, paper_trades.status,
+        paper_trades.operator_approval_audit_log_id, paper_trades.entry_audit_log_id,
+        paper_trades.exit_audit_log_id, paper_trades.live_trading_enabled,
+        paper_trades.broker_execution, paper_trades.simulated_entry_price, paper_trades.quantity,
+        paper_trades.closed_at, paper_trades.exit_price,
+        paper_trades.recommendation_id AS source_recommendation_id,
+        source_recommendations.ticker AS source_recommendation_ticker,
+        source_recommendations.instrument_type AS source_recommendation_instrument_type,
+        source_recommendations.strategy_version_id AS source_recommendation_strategy_version_id,
+        source_recommendations.decision AS source_recommendation_decision,
+        source_recommendations.evidence_status AS source_recommendation_evidence_status,
+        source_recommendations.evidence_gate AS source_recommendation_evidence_gate,
+        source_recommendations.backtest_run_id AS source_recommendation_backtest_run_id,
+        source_recommendations.paper_trade_evidence_id AS source_recommendation_paper_trade_evidence_id
       FROM paper_trades
-      WHERE id = ?
+      LEFT JOIN recommendations AS source_recommendations
+        ON source_recommendations.id = paper_trades.recommendation_id
+      WHERE paper_trades.id = ?
       LIMIT 1`,
     args: [evidenceId],
   });
@@ -408,9 +456,71 @@ async function resolvePaperTradeEvidence(
   const mode = readString(row, "mode");
   const liveTradingEnabledRaw = readNumber(row, "live_trading_enabled");
   const brokerExecutionRaw = readNumber(row, "broker_execution");
+  const sourceRecommendationDecision = readOptionalString(row, "source_recommendation_decision");
+  const sourceRecommendationId = readOptionalString(row, "source_recommendation_id");
+  const sourceRecommendationTicker = readOptionalString(row, "source_recommendation_ticker");
+  const sourceRecommendationInstrumentType = readOptionalString(
+    row,
+    "source_recommendation_instrument_type",
+  );
+  const sourceRecommendationStrategyVersionId = readOptionalString(
+    row,
+    "source_recommendation_strategy_version_id",
+  );
+  const sourceRecommendationEvidenceStatus = readOptionalString(
+    row,
+    "source_recommendation_evidence_status",
+  );
+  const sourceRecommendationEvidenceGate = readOptionalString(
+    row,
+    "source_recommendation_evidence_gate",
+  );
+  const sourceRecommendationBacktestRunId = readOptionalString(
+    row,
+    "source_recommendation_backtest_run_id",
+  );
+  const sourceRecommendationPaperTradeEvidenceId = readOptionalString(
+    row,
+    "source_recommendation_paper_trade_evidence_id",
+  );
 
   if (status !== "closed") {
     reasonCodes.push("paper_trade_evidence_not_closed");
+  }
+  if (
+    sourceRecommendationDecision !== "paper_trade" ||
+    sourceRecommendationEvidenceStatus !== "paper_trade_eligible" ||
+    sourceRecommendationEvidenceGate !== "verified" ||
+    sourceRecommendationId === recommendation.id ||
+    sourceRecommendationBacktestRunId === null ||
+    sourceRecommendationPaperTradeEvidenceId !== null ||
+    sourceRecommendationTicker === null ||
+    sourceRecommendationInstrumentType === null ||
+    sourceRecommendationStrategyVersionId === null ||
+    sourceRecommendationTicker !== ticker ||
+    sourceRecommendationInstrumentType !== instrumentType ||
+    sourceRecommendationStrategyVersionId !== strategyVersionId
+  ) {
+    reasonCodes.push("paper_trade_evidence_source_unverified");
+  }
+  if (
+    sourceRecommendationBacktestRunId !== null &&
+    sourceRecommendationTicker !== null &&
+    sourceRecommendationInstrumentType !== null &&
+    sourceRecommendationStrategyVersionId !== null
+  ) {
+    const sourceBacktestEvidence = await resolveBacktestEvidence(
+      client,
+      sourceRecommendationBacktestRunId,
+      {
+        ticker: sourceRecommendationTicker,
+        instrumentType: sourceRecommendationInstrumentType,
+        strategyVersionId: sourceRecommendationStrategyVersionId,
+      },
+    );
+    if (sourceBacktestEvidence.status !== "verified") {
+      reasonCodes.push("paper_trade_evidence_source_unverified");
+    }
   }
   if (mode !== "paper" || liveTradingEnabledRaw !== 0 || brokerExecutionRaw !== 0) {
     reasonCodes.push("paper_trade_evidence_unsafe");
