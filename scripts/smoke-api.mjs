@@ -21,6 +21,27 @@ try {
     throw new Error(`Unexpected /health response: ${response.body}`);
   }
 
+  const providerSelectionResponse = await server.inject({
+    method: "GET",
+    url: "/providers/selection",
+  });
+
+  if (providerSelectionResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /providers/selection to return 200, got ${providerSelectionResponse.statusCode}`,
+    );
+  }
+
+  const providerSelectionBody = providerSelectionResponse.json();
+  if (
+    providerSelectionBody.requiresEnv !== false ||
+    providerSelectionBody.liveTradingEnabled !== false ||
+    providerSelectionBody.providerKeysRequiredNow?.length !== 0 ||
+    !providerSelectionBody.useNow?.includes("mock")
+  ) {
+    throw new Error(`Unexpected provider selection response: ${providerSelectionResponse.body}`);
+  }
+
   const dryRunResponse = await server.inject({
     method: "POST",
     url: "/ingestion/mock-dry-run",

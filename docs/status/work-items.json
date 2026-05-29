@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T21:07:28-04:00",
+  "lastUpdated": "2026-05-28T21:10:33-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,7 +11,7 @@
   ],
   "currentFocus": {
     "phase": "Milestone 3: Provider interfaces and mock ingestion",
-    "task": "Deterministic provider selection scoring added; mock remains the only use-now provider family",
+    "task": "Read-only provider selection API status surface added; no provider keys are required now",
     "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
     "status": "Completed",
     "priority": "High",
@@ -483,6 +483,33 @@
         "Lint",
         "Format check",
         "Root CI",
+        "Status JSON parse",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M3-008",
+      "title": "Expose provider selection status through the API",
+      "phase": "Milestone 3",
+      "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Provider ingestion and data quality",
+      "blockers": [],
+      "nextStep": "Continue Milestone 3 with fixture expansion or a lightweight web status panel.",
+      "relatedDocs": [
+        "apps/api/src/server.ts",
+        "apps/api/test/provider-selection.test.ts",
+        "scripts/smoke-api.mjs"
+      ],
+      "validationRequired": [
+        "Focused API provider-selection test",
+        "Type check",
+        "Lint",
+        "Format check",
+        "Root CI",
+        "API smoke",
         "Status JSON parse",
         "Secret-pattern scan",
         "Live-trading surface scan"

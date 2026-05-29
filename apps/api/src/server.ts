@@ -4,10 +4,12 @@ import {
   createMockMarketDataProvider,
   createMockNewsProvider,
   createMockOptionsProvider,
+  evaluateProviderCandidates,
   ingestEarningsEvents,
   ingestNewsArticles,
   ingestOptionQuotes,
   ingestPriceBars,
+  providerSelectionCandidates,
   type IngestionClock,
 } from "@stockmarket/data";
 import { createLocalClient, persistIngestionBatch, runMigrations } from "@stockmarket/db";
@@ -42,6 +44,27 @@ export function buildServer(env: ApiEnv) {
     liveTradingEnabled: env.LIVE_TRADING_ENABLED,
     timestamp: new Date().toISOString(),
   }));
+
+  server.get("/providers/selection", async () => {
+    const candidates = evaluateProviderCandidates(providerSelectionCandidates);
+
+    return {
+      mode: "policy",
+      requiresEnv: false,
+      liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+      providerKeysRequiredNow: [],
+      useNow: candidates
+        .filter((candidate) => candidate.decision === "use_now")
+        .map((candidate) => candidate.id),
+      evaluateFirst: candidates
+        .filter((candidate) => candidate.decision === "evaluate_first")
+        .map((candidate) => candidate.id),
+      deferred: candidates
+        .filter((candidate) => candidate.decision === "defer")
+        .map((candidate) => candidate.id),
+      candidates,
+    };
+  });
 
   server.post("/ingestion/mock-dry-run", async () => {
     const clock: IngestionClock = {
