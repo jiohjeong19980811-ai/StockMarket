@@ -9,5 +9,5 @@
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../data" }]
+  "references": [{ "path": "../backtesting" }, { "path": "../data" }]
 }

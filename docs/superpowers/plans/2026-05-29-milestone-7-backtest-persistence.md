@@ -123,7 +123,7 @@ Expected: migration tests pass and the migration list includes `0004_backtest_ru
 - Modify: `packages/db/tsconfig.json`
 - Modify: `package-lock.json`
 
-- [ ] **Step 1: Add failing persistence tests**
+- [x] **Step 1: Add failing persistence tests**
 
 Create `packages/db/test/backtest-run-ledger.test.ts`. Seed a strategy version, build a `StockBacktestInput`, call `evaluateStockBacktest(input)`, and assert:
 
@@ -143,7 +143,7 @@ await expect(persistStockBacktestRun(client, { ...input, optionsProxy: true }, r
 await expect(persistStockBacktestRun(client, input, { ...result, notRecommendation: false as true }, now)).rejects.toThrow(/notRecommendation/i);
 ```
 
-- [ ] **Step 2: Run the helper test and confirm failure**
+- [x] **Step 2: Run the helper test and confirm failure**
 
 Run:
 
@@ -153,11 +153,11 @@ npm.cmd run test --workspace @stockmarket/db -- backtest-run-ledger
 
 Expected: failure because `persistStockBacktestRun` does not exist.
 
-- [ ] **Step 3: Add DB package dependency and references**
+- [x] **Step 3: Add DB package dependency and references**
 
 Add `"@stockmarket/backtesting": "0.1.0"` to `packages/db/package.json`, add `{ "path": "../backtesting" }` to `packages/db/tsconfig.json`, and update `package-lock.json` using the repo package-lock workflow.
 
-- [ ] **Step 4: Implement the helper**
+- [x] **Step 4: Implement the helper**
 
 Create `packages/db/src/backtest-run-ledger.ts` with:
 
@@ -256,7 +256,7 @@ export async function persistStockBacktestRun(
 
 Store `result.metrics`, `result.assumptions`, `result.sourceCitations`, `result.reasonCodes`, and `result.dataFreshness.notes` as JSON strings. The implementation may add small helper functions for ID normalization if tests show the raw trade ID is not safe as part of a SQLite primary key.
 
-- [ ] **Step 5: Export and verify**
+- [x] **Step 5: Export and verify**
 
 Export the helper from `packages/db/src/index.ts`, then run:
 
