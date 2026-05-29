@@ -220,7 +220,8 @@ try {
     paperEvidenceSummaryBody.persistence?.durable !== false ||
     paperEvidenceSummaryBody.summary?.notRecommendation !== true ||
     paperEvidenceSummaryBody.summary?.brokerExecution !== false ||
-    paperEvidenceSummaryBody.summary?.reviewStatus !== "ready_for_review" ||
+    paperEvidenceSummaryBody.summary?.reviewStatus !== "needs_more_data" ||
+    !paperEvidenceSummaryBody.summary?.reasonCodes?.includes("insufficient_closed_trades") ||
     paperEvidenceSummaryBody.summary?.closedTrades !== 2
   ) {
     throw new Error(

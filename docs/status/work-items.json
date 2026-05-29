@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T09:23:30-04:00",
+  "lastUpdated": "2026-05-29T09:49:40-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,11 +11,11 @@
   ],
   "currentFocus": {
     "phase": "Milestone 6: Paper trading",
-    "task": "Show paper-trade read model in the operator console",
+    "task": "Close Milestone 6 paper-trading review blockers",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
     "status": "Completed",
     "priority": "High",
-    "category": "Paper trading UI and read model visibility"
+    "category": "Paper trading safety and release readiness"
   },
   "items": [
     {
@@ -1107,6 +1107,82 @@
         "Secret-pattern scan",
         "Live-trading surface scan",
         "Local web smoke"
+      ]
+    },
+    {
+      "id": "M6-016",
+      "title": "Close paper-trading review blockers",
+      "phase": "Milestone 6",
+      "owner": "Codex founding CTO / lead architect / principal engineer / security reviewer / risk reviewer / QA reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Paper trading safety and release readiness",
+      "blockers": [],
+      "nextStep": "Commit the review fixes, then continue with M6-017 durable evidence and operator audit inspection work.",
+      "relatedDocs": [
+        "packages/paper-trading/src/index.ts",
+        "packages/paper-trading/test/paper-trading.test.ts",
+        "packages/db/migrations/0002_paper_trades.sql",
+        "packages/db/migrations/0003_paper_trade_closes.sql",
+        "packages/db/test/migration.test.ts",
+        "apps/api/src/server.ts",
+        "apps/api/test/paper-trading.test.ts",
+        "apps/web/src/App.tsx",
+        "apps/web/test/App.test.tsx",
+        "scripts/smoke-api.mjs",
+        "docs/status/current-work.md",
+        "docs/status/validation-status.md",
+        "docs/decision-log.md",
+        "docs/risk-and-compliance.md",
+        "docs/backtesting-and-validation.md",
+        "docs/architecture.md",
+        "docs/product-roadmap.md"
+      ],
+      "validationRequired": [
+        "Paper-trading package tests",
+        "DB migration tests",
+        "DB paper-trade ledger tests",
+        "API paper-trading tests",
+        "Web dashboard tests",
+        "Data ingestion regression",
+        "Root CI",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan",
+        "Local web smoke"
+      ]
+    },
+    {
+      "id": "M6-017",
+      "title": "Add durable evidence resolver and richer operator audit inspection",
+      "phase": "Milestone 6",
+      "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / UI reviewer",
+      "status": "Planned",
+      "priority": "High",
+      "category": "Paper trading evidence and operator workflow",
+      "blockers": [
+        "Needs review of minimum evidence resolver shape and operator audit detail scope"
+      ],
+      "nextStep": "Design a persisted evidence resolver for backtest and paper-trade cohorts, then expose citation, freshness, downside, invalidation, audit, and operator decision details in the console.",
+      "relatedDocs": [
+        "docs/backtesting-and-validation.md",
+        "docs/risk-and-compliance.md",
+        "docs/open-questions.md",
+        "packages/db",
+        "packages/paper-trading",
+        "apps/api",
+        "apps/web"
+      ],
+      "validationRequired": [
+        "Evidence resolver tests",
+        "DB migration tests",
+        "API evidence tests",
+        "Web dashboard tests",
+        "Root CI",
+        "Status JSON parse",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
       ]
     }
   ]

@@ -18,6 +18,8 @@
 - How should AI-generated research summaries be versioned and evaluated?
 - What minimum trade count, out-of-sample period, and paper-trading sample should be required before a strategy becomes `paper trade` eligible?
 - What exact stale-data thresholds should apply by strategy family?
+- What durable evidence resolver should connect recommendation evidence IDs to persisted backtest runs and paper-trade outcome cohorts before any strategy promotion?
+- Should ingestion run IDs add an additional request nonce or database-generated sequence to avoid same-request/same-clock collisions across future concurrent provider runs?
 
 ## Operations
 
@@ -26,4 +28,6 @@
 - What exact operator approval process is required before any future paper broker integration?
 - What review checklist is required before adding any paid provider key to local development?
 - What initial paper portfolio capital base and sizing units should be used for reports and risk limits?
+- What UI inspection depth is required for citations, freshness, downside, invalidation conditions, and audit events before Milestone 6 exits review?
+- Should cancelled paper-trade states require a dedicated audit event and lessons-learned path before they are represented in the read model?
 - Should public or exported reports require a separate compliance review for hypothetical performance language?

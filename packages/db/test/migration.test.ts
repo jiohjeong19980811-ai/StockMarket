@@ -693,6 +693,96 @@ describe("database migrations", () => {
     ).rejects.toThrow();
   });
 
+  it("rejects paper trades with understated stop-based max loss", async () => {
+    await seedPaperTradeDependencies();
+
+    await expect(
+      insertPaperTrade({
+        max_loss_amount: 1,
+        risk_pct_of_equity: 0.001,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects paper trades with invalid or unordered entry timestamps", async () => {
+    await seedPaperTradeDependencies();
+
+    await expect(insertPaperTrade({ entered_at: "not-a-date" })).rejects.toThrow();
+    await expect(
+      insertPaperTrade({
+        id: "paper_trade_bad_time_stop",
+        entered_at: "2026-05-15T20:00:00Z",
+        time_stop_at: "2026-05-01T20:00:00Z",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects paper trades whose audit IDs do not match paper-trade event semantics", async () => {
+    await seedPaperTradeDependencies();
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "audit_wrong_subject",
+        "paper_trade_opened",
+        "system",
+        "paper-trading",
+        now,
+        "recommendation",
+        "rec_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+
+    await expect(insertPaperTrade({ entry_audit_log_id: "audit_wrong_subject" })).rejects.toThrow();
+  });
+
+  it("rejects closed paper trades whose close audit ID does not match close event semantics", async () => {
+    await seedPaperTradeDependencies();
+    await insertPaperTrade();
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "audit_wrong_close",
+        "operator_decision",
+        "operator",
+        "operator:test",
+        now,
+        "paper_trade",
+        "paper_trade_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+
+    await expect(
+      execute(
+        `UPDATE paper_trades
+         SET status = 'closed',
+           exit_audit_log_id = ?,
+           closed_at = ?,
+           exit_price = ?,
+           exit_reason = ?,
+           lessons_learned = ?,
+           updated_at = ?
+         WHERE id = ?`,
+        [
+          "audit_wrong_close",
+          "2026-05-06T20:00:00Z",
+          430,
+          "Profit target review hit.",
+          "Follow-through appeared before the time stop.",
+          "2026-05-06T20:00:00Z",
+          "paper_trade_1",
+        ],
+      ),
+    ).rejects.toThrow();
+  });
+
   it("rejects recommendations with out-of-range scores", async () => {
     await seedRecommendationDependencies();
 

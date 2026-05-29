@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-29T09:23:30-04:00
+Last updated: 2026-05-29T09:49:40-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6: Paper trading |
-| Current task | Show paper-trade read model in the operator console |
+| Current task | Close Milestone 6 paper-trading review blockers |
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Paper trading UI and read model visibility |
+| Category | Paper trading safety and release readiness |
 | Blockers | None |
-| Next step | Commit the read-model UI slice, then continue Milestone 6 with backtesting ingestion of paper-trade evidence or milestone review. |
-| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `docs/architecture.md`, `docs/product-roadmap.md` |
-| Validation required | Completed: focused web red-green test, status JSON parse, root CI with 122 unit tests and 16 hook tests, dependency audit, production build, API smoke, whitespace check, secret-pattern scan, live-trading surface scan, and local web smoke. |
+| Next step | Commit the review fixes, then continue Milestone 6 with durable evidence resolver and richer operator audit inspection work. |
+| Related docs/files | `packages/paper-trading/src/index.ts`, `packages/db/migrations/0002_paper_trades.sql`, `packages/db/migrations/0003_paper_trade_closes.sql`, `apps/api/src/server.ts`, `apps/web/src/App.tsx`, `docs/status/` |
+| Validation required | Completed: focused red-green paper-trading, DB migration, API, web, DB ledger, data-ingestion, and typecheck tests; root CI with 131 unit tests and 16 hook tests; dependency audit; production build; API smoke; status JSON parse; whitespace check; secret-pattern scan; live-trading surface scan; and local web smoke. |
 
 ## Status Vocabulary
 

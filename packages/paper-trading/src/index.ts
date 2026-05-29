@@ -47,6 +47,8 @@ export type PaperTradeRejectReason =
   | "invalid_entry_price_or_quantity"
   | "invalid_exit_prices"
   | "invalid_max_loss"
+  | "max_loss_understated"
+  | "invalid_timestamps"
   | "position_risk_limit_exceeded"
   | "single_name_exposure_limit_exceeded"
   | "sector_exposure_limit_exceeded"
@@ -90,6 +92,7 @@ export interface PaperTrade {
   entryPrice: number;
   stopLossPrice: number;
   profitTargetPrice: number;
+  invalidationConditions: string[];
   thesisSnapshot: string;
   stopRule: string;
   targetRule: string;
@@ -112,7 +115,8 @@ export type PaperTradeCloseRejectReason =
   | "trade_not_open"
   | "broker_execution_fields_prohibited"
   | "exit_details_missing"
-  | "invalid_exit_price";
+  | "invalid_exit_price"
+  | "invalid_timestamps";
 
 export interface PaperTradeExitAuditSnapshot {
   auditLogId: string;
@@ -171,7 +175,8 @@ export type PaperTradeEvidenceReason =
   | "requires_backtest_and_operator_review"
   | "broker_execution_fields_prohibited"
   | "live_trading_fields_prohibited"
-  | "non_paper_trade_record_prohibited";
+  | "non_paper_trade_record_prohibited"
+  | "mixed_evidence_cohort";
 
 export interface PaperTradeEvidenceSummaryOptions {
   minimumClosedTradesForReview?: number;
@@ -216,6 +221,7 @@ const prohibitedBrokerFields = [
   "providerOrderId",
   "executionVenue",
 ] as const;
+const brokerExecutionBooleanFields = ["brokerExecution", "liveTradingEnabled"] as const;
 
 function hasText(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -238,8 +244,36 @@ function isOptionsInstrument(instrumentType: InstrumentType): boolean {
 }
 
 function hasProhibitedBrokerFields(request: unknown): boolean {
-  const candidate = request as Record<string, unknown>;
-  return prohibitedBrokerFields.some((field) => field in candidate);
+  if (request === null || typeof request !== "object") {
+    return false;
+  }
+  if (Array.isArray(request)) {
+    return request.some((item) => hasProhibitedBrokerFields(item));
+  }
+
+  return Object.entries(request as Record<string, unknown>).some(
+    ([key, value]) =>
+      prohibitedBrokerFields.includes(key as (typeof prohibitedBrokerFields)[number]) ||
+      hasProhibitedBrokerFields(value),
+  );
+}
+
+function hasUnsafeBrokerExecutionFlags(request: unknown): boolean {
+  if (request === null || typeof request !== "object") {
+    return false;
+  }
+  if (Array.isArray(request)) {
+    return request.some((item) => hasUnsafeBrokerExecutionFlags(item));
+  }
+
+  return Object.entries(request as Record<string, unknown>).some(
+    ([key, value]) =>
+      (brokerExecutionBooleanFields.includes(
+        key as (typeof brokerExecutionBooleanFields)[number],
+      ) &&
+        value !== false) ||
+      hasUnsafeBrokerExecutionFlags(value),
+  );
 }
 
 function hasOperatorApproval(approval: PaperTradeOperatorApproval): boolean {
@@ -282,6 +316,50 @@ function hasExitEvidence(exit: PaperTradeExitRequest): boolean {
 
 function roundedCurrency(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+const isoTimestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+
+function timestampMs(value: string): number | null {
+  if (!isoTimestampPattern.test(value)) {
+    return null;
+  }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function hasValidEntryTimestamps(
+  entry: PaperTradeEntryRequest,
+  approval: PaperTradeOperatorApproval,
+): boolean {
+  const requestedAt = timestampMs(entry.requestedAt);
+  const approvedAt = timestampMs(approval.approvedAt);
+  return requestedAt !== null && approvedAt !== null && approvedAt <= requestedAt;
+}
+
+function hasValidCloseTimestamps(trade: PaperTradeLifecycle, exit: PaperTradeExitRequest): boolean {
+  const openedAt = timestampMs(trade.openedAt);
+  const exitedAt = timestampMs(exit.exitedAt);
+  const priceTimestamp = timestampMs(exit.priceTimestamp);
+  return (
+    openedAt !== null &&
+    exitedAt !== null &&
+    priceTimestamp !== null &&
+    exitedAt >= openedAt &&
+    priceTimestamp <= exitedAt
+  );
+}
+
+function stopBasedMaxLoss(entry: PaperTradeEntryRequest): number | null {
+  if (
+    !isPositiveNumber(entry.entryPrice) ||
+    !isPositiveNumber(entry.stopLossPrice) ||
+    !isPositiveNumber(entry.quantity) ||
+    entry.stopLossPrice >= entry.entryPrice
+  ) {
+    return null;
+  }
+  return roundedCurrency((entry.entryPrice - entry.stopLossPrice) * entry.quantity);
 }
 
 function emptyEvidenceSummary(
@@ -329,6 +407,20 @@ function evidenceSafetyReasons(trades: PaperTradeLifecycle[]): PaperTradeEvidenc
   if (trades.some((trade) => (trade as { brokerExecution?: unknown }).brokerExecution !== false)) {
     reasons.push("broker_execution_fields_prohibited");
   }
+  if (
+    trades.some((trade) => hasProhibitedBrokerFields(trade) || hasUnsafeBrokerExecutionFlags(trade))
+  ) {
+    reasons.push("broker_execution_fields_prohibited");
+  }
+  const cohortKeys = new Set(
+    trades.map(
+      (trade) =>
+        `${trade.ticker}:${trade.instrumentType}:${trade.strategyFamily}:${trade.strategyVersion}`,
+    ),
+  );
+  if (cohortKeys.size > 1) {
+    reasons.push("mixed_evidence_cohort");
+  }
   return [...new Set(reasons)];
 }
 
@@ -344,14 +436,19 @@ function buildPaperTradeId(recommendationId: string, requestedAt: string): strin
 export function createPaperTrade(request: PaperTradeRequest): PaperTradeDecision {
   const reasons: PaperTradeRejectReason[] = [];
   const { recommendation, account, entry, operatorApproval } = request;
+  const computedStopBasedMaxLoss = stopBasedMaxLoss(entry);
+  const conservativeMaxLoss =
+    computedStopBasedMaxLoss === null
+      ? entry.maxLoss
+      : Math.max(entry.maxLoss, computedStopBasedMaxLoss);
   const riskPctOfEquity = isPositiveNumber(account.paperEquity)
-    ? roundedPercent((entry.maxLoss / account.paperEquity) * 100)
+    ? roundedPercent((conservativeMaxLoss / account.paperEquity) * 100)
     : 0;
 
   if (!isPaperTradeEligible(recommendation)) {
     reasons.push("recommendation_not_paper_trade_eligible");
   }
-  if (hasProhibitedBrokerFields(request)) {
+  if (hasProhibitedBrokerFields(request) || hasUnsafeBrokerExecutionFlags(request)) {
     reasons.push("broker_execution_fields_prohibited");
   }
   if (!hasOperatorApproval(operatorApproval)) {
@@ -371,6 +468,12 @@ export function createPaperTrade(request: PaperTradeRequest): PaperTradeDecision
   }
   if (!isPositiveNumber(entry.maxLoss)) {
     reasons.push("invalid_max_loss");
+  }
+  if (computedStopBasedMaxLoss !== null && entry.maxLoss < computedStopBasedMaxLoss) {
+    reasons.push("max_loss_understated");
+  }
+  if (!hasValidEntryTimestamps(entry, operatorApproval)) {
+    reasons.push("invalid_timestamps");
   }
   if (riskPctOfEquity > maximumPositionRiskPct) {
     reasons.push("position_risk_limit_exceeded");
@@ -420,12 +523,13 @@ export function createPaperTrade(request: PaperTradeRequest): PaperTradeDecision
       entryPrice: entry.entryPrice,
       stopLossPrice: entry.stopLossPrice,
       profitTargetPrice: entry.profitTargetPrice,
+      invalidationConditions: [...recommendation.invalidationConditions],
       thesisSnapshot: entry.thesisSnapshot,
       stopRule: entry.stopRule,
       targetRule: entry.targetRule,
       timeStop: entry.timeStop,
       risk: {
-        maxLoss: entry.maxLoss,
+        maxLoss: conservativeMaxLoss,
         riskPctOfEquity,
         accountEquityAtOpen: account.paperEquity,
         singleNameExposurePct: account.singleNameExposurePct,
@@ -455,7 +559,7 @@ export function closePaperTrade(
   if (trade.status !== "open") {
     reasons.push("trade_not_open");
   }
-  if (hasProhibitedBrokerFields(exit)) {
+  if (hasProhibitedBrokerFields(exit) || hasUnsafeBrokerExecutionFlags(exit)) {
     reasons.push("broker_execution_fields_prohibited");
   }
   if (!hasExitEvidence(exit)) {
@@ -463,6 +567,9 @@ export function closePaperTrade(
   }
   if (!isPositiveNumber(exit.exitPrice)) {
     reasons.push("invalid_exit_price");
+  }
+  if (!hasValidCloseTimestamps(trade, exit)) {
+    reasons.push("invalid_timestamps");
   }
 
   if (reasons.length > 0) {

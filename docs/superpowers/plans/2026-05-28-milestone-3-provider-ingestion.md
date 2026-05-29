@@ -245,4 +245,3 @@ git commit -m "feat: add provider ingestion contracts"
 - Spec coverage: The plan covers provider interfaces, mock providers, price/news/earnings/options ingestion, data freshness checks, DB migration support, tests, status docs, and no broker execution paths.
 - Placeholder scan: No placeholder markers are used.
 - Type consistency: Provider names, request types, batch types, and quality-event terms are consistent across tasks.
-

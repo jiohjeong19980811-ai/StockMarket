@@ -49,11 +49,25 @@ CREATE TABLE paper_trades (
   CHECK (requested_entry_price > 0),
   CHECK (simulated_entry_price > 0),
   CHECK (quantity > 0),
-  CHECK (length(entered_at) > 0),
+  CHECK (
+    (
+      entered_at GLOB '????-??-??T??:??:??Z'
+      OR entered_at GLOB '????-??-??T??:??:??.???Z'
+    )
+    AND julianday(entered_at) IS NOT NULL
+  ),
   CHECK (stop_loss > 0 AND stop_loss < simulated_entry_price),
   CHECK (profit_target > simulated_entry_price),
-  CHECK (length(time_stop_at) > 0),
+  CHECK (
+    (
+      time_stop_at GLOB '????-??-??T??:??:??Z'
+      OR time_stop_at GLOB '????-??-??T??:??:??.???Z'
+    )
+    AND julianday(time_stop_at) IS NOT NULL
+    AND julianday(time_stop_at) > julianday(entered_at)
+  ),
   CHECK (max_loss_amount > 0),
+  CHECK (max_loss_amount >= ((simulated_entry_price - stop_loss) * quantity)),
   CHECK (account_equity_at_entry > 0),
   CHECK (max_loss_amount <= account_equity_at_entry * 0.005),
   CHECK (risk_pct_of_equity >= 0 AND risk_pct_of_equity <= 0.5),
@@ -65,20 +79,98 @@ CREATE TABLE paper_trades (
   CHECK (
     status != 'closed'
     OR (
-      closed_at IS NOT NULL AND length(closed_at) > 0
+      closed_at IS NOT NULL
+      AND (
+        closed_at GLOB '????-??-??T??:??:??Z'
+        OR closed_at GLOB '????-??-??T??:??:??.???Z'
+      )
+      AND julianday(closed_at) IS NOT NULL
+      AND julianday(closed_at) >= julianday(entered_at)
       AND exit_price IS NOT NULL AND exit_price > 0
       AND exit_reason IS NOT NULL AND length(exit_reason) > 0
       AND lessons_learned IS NOT NULL AND length(lessons_learned) > 0
     )
   ),
-  CHECK (length(created_at) > 0),
-  CHECK (length(updated_at) > 0)
+  CHECK (
+    (
+      created_at GLOB '????-??-??T??:??:??Z'
+      OR created_at GLOB '????-??-??T??:??:??.???Z'
+    )
+    AND julianday(created_at) IS NOT NULL
+  ),
+  CHECK (
+    (
+      updated_at GLOB '????-??-??T??:??:??Z'
+      OR updated_at GLOB '????-??-??T??:??:??.???Z'
+    )
+    AND julianday(updated_at) IS NOT NULL
+  )
 );
 
 CREATE UNIQUE INDEX paper_trades_recommendation_unique ON paper_trades(recommendation_id);
 CREATE INDEX paper_trades_ticker_status_idx ON paper_trades(ticker, status);
 CREATE INDEX paper_trades_strategy_version_idx ON paper_trades(strategy_version_id);
 CREATE INDEX paper_trades_account_status_idx ON paper_trades(account_id, status);
+
+CREATE TRIGGER paper_trades_audit_linkage_insert
+BEFORE INSERT ON paper_trades
+BEGIN
+  SELECT RAISE(ABORT, 'paper trade requires matching operator approval audit linkage')
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM audit_logs
+    WHERE audit_logs.id = NEW.operator_approval_audit_log_id
+      AND audit_logs.event_type = 'operator_decision'
+      AND audit_logs.actor_type = 'operator'
+      AND audit_logs.subject_type = 'paper_trade'
+      AND audit_logs.subject_id = NEW.id
+      AND audit_logs.risk_decision = 'pass'
+      AND audit_logs.operator_decision = 'paper_trade'
+  );
+
+  SELECT RAISE(ABORT, 'paper trade requires matching entry audit linkage')
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM audit_logs
+    WHERE audit_logs.id = NEW.entry_audit_log_id
+      AND audit_logs.event_type = 'paper_trade_opened'
+      AND audit_logs.actor_type = 'system'
+      AND audit_logs.subject_type = 'paper_trade'
+      AND audit_logs.subject_id = NEW.id
+      AND audit_logs.risk_decision = 'pass'
+      AND audit_logs.operator_decision = 'paper_trade'
+  );
+END;
+
+CREATE TRIGGER paper_trades_audit_linkage_update
+BEFORE UPDATE OF id, operator_approval_audit_log_id, entry_audit_log_id ON paper_trades
+BEGIN
+  SELECT RAISE(ABORT, 'paper trade requires matching operator approval audit linkage')
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM audit_logs
+    WHERE audit_logs.id = NEW.operator_approval_audit_log_id
+      AND audit_logs.event_type = 'operator_decision'
+      AND audit_logs.actor_type = 'operator'
+      AND audit_logs.subject_type = 'paper_trade'
+      AND audit_logs.subject_id = NEW.id
+      AND audit_logs.risk_decision = 'pass'
+      AND audit_logs.operator_decision = 'paper_trade'
+  );
+
+  SELECT RAISE(ABORT, 'paper trade requires matching entry audit linkage')
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM audit_logs
+    WHERE audit_logs.id = NEW.entry_audit_log_id
+      AND audit_logs.event_type = 'paper_trade_opened'
+      AND audit_logs.actor_type = 'system'
+      AND audit_logs.subject_type = 'paper_trade'
+      AND audit_logs.subject_id = NEW.id
+      AND audit_logs.risk_decision = 'pass'
+      AND audit_logs.operator_decision = 'paper_trade'
+  );
+END;
 
 CREATE TRIGGER paper_trades_recommendation_eligible_insert
 BEFORE INSERT ON paper_trades

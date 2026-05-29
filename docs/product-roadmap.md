@@ -42,6 +42,8 @@ Acceptance criteria:
 - Paper-trade closes require timestamped exit prices, exit reasons, lessons learned, and simulated P/L calculations before outcomes feed validation.
 - DB paper-trade closes require close audit linkage and reject duplicate close attempts.
 - Durable paper-trade records remain paper-only, stock-only for MVP, and cannot store live-trading or broker-execution flags.
+- Paper-trade contracts reject understated max loss, invalid or unordered timestamps, nested broker/order-shaped fields, and mixed-cohort evidence summaries.
+- Paper-trade audit IDs point to semantically correct approval, entry, and close audit events before records are accepted.
 - API smoke can verify a mock paper-trade decision is persisted through an in-memory ledger dry run without provider keys or broker execution.
 - API smoke can verify a mock paper trade opens and closes through the in-memory ledger with close audit linkage.
 - API smoke can verify persisted paper trades can be read back through a safe paper-only read model with audit links and computed simulated outcomes.
@@ -49,6 +51,7 @@ Acceptance criteria:
 - Operator console can show simulated paper-trade close outcome, P/L, return percent, exit price, and lessons from the mock close dry run.
 - Operator console can show paper-trade evidence summary metrics, including closed/open counts, win rate, realized P/L, review status, and validation-only messaging.
 - Operator console can show mock persisted ledger readback details, including paper-only status, close audit ID, entry/exit prices, simulated P/L, return, and risk percent.
+- Operator console hides sample paper-trade metrics when the API is unavailable and shows `Data unavailable` / `No operational decision` instead of an actionable-looking fallback.
 - Paper-trade evidence summaries aggregate closed simulated trades for validation metrics while remaining non-recommendation and review-gated.
 - Backtesting framework exists.
 - Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.

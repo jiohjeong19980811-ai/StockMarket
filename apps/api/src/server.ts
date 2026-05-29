@@ -214,9 +214,9 @@ function mockPaperTradeRequestVariant(
 }
 
 const mockPaperTradeExitRequest: PaperTradeExitRequest = {
-  exitedAt: "2026-05-31T20:00:00.000Z",
+  exitedAt: "2026-05-29T12:00:00.000Z",
   exitPrice: 106,
-  priceTimestamp: "2026-05-31T20:00:00.000Z",
+  priceTimestamp: "2026-05-29T12:00:00.000Z",
   exitReason: "Mock profit-target review hit during paper-trade validation.",
   lessonsLearned: "Mock paper trade followed through before the time stop.",
   auditLogId: "audit_mock_paper_close_1",
@@ -768,7 +768,7 @@ export function buildServer(env: ApiEnv) {
     const openTrade = acceptedPaperTradeOrThrow(
       createPaperTrade(
         mockPaperTradeRequestVariant(
-          "2026-06-01T15:00:00.000Z",
+          "2026-05-29T12:00:00.000Z",
           "audit_mock_paper_open_pending_1",
           "Mock open paper trade for evidence summary counts.",
         ),
@@ -785,7 +785,7 @@ export function buildServer(env: ApiEnv) {
         acceptedPaperTradeOrThrow(
           createPaperTrade(
             mockPaperTradeRequestVariant(
-              "2026-05-29T15:00:00.000Z",
+              "2026-05-29T10:00:00.000Z",
               "audit_mock_paper_open_loss_1",
               "Mock losing paper trade for evidence summary counts.",
             ),
@@ -812,9 +812,7 @@ export function buildServer(env: ApiEnv) {
         durable: false,
         note: "Mock paper-trade evidence summary data is generated in memory.",
       },
-      summary: summarizePaperTradeEvidence([openTrade, winner, loser], {
-        minimumClosedTradesForReview: 2,
-      }),
+      summary: summarizePaperTradeEvidence([openTrade, winner, loser]),
     };
   });
 

@@ -145,12 +145,16 @@ Paper-trading outcomes should feed validation:
 
 Paper-trade entries must be durable before they are treated as validation evidence. The MVP ledger stores the thesis snapshot, numeric stop-loss, profit-target, time stop, audit references, and paper risk snapshots so later exits and lessons can be tied back to the original approved plan.
 
+Paper-trade entries must not understate risk. Max loss has to be at least the stop-based loss floor, entry and approval timestamps must be valid and ordered, and broker/order-shaped fields must be rejected even when they appear inside nested payloads.
+
 Paper-trade closes require timestamped exit price evidence, an exit reason, lessons learned, and an audit ID. P/L should be compared against the original thesis, stop, target, time stop, and downside scenario before feeding future strategy promotion decisions.
 
-Persisted closes must include close audit linkage and cannot be written twice for the same open paper trade. This preserves a one-entry, one-exit evidence chain for later strategy review.
+Persisted closes must include close audit linkage and cannot be written twice for the same open paper trade. Approval, entry, and close audit IDs must point to semantically correct paper-trade audit events. This preserves a one-entry, one-exit evidence chain for later strategy review.
 
 Backtesting and validation consumers should use the durable paper-trade read model rather than raw SQL rows. The read model exposes parsed invalidation conditions, entry risk snapshots, audit IDs, and computed simulated outcomes while keeping live trading and broker execution disabled in the returned contract.
 
-Paper-trade evidence summaries should aggregate only closed paper trades for performance metrics while counting open trades separately. Summaries must remain `notRecommendation`, block broker/live-shaped records, and require backtest plus operator review before any strategy promotion decision.
+Paper-trade evidence summaries should aggregate only closed paper trades for performance metrics while counting open trades separately. Summaries must remain `notRecommendation`, block broker/live-shaped records, reject mixed ticker/instrument/strategy/version cohorts, and require backtest plus operator review before any strategy promotion decision.
+
+Durable evidence verification remains a follow-up before strategy promotion: future backtesting consumers should resolve evidence IDs against persisted paper-trade or backtest tables instead of trusting caller-provided IDs.
 
 Lessons learned should be stored and visible on future recommendations from the same strategy.

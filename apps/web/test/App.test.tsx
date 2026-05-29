@@ -116,7 +116,7 @@ const mockPaperCloseBody = {
       lessons: ["Mock paper trade followed through before the time stop."],
       exitAudit: {
         auditLogId: "audit_mock_paper_close_1",
-        priceTimestamp: "2026-05-31T20:00:00.000Z",
+        priceTimestamp: "2026-05-29T12:00:00.000Z",
       },
     },
   },
@@ -150,8 +150,8 @@ const mockPaperEvidenceSummaryBody = {
     brokerExecution: false,
     notRecommendation: true,
     status: "accepted",
-    reviewStatus: "ready_for_review",
-    reasonCodes: ["requires_backtest_and_operator_review"],
+    reviewStatus: "needs_more_data",
+    reasonCodes: ["insufficient_closed_trades"],
     totalTrades: 3,
     openTrades: 1,
     closedTrades: 2,
@@ -227,7 +227,7 @@ const mockPaperReadModelBody = {
         dailyLossPctAtEntry: 0.1,
       },
       outcome: {
-        closedAt: "2026-05-31T20:00:00.000Z",
+        closedAt: "2026-05-29T12:00:00.000Z",
         exitPrice: 106,
         exitReason: "Mock profit-target review hit during paper-trade validation.",
         lessonsLearned: "Mock paper trade followed through before the time stop.",
@@ -235,7 +235,7 @@ const mockPaperReadModelBody = {
         realizedReturnPct: 6,
       },
       createdAt: "2026-05-28T15:00:00.000Z",
-      updatedAt: "2026-05-31T20:00:00.000Z",
+      updatedAt: "2026-05-29T12:00:00.000Z",
     },
   ],
 };
@@ -295,7 +295,7 @@ describe("operator console shell", () => {
       screen.getAllByText("Mock paper trade followed through before the time stop.").length,
     ).toBeGreaterThan(0);
     expect(screen.getByText("Paper Trade Evidence")).toBeInTheDocument();
-    expect(screen.getByText("Ready for Review")).toBeInTheDocument();
+    expect(screen.getByText("Needs More Data")).toBeInTheDocument();
     expect(screen.getByText("Closed")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("Open")).toBeInTheDocument();
@@ -336,11 +336,13 @@ describe("operator console shell", () => {
     render(<App />);
 
     expect(await screen.findByText("API offline")).toBeInTheDocument();
-    expect(screen.getByText("Fallback mock snapshot")).toBeInTheDocument();
-    expect(screen.getByText("Paper fallback snapshot")).toBeInTheDocument();
-    expect(screen.getByText("Paper close fallback snapshot")).toBeInTheDocument();
-    expect(screen.getByText("Evidence fallback snapshot")).toBeInTheDocument();
-    expect(screen.getByText("Ledger fallback snapshot")).toBeInTheDocument();
-    expect(screen.getAllByText("Watchlist").length).toBeGreaterThan(0);
+    expect(screen.getByText("Data unavailable")).toBeInTheDocument();
+    expect(screen.getByText("No operational decision")).toBeInTheDocument();
+    expect(
+      screen.getByText("Sample trade metrics are hidden until the local API responds."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Simulated Closed")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ledger fallback snapshot")).not.toBeInTheDocument();
+    expect(screen.queryByText("Watchlist")).not.toBeInTheDocument();
   });
 });

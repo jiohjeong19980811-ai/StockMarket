@@ -117,7 +117,9 @@ Initial paper-only default limits should be conservative and revisited after pap
 - Max aggregate options premium at risk: 2%-3%.
 - Max daily paper loss pause: 1%-2%.
 
-Paper-trade evidence summaries may inform later risk-limit reviews, but they are not performance claims and cannot automatically promote a strategy. Summaries must separate open trades from closed-trade metrics, require close audit IDs, block broker/live-shaped records, and keep operator plus backtest review as a promotion prerequisite.
+Paper-trade evidence summaries may inform later risk-limit reviews, but they are not performance claims and cannot automatically promote a strategy. Summaries must separate open trades from closed-trade metrics, require close audit IDs, block broker/live-shaped records, reject mixed ticker/instrument/strategy/version cohorts, and keep operator plus backtest review as a promotion prerequisite.
+
+When the operator UI cannot reach the API, paper-trading metrics should be hidden behind a `Data unavailable` state. Offline fixture data may support smoke tests, but it must not look like an operational recommendation, strategy promotion, or current paper-trade decision.
 
 Initial liquidity defaults:
 
@@ -158,12 +160,14 @@ The first paper-trading package slice is simulated-only. Opening a paper positio
 - Operator approval metadata and audit log ID.
 - Thesis snapshot, stop rule, target rule, numeric stop-loss price, numeric profit-target price, and time stop.
 - Valid paper equity, entry price, quantity, and max loss.
+- Max loss at least as conservative as the stop-based loss floor: `(entry price - stop loss) * quantity` for long stock paper entries.
+- Valid ISO entry timestamps where operator approval happens before the simulated entry request.
 - Paper exposure inside the conservative MVP caps.
-- No broker, live account, external order, or execution-shaped fields.
+- No broker, live account, external order, or execution-shaped fields, including nested broker/order-shaped fields.
 
-Durable paper-trade rows must also preserve recommendation, approval, and entry audit references. The database constrains paper trades to stock-only MVP entries, rejects non-paper or broker-execution flags, rejects ineligible recommendations, and enforces max idea risk, single-name exposure, sector exposure, correlated exposure, and daily paper-loss caps.
+Durable paper-trade rows must also preserve recommendation, approval, and entry audit references. The database constrains paper trades to stock-only MVP entries, rejects non-paper or broker-execution flags, rejects ineligible recommendations, enforces max idea risk, single-name exposure, sector exposure, correlated exposure, and daily paper-loss caps, and requires audit references to point to semantically correct paper-trade approval, entry, and close events.
 
-Closing a paper trade requires timestamped exit price evidence, an exit reason, lessons learned, and an audit ID. Simulated P/L must be treated as validation evidence only, not as proof of future returns.
+Closing a paper trade requires timestamped exit price evidence, an exit reason, lessons learned, and an audit ID. Exit timestamps must be valid ISO values, the close cannot occur before the open, and the exit price timestamp cannot be after the close timestamp. Simulated P/L must be treated as validation evidence only, not as proof of future returns.
 
 Persisted closes must update an open paper trade exactly once and must include close audit linkage. Duplicate closes, missing close audit IDs, missing exit details, or missing lessons learned are blocked.
 

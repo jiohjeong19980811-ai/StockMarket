@@ -351,7 +351,7 @@ const fallbackPaperClose: PaperTradeCloseResponse = {
       lessons: ["Mock paper trade followed through before the time stop."],
       exitAudit: {
         auditLogId: "audit_mock_paper_close_1",
-        priceTimestamp: "2026-05-31T20:00:00.000Z",
+        priceTimestamp: "2026-05-29T12:00:00.000Z",
       },
     },
   },
@@ -385,8 +385,8 @@ const fallbackPaperEvidence: PaperTradeEvidenceSummaryResponse = {
     brokerExecution: false,
     notRecommendation: true,
     status: "accepted",
-    reviewStatus: "ready_for_review",
-    reasonCodes: ["requires_backtest_and_operator_review"],
+    reviewStatus: "needs_more_data",
+    reasonCodes: ["insufficient_closed_trades"],
     totalTrades: 3,
     openTrades: 1,
     closedTrades: 2,
@@ -462,7 +462,7 @@ const fallbackPaperReadModel: PaperTradeReadModelResponse = {
         dailyLossPctAtEntry: 0.1,
       },
       outcome: {
-        closedAt: "2026-05-31T20:00:00.000Z",
+        closedAt: "2026-05-29T12:00:00.000Z",
         exitPrice: 106,
         exitReason: "Mock profit-target review hit during paper-trade validation.",
         lessonsLearned: "Mock paper trade followed through before the time stop.",
@@ -470,7 +470,7 @@ const fallbackPaperReadModel: PaperTradeReadModelResponse = {
         realizedReturnPct: 6,
       },
       createdAt: "2026-05-28T15:00:00.000Z",
-      updatedAt: "2026-05-31T20:00:00.000Z",
+      updatedAt: "2026-05-29T12:00:00.000Z",
     },
   ],
 };
@@ -637,12 +637,19 @@ export function App() {
   const ledgerAuditId = ledgerTrade?.audit.exitAuditLogId ?? ledgerTrade?.audit.entryAuditLogId;
   const ledgerLesson =
     ledgerOutcome?.lessonsLearned ?? "Persisted paper-trade readback is still open.";
+  const isOffline = apiState === "offline";
+  const paperTradeGateLabel =
+    failedGates.length > 0
+      ? "Blocked pending evidence"
+      : scoring.result.strategyPolicy.paperTradeAllowed
+        ? "Allowed by Policy"
+        : "Blocked";
 
   return (
     <main className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Milestone 4</p>
+          <p className="eyebrow">Milestone 6</p>
           <h1>StockMarket Operator Console</h1>
         </div>
         <span className="status-pill">Mock Only</span>
@@ -674,230 +681,234 @@ export function App() {
         </div>
         <div className="kpi">
           <span>Decision</span>
-          <strong>{decisionLabels[scoring.result.decision]}</strong>
+          <strong>
+            {isOffline ? "No operational decision" : decisionLabels[scoring.result.decision]}
+          </strong>
         </div>
       </section>
 
-      <section className="dashboard-grid" aria-label="Operator scoring dashboard">
-        <article className="panel panel-large">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Mock scoring evaluation</p>
-              <h2>
-                {scoring.result.ticker} {decisionLabels[scoring.result.decision]}
-              </h2>
+      {isOffline ? (
+        <section className="dashboard-grid" aria-label="Operator scoring dashboard">
+          <article className="panel panel-large">
+            <p className="eyebrow">Data unavailable</p>
+            <h2>Operational data unavailable</h2>
+            <p className="panel-copy">
+              Sample trade metrics are hidden until the local API responds.
+            </p>
+            <p className="panel-copy">
+              Keep live trading disabled and treat the dashboard as unavailable, not as a stale
+              recommendation.
+            </p>
+          </article>
+        </section>
+      ) : (
+        <section className="dashboard-grid" aria-label="Operator scoring dashboard">
+          <article className="panel panel-large">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Mock scoring evaluation</p>
+                <h2>
+                  {scoring.result.ticker} {decisionLabels[scoring.result.decision]}
+                </h2>
+              </div>
+              <span className="status-pill subtle">API snapshot</span>
             </div>
-            <span className="status-pill subtle">
-              {apiState === "offline" ? "Fallback mock snapshot" : "API snapshot"}
-            </span>
-          </div>
-          <p className="panel-copy">{scoring.result.explanation.summary}</p>
-          <div className="policy-strip" aria-label="Strategy policy">
-            <div>
-              <span>Strategy Policy</span>
-              <strong>{scoring.result.strategyPolicy.label}</strong>
+            <p className="panel-copy">{scoring.result.explanation.summary}</p>
+            <div className="policy-strip" aria-label="Strategy policy">
+              <div>
+                <span>Strategy Policy</span>
+                <strong>{scoring.result.strategyPolicy.label}</strong>
+              </div>
+              <div>
+                <span>MVP Status</span>
+                <strong>{mvpDecisionLabels[scoring.result.strategyPolicy.mvpDecision]}</strong>
+              </div>
+              <div>
+                <span>Paper Trade Gate</span>
+                <strong>{paperTradeGateLabel}</strong>
+              </div>
             </div>
-            <div>
-              <span>MVP Status</span>
-              <strong>{mvpDecisionLabels[scoring.result.strategyPolicy.mvpDecision]}</strong>
+            <div className="score-grid" aria-label="Score summary">
+              <ScoreMeter label="Risk Controls" value={scoring.result.scores.risk} />
+              <ScoreMeter label="Confidence" value={scoring.result.scores.confidence} />
+              <ScoreMeter label="Liquidity" value={scoring.result.scores.liquidity} />
             </div>
-            <div>
-              <span>Paper Trade Gate</span>
-              <strong>
-                {scoring.result.strategyPolicy.paperTradeAllowed ? "Allowed by Policy" : "Blocked"}
-              </strong>
-            </div>
-          </div>
-          <div className="score-grid" aria-label="Score summary">
-            <ScoreMeter label="Risk Controls" value={scoring.result.scores.risk} />
-            <ScoreMeter label="Confidence" value={scoring.result.scores.confidence} />
-            <ScoreMeter label="Liquidity" value={scoring.result.scores.liquidity} />
-          </div>
-        </article>
+          </article>
 
-        <article className="panel">
-          <p className="eyebrow">Promotion gates</p>
-          <h2>Evidence Blockers</h2>
-          <ul className="gate-list">
-            {scoring.result.gates.map((gate) => (
-              <li key={gate.id} className={gate.passed ? "gate-pass" : "gate-fail"}>
-                <span>{gate.passed ? "Pass" : "Block"}</span>
-                <p>{gate.message}</p>
-              </li>
-            ))}
-          </ul>
-        </article>
+          <article className="panel">
+            <p className="eyebrow">Promotion gates</p>
+            <h2>Evidence Blockers</h2>
+            <ul className="gate-list">
+              {scoring.result.gates.map((gate) => (
+                <li key={gate.id} className={gate.passed ? "gate-pass" : "gate-fail"}>
+                  <span>{gate.passed ? "Pass" : "Block"}</span>
+                  <p>{gate.message}</p>
+                </li>
+              ))}
+            </ul>
+          </article>
 
-        <article className="panel">
-          <p className="eyebrow">Research status</p>
-          <h2>{scoring.notRecommendation ? "Not a Recommendation" : "Review Required"}</h2>
-          <p className="panel-copy">{scoring.result.explanation.assumptions[0]}</p>
-          <p className="panel-copy">
-            {failedGates.length > 0 ? failedGates[0]?.message : "All displayed gates pass."}
-          </p>
-        </article>
+          <article className="panel">
+            <p className="eyebrow">Research status</p>
+            <h2>{scoring.notRecommendation ? "Not a Recommendation" : "Review Required"}</h2>
+            <p className="panel-copy">{scoring.result.explanation.assumptions[0]}</p>
+            <p className="panel-copy">
+              {failedGates.length > 0 ? failedGates[0]?.message : "All displayed gates pass."}
+            </p>
+          </article>
 
-        <article className="panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Paper Trade Contract</p>
-              <h2>{paperTradeStatusLabels[paperTrading.result.status]}</h2>
+          <article className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Paper Trade Contract</p>
+                <h2>{paperTradeStatusLabels[paperTrading.result.status]}</h2>
+              </div>
+              <span className="status-pill subtle">Paper API snapshot</span>
             </div>
-            <span className="status-pill subtle">
-              {apiState === "offline" ? "Paper fallback snapshot" : "Paper API snapshot"}
-            </span>
-          </div>
-          <div className="trade-strip" aria-label="Paper trade risk summary">
-            <div>
-              <span>Mode</span>
-              <strong>{paperTrade?.mode === "paper" ? "Paper Only" : "Review"}</strong>
+            <div className="trade-strip" aria-label="Paper trade risk summary">
+              <div>
+                <span>Mode</span>
+                <strong>{paperTrade?.mode === "paper" ? "Paper Only" : "Review"}</strong>
+              </div>
+              <div>
+                <span>Max Loss</span>
+                <strong>{formatCurrency(paperTrade?.risk.maxLoss ?? 0)}</strong>
+              </div>
+              <div>
+                <span>Risk</span>
+                <strong>{paperTrade?.risk.riskPctOfEquity ?? 0}%</strong>
+              </div>
             </div>
-            <div>
-              <span>Max Loss</span>
-              <strong>{formatCurrency(paperTrade?.risk.maxLoss ?? 0)}</strong>
-            </div>
-            <div>
-              <span>Risk</span>
-              <strong>{paperTrade?.risk.riskPctOfEquity ?? 0}%</strong>
-            </div>
-          </div>
-          <p className="panel-copy">
-            {paperTrade?.brokerExecution === false
-              ? "No broker execution or durable paper-trade record is created by this mock check."
-              : "Paper-trade contract review is blocked."}
-          </p>
-        </article>
+            <p className="panel-copy">
+              {paperTrade?.brokerExecution === false
+                ? "No broker execution or durable paper-trade record is created by this mock check."
+                : "Paper-trade contract review is blocked."}
+            </p>
+          </article>
 
-        <article className="panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Paper Trade Outcome</p>
-              <h2>{paperTradeCloseStatusLabels[paperClose.closeResult.status]}</h2>
+          <article className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Paper Trade Outcome</p>
+                <h2>{paperTradeCloseStatusLabels[paperClose.closeResult.status]}</h2>
+              </div>
+              <span className="status-pill subtle">Paper close API snapshot</span>
             </div>
-            <span className="status-pill subtle">
-              {apiState === "offline"
-                ? "Paper close fallback snapshot"
-                : "Paper close API snapshot"}
-            </span>
-          </div>
-          <div className="outcome-strip" aria-label="Paper trade performance summary">
-            <div>
-              <span>P/L</span>
-              <strong>{formatCurrency(paperCloseTrade?.realizedPnl ?? 0)}</strong>
+            <div className="outcome-strip" aria-label="Paper trade performance summary">
+              <div>
+                <span>P/L</span>
+                <strong>{formatCurrency(paperCloseTrade?.realizedPnl ?? 0)}</strong>
+              </div>
+              <div>
+                <span>Return</span>
+                <strong>{formatPercent(paperCloseTrade?.realizedReturnPct ?? 0)}</strong>
+              </div>
+              <div>
+                <span>Exit</span>
+                <strong>{formatCurrency(paperCloseTrade?.exitPrice ?? 0)}</strong>
+              </div>
             </div>
-            <div>
-              <span>Return</span>
-              <strong>{formatPercent(paperCloseTrade?.realizedReturnPct ?? 0)}</strong>
-            </div>
-            <div>
-              <span>Exit</span>
-              <strong>{formatCurrency(paperCloseTrade?.exitPrice ?? 0)}</strong>
-            </div>
-          </div>
-          <p className="panel-copy">{closeLesson}</p>
-          <p className="panel-copy">
-            {paperCloseTrade?.brokerExecution === false
-              ? "Close audit is linked to the in-memory ledger; no broker execution occurred."
-              : "Paper-trade close review is blocked."}
-          </p>
-        </article>
+            <p className="panel-copy">{closeLesson}</p>
+            <p className="panel-copy">
+              {paperCloseTrade?.brokerExecution === false
+                ? "Close audit is linked to the in-memory ledger; no broker execution occurred."
+                : "Paper-trade close review is blocked."}
+            </p>
+          </article>
 
-        <article className="panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Paper Trade Evidence</p>
-              <h2>{paperEvidenceReviewLabels[paperEvidenceSummary.reviewStatus]}</h2>
+          <article className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Paper Trade Evidence</p>
+                <h2>{paperEvidenceReviewLabels[paperEvidenceSummary.reviewStatus]}</h2>
+              </div>
+              <span className="status-pill subtle">Evidence API snapshot</span>
             </div>
-            <span className="status-pill subtle">
-              {apiState === "offline" ? "Evidence fallback snapshot" : "Evidence API snapshot"}
-            </span>
-          </div>
-          <div className="evidence-strip" aria-label="Paper trade evidence summary">
-            <div>
-              <span>Closed</span>
-              <strong>{paperEvidenceSummary.closedTrades}</strong>
+            <div className="evidence-strip" aria-label="Paper trade evidence summary">
+              <div>
+                <span>Closed</span>
+                <strong>{paperEvidenceSummary.closedTrades}</strong>
+              </div>
+              <div>
+                <span>Open</span>
+                <strong>{paperEvidenceSummary.openTrades}</strong>
+              </div>
+              <div>
+                <span>Win Rate</span>
+                <strong>{formatPercent(paperEvidenceSummary.winRatePct)}</strong>
+              </div>
             </div>
-            <div>
-              <span>Open</span>
-              <strong>{paperEvidenceSummary.openTrades}</strong>
+            <div
+              className="evidence-strip evidence-strip-secondary"
+              aria-label="Paper trade evidence performance"
+            >
+              <div>
+                <span>Realized</span>
+                <strong>{formatCurrency(paperEvidenceSummary.realizedPnl)}</strong>
+              </div>
+              <div>
+                <span>Avg Return</span>
+                <strong>{formatPercent(paperEvidenceSummary.averageReturnPct)}</strong>
+              </div>
+              <div>
+                <span>Avg Risk</span>
+                <strong>{formatPercent(paperEvidenceSummary.averageRiskPctOfEquity)}</strong>
+              </div>
             </div>
-            <div>
-              <span>Win Rate</span>
-              <strong>{formatPercent(paperEvidenceSummary.winRatePct)}</strong>
-            </div>
-          </div>
-          <div
-            className="evidence-strip evidence-strip-secondary"
-            aria-label="Paper trade evidence performance"
-          >
-            <div>
-              <span>Realized</span>
-              <strong>{formatCurrency(paperEvidenceSummary.realizedPnl)}</strong>
-            </div>
-            <div>
-              <span>Avg Return</span>
-              <strong>{formatPercent(paperEvidenceSummary.averageReturnPct)}</strong>
-            </div>
-            <div>
-              <span>Avg Risk</span>
-              <strong>{formatPercent(paperEvidenceSummary.averageRiskPctOfEquity)}</strong>
-            </div>
-          </div>
-          <p className="panel-copy">{evidenceNote}</p>
-          <p className="panel-copy">
-            Backtest and operator review remain required before strategy promotion.
-          </p>
-        </article>
+            <p className="panel-copy">{evidenceNote}</p>
+            <p className="panel-copy">
+              Backtest and operator review remain required before strategy promotion.
+            </p>
+          </article>
 
-        <article className="panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Paper Trade Ledger</p>
-              <h2>{paperReadStatusLabels[ledgerTrade.status]}</h2>
+          <article className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Paper Trade Ledger</p>
+                <h2>{paperReadStatusLabels[ledgerTrade.status]}</h2>
+              </div>
+              <span className="status-pill subtle">Ledger API snapshot</span>
             </div>
-            <span className="status-pill subtle">
-              {apiState === "offline" ? "Ledger fallback snapshot" : "Ledger API snapshot"}
-            </span>
-          </div>
-          <div className="evidence-strip" aria-label="Paper trade ledger readback">
-            <div>
-              <span>Audit</span>
-              <strong>{ledgerAuditId}</strong>
+            <div className="evidence-strip" aria-label="Paper trade ledger readback">
+              <div>
+                <span>Audit</span>
+                <strong>{ledgerAuditId}</strong>
+              </div>
+              <div>
+                <span>P/L</span>
+                <strong>{formatCurrency(ledgerOutcome?.realizedPnl ?? 0)}</strong>
+              </div>
+              <div>
+                <span>Risk</span>
+                <strong>{formatPercent(ledgerTrade.risk.riskPctOfEquity)}</strong>
+              </div>
             </div>
-            <div>
-              <span>P/L</span>
-              <strong>{formatCurrency(ledgerOutcome?.realizedPnl ?? 0)}</strong>
+            <div
+              className="evidence-strip evidence-strip-secondary"
+              aria-label="Paper trade ledger prices"
+            >
+              <div>
+                <span>Entry</span>
+                <strong>{formatCurrency(ledgerTrade.entry.simulatedPrice)}</strong>
+              </div>
+              <div>
+                <span>Exit</span>
+                <strong>{formatCurrency(ledgerOutcome?.exitPrice ?? 0)}</strong>
+              </div>
+              <div>
+                <span>Return</span>
+                <strong>{formatPercent(ledgerOutcome?.realizedReturnPct ?? 0)}</strong>
+              </div>
             </div>
-            <div>
-              <span>Risk</span>
-              <strong>{formatPercent(ledgerTrade.risk.riskPctOfEquity)}</strong>
-            </div>
-          </div>
-          <div
-            className="evidence-strip evidence-strip-secondary"
-            aria-label="Paper trade ledger prices"
-          >
-            <div>
-              <span>Entry</span>
-              <strong>{formatCurrency(ledgerTrade.entry.simulatedPrice)}</strong>
-            </div>
-            <div>
-              <span>Exit</span>
-              <strong>{formatCurrency(ledgerOutcome?.exitPrice ?? 0)}</strong>
-            </div>
-            <div>
-              <span>Return</span>
-              <strong>{formatPercent(ledgerOutcome?.realizedReturnPct ?? 0)}</strong>
-            </div>
-          </div>
-          <p className="panel-copy">{ledgerLesson}</p>
-          <p className="panel-copy">
-            {ledgerTrade.brokerExecution === false
-              ? "Read model preserves paper-only ledger state; no broker execution occurred."
-              : "Paper-trade read model review is blocked."}
-          </p>
-        </article>
-      </section>
+            <p className="panel-copy">{ledgerLesson}</p>
+            <p className="panel-copy">
+              {ledgerTrade.brokerExecution === false
+                ? "Read model preserves paper-only ledger state; no broker execution occurred."
+                : "Paper-trade read model review is blocked."}
+            </p>
+          </article>
+        </section>
+      )}
     </main>
   );
 }

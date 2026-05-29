@@ -133,6 +133,7 @@ describe("createPaperTrade", () => {
       entryPrice: 100,
       stopLossPrice: 95,
       profitTargetPrice: 108,
+      invalidationConditions: ["Close below post-earnings low"],
       thesisSnapshot: baseRecommendation.thesis,
       stopRule: "Exit on close below post-earnings low.",
       targetRule: "Review after 5% paper gain or thesis invalidation.",
@@ -209,6 +210,34 @@ describe("createPaperTrade", () => {
     expect(invalidExit.reasonCodes).toContain("invalid_exit_price");
   });
 
+  it("rejects paper-trade closes with nested broker fields or invalid timestamp order", () => {
+    const opened = createPaperTrade(requestWith());
+    expect(opened.status).toBe("accepted");
+
+    const nestedBroker = closePaperTrade(opened.trade, {
+      exitedAt: "2026-05-06T20:00:00Z",
+      exitPrice: 106,
+      priceTimestamp: "2026-05-06T20:00:00Z",
+      exitReason: "Profit target review hit during paper-trade validation.",
+      lessonsLearned: "Momentum follow-through appeared before the time stop.",
+      auditLogId: "audit_paper_close_1",
+      brokerOrderId: "nested-live-order-shape",
+    } as unknown as Parameters<typeof closePaperTrade>[1]);
+    const exitBeforeEntry = closePaperTrade(opened.trade, {
+      exitedAt: "2026-04-30T20:00:00Z",
+      exitPrice: 106,
+      priceTimestamp: "2026-05-06T20:00:00Z",
+      exitReason: "Profit target review hit during paper-trade validation.",
+      lessonsLearned: "Momentum follow-through appeared before the time stop.",
+      auditLogId: "audit_paper_close_1",
+    });
+
+    expect(nestedBroker.status).toBe("rejected");
+    expect(nestedBroker.reasonCodes).toContain("broker_execution_fields_prohibited");
+    expect(exitBeforeEntry.status).toBe("rejected");
+    expect(exitBeforeEntry.reasonCodes).toContain("invalid_timestamps");
+  });
+
   it("rejects duplicate closes for an already closed paper trade", () => {
     const opened = createPaperTrade(requestWith());
     expect(opened.status).toBe("accepted");
@@ -261,6 +290,73 @@ describe("createPaperTrade", () => {
     expect(result.status).toBe("rejected");
     expect(result.reasonCodes).toContain("broker_execution_fields_prohibited");
     expect(result.trade).toBeUndefined();
+  });
+
+  it("rejects nested broker, execution, or external order-shaped fields inside paper requests", () => {
+    const nestedOrderId = createPaperTrade(
+      requestWith({
+        entry: {
+          ...requestWith().entry,
+          brokerOrderId: "nested-live-order-shape",
+        } as unknown as PaperTradeRequest["entry"],
+      }),
+    );
+    const nestedExecutionFlag = createPaperTrade(
+      requestWith({
+        entry: {
+          ...requestWith().entry,
+          execution: {
+            brokerExecution: true,
+          },
+        } as unknown as PaperTradeRequest["entry"],
+      }),
+    );
+
+    expect(nestedOrderId.status).toBe("rejected");
+    expect(nestedOrderId.reasonCodes).toContain("broker_execution_fields_prohibited");
+    expect(nestedOrderId.trade).toBeUndefined();
+    expect(nestedExecutionFlag.status).toBe("rejected");
+    expect(nestedExecutionFlag.reasonCodes).toContain("broker_execution_fields_prohibited");
+    expect(nestedExecutionFlag.trade).toBeUndefined();
+  });
+
+  it("rejects paper trades that understate stop-based max loss", () => {
+    const result = createPaperTrade(
+      requestWith({
+        entry: {
+          ...requestWith().entry,
+          maxLoss: 1,
+        },
+      }),
+    );
+
+    expect(result.status).toBe("rejected");
+    expect(result.reasonCodes).toContain("max_loss_understated");
+    expect(result.trade).toBeUndefined();
+  });
+
+  it("rejects paper trades with invalid or unordered entry timestamps", () => {
+    const invalidRequestedAt = createPaperTrade(
+      requestWith({
+        entry: {
+          ...requestWith().entry,
+          requestedAt: "not-a-date",
+        },
+      }),
+    );
+    const approvalAfterEntry = createPaperTrade(
+      requestWith({
+        operatorApproval: {
+          ...requestWith().operatorApproval,
+          approvedAt: "2026-05-01T13:05:00Z",
+        },
+      }),
+    );
+
+    expect(invalidRequestedAt.status).toBe("rejected");
+    expect(invalidRequestedAt.reasonCodes).toContain("invalid_timestamps");
+    expect(approvalAfterEntry.status).toBe("rejected");
+    expect(approvalAfterEntry.reasonCodes).toContain("invalid_timestamps");
   });
 
   it("rejects paper trades that exceed conservative paper exposure limits", () => {
@@ -431,5 +527,31 @@ describe("summarizePaperTradeEvidence", () => {
     expect(summary.reasonCodes).toContain("broker_execution_fields_prohibited");
     expect(summary.closedTrades).toBe(0);
     expect(summary.notRecommendation).toBe(true);
+  });
+
+  it("blocks evidence summaries that mix strategy cohorts or contain nested broker fields", () => {
+    const msftWinner = closeAcceptedTrade(
+      106,
+      "audit_paper_close_msft",
+      "MSFT winner followed the target rule.",
+    );
+    const aaplWinner = {
+      ...closeAcceptedTrade(106, "audit_paper_close_aapl", "AAPL winner followed the target rule."),
+      ticker: "AAPL",
+    } satisfies PaperTradeClosed;
+    const nestedBroker = {
+      ...msftWinner,
+      metadata: {
+        brokerOrderId: "nested-live-order-shape",
+      },
+    } as unknown as PaperTradeClosed;
+
+    const mixed = summarizePaperTradeEvidence([msftWinner, aaplWinner]);
+    const unsafe = summarizePaperTradeEvidence([nestedBroker]);
+
+    expect(mixed.status).toBe("blocked");
+    expect(mixed.reasonCodes).toContain("mixed_evidence_cohort");
+    expect(unsafe.status).toBe("blocked");
+    expect(unsafe.reasonCodes).toContain("broker_execution_fields_prohibited");
   });
 });

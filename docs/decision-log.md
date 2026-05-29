@@ -263,3 +263,9 @@ Reason: Paper-trade records need a reusable read shape before UI, reports, or ba
 Decision: Show `/paper-trading/mock-read-model-dry-run` in the operator console as a persisted ledger readback panel with paper-only status, close audit ID, entry/exit prices, simulated P/L, return, risk percent, and no-broker wording.
 
 Reason: Operators need to distinguish simulated close calculations from persisted readback data. Showing the read model in the UI makes audit linkage visible without turning paper-trade outcomes into strategy recommendations.
+
+## 2026-05-29: Paper-Trading Review Safety Gates
+
+Decision: Close the Milestone 6 review blockers by making paper-trade max loss derive from the stop-based loss floor, rejecting invalid entry/close timestamp ordering, recursively blocking nested broker/order-shaped fields, requiring single-cohort evidence summaries, restoring the default closed-trade evidence threshold, and hiding offline sample metrics behind a `Data unavailable` operator state.
+
+Reason: Paper-trading evidence is only useful if it cannot understate risk, mix strategy cohorts, rely on future or unordered timestamps, or appear actionable when the API is offline. The UI, package contracts, API mocks, and DB triggers should all preserve the paper-only, audit-first boundary before Milestone 6 is reviewed for merge readiness.

@@ -36,6 +36,7 @@ describe("mock paper-trading route", () => {
             ticker: "MSFT",
             instrumentType: "stock",
             status: "open",
+            invalidationConditions: ["Close below mock breakout level"],
           },
         },
       });
@@ -175,8 +176,8 @@ describe("mock paper-trading route", () => {
           brokerExecution: false,
           notRecommendation: true,
           status: "accepted",
-          reviewStatus: "ready_for_review",
-          reasonCodes: ["requires_backtest_and_operator_review"],
+          reviewStatus: "needs_more_data",
+          reasonCodes: ["insufficient_closed_trades"],
           totalTrades: 3,
           openTrades: 1,
           closedTrades: 2,

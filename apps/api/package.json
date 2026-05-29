@@ -12,6 +12,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@stockmarket/core": "0.1.0",
     "@stockmarket/data": "0.1.0",
     "@stockmarket/db": "0.1.0",
     "@stockmarket/paper-trading": "0.1.0",
