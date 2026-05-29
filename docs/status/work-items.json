@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T18:57:20-04:00",
+  "lastUpdated": "2026-05-28T20:51:14-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,7 +11,7 @@
   ],
   "currentFocus": {
     "phase": "Milestone 3: Provider interfaces and mock ingestion",
-    "task": "Provider-specific adapter stubs added for Polygon, Financial Modeling Prep, and Finnhub",
+    "task": "Provider environment requirements clarified; local .env remains optional while mocks and deferred adapter stubs are active",
     "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
     "status": "Completed",
     "priority": "High",
@@ -373,6 +373,32 @@
         "Root CI",
         "Secret-pattern scan",
         "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M3-004",
+      "title": "Clarify provider environment requirements",
+      "phase": "Milestone 3",
+      "owner": "Codex founding CTO / lead architect / security reviewer / data quality reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Provider ingestion and security",
+      "blockers": [],
+      "nextStep": "Continue Milestone 3 with a mock ingestion API endpoint or CLI dry run.",
+      "relatedDocs": [
+        ".env.example",
+        "docs/provider-configuration.md",
+        "docs/data-sources.md",
+        "docs/security.md",
+        "docs/decision-log.md",
+        "docs/open-questions.md"
+      ],
+      "validationRequired": [
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan",
+        "Root CI"
       ]
     }
   ]

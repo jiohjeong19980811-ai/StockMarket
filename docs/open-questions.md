@@ -7,6 +7,7 @@
 - Which provider can supply reliable historical options-chain data for backtesting at an acceptable cost?
 - Which historical options provider can supply point-in-time bid/ask, open interest, volume, IV, Greeks, and quote timestamps with licensing that allows local storage?
 - Which provider supplies reliable point-in-time earnings estimates and analyst revisions?
+- Which provider-specific keys should be enabled first after terms review: `POLYGON_API_KEY`, `FMP_API_KEY`, `FINNHUB_API_KEY`, another key, or none until more mock workflows are complete?
 - What should the first test universe be: S&P 1500, Russell 3000, or a custom liquidity-filtered universe?
 - Should MVP paper trading be long-only for stocks until shorting, borrow, and margin assumptions are explicitly modeled?
 - Which news provider licensing terms allow storing article metadata and summaries?

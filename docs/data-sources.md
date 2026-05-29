@@ -72,6 +72,8 @@ The ingestion layer must flag:
 
 Start with a low-cost or free development provider only after the provider contract is implemented. The app should support mocked ingestion so the MVP can run tests without paid data access.
 
+No local `.env` file is required for the current mock-provider workflow. Provider-specific keys remain optional placeholders until a provider is selected and that adapter is explicitly enabled. See `docs/provider-configuration.md`.
+
 ## Research-Informed Provider Shortlist
 
 | Provider | Primary use | Timing | Notes |

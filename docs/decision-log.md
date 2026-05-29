@@ -137,3 +137,9 @@ Reason: The MVP database must reject modified historical migrations and avoid pa
 Decision: Allow the project `PermissionRequest` hook to auto-approve routine in-repository commands for tests, builds, CI, hook validation, status/diff inspection, branch switching, and `npm ci`. Enable sandbox approval prompts in the project Codex config, but keep dependency additions, commits, merges, and remote publication out of the routine auto-allow path.
 
 Reason: Subagents and the main Codex operator should not stall on normal project validation or local workflow commands. The autonomy boundary remains constrained by hard blocks for secrets, `.env` reads, destructive repository deletion, out-of-repository writes, live trading, broker order paths, dependency additions, and remote publication prompts.
+
+## 2026-05-28: Local Provider Environment Not Required
+
+Decision: A local `.env` file is not required while provider decisions remain open and the implementation uses mock providers, fixtures, provider interfaces, and `.env.example` placeholders. Provider keys must be provider-specific when introduced, such as `POLYGON_API_KEY`, `FMP_API_KEY`, or `FINNHUB_API_KEY`, rather than generic names like `NEWS_API_KEY`.
+
+Reason: The MVP must avoid accidental secret handling and premature vendor lock-in. Mock ingestion, data-quality checks, DB persistence, API/UI work, scoring contracts, and backtesting design can continue without real provider credentials.

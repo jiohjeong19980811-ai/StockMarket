@@ -1,25 +1,26 @@
 # Validation Status
 
-Last updated: 2026-05-28T18:57:20-04:00
+Last updated: 2026-05-28T20:51:14-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 3 provider ingestion validation |
-| Current task | Provider-specific adapter stubs added for Polygon, Financial Modeling Prep, and Finnhub |
-| Owner/agent | Codex founding CTO / lead architect / principal engineer / data quality reviewer |
+| Current task | Provider environment requirements clarified; local `.env` remains optional while mocks and deferred adapter stubs are active |
+| Owner/agent | Codex founding CTO / lead architect / security reviewer / data quality reviewer |
 | Status | Completed |
 | Priority | High |
-| Category | Provider ingestion and data quality |
+| Category | Provider ingestion and security |
 | Blockers | None |
-| Next step | Commit the provider adapter stub slice, then continue with provider configuration docs and a mock ingestion API endpoint or CLI dry run |
-| Related docs/files | `packages/data/src/provider-adapters.ts`, `packages/data/test/provider-adapters.test.ts`, `packages/data`, `packages/db/src/ingestion-sink.ts`, `docs/superpowers/plans/2026-05-28-milestone-3-provider-ingestion.md`, `docs/status/` |
+| Next step | Commit the provider environment clarification, then continue with a mock ingestion API endpoint or CLI dry run |
+| Related docs/files | `.env.example`, `docs/provider-configuration.md`, `docs/data-sources.md`, `docs/security.md`, `docs/decision-log.md`, `docs/open-questions.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 3 provider environment clarification | Completed | Confirmed local `.env` is not required; provider-specific optional placeholders documented; generic provider keys removed from `.env.example`; root CI passed with 60 unit tests and 16 hook tests | Status JSON parse, whitespace check, provider-key naming scan, secret scan, live-trading scan, `npm.cmd run ci` |
 | Milestone 3 provider adapter tests | Completed | 3 tests passed for provider metadata, absence of broker execution methods, missing-key rejection, and configured HTTP deferral until terms review | `npm.cmd run test --workspace @stockmarket/data -- provider-adapters` |
 | Milestone 3 data package tests | Completed | 10 tests passed across provider adapter and mock ingestion suites | `npm.cmd run test --workspace @stockmarket/data` |
 | Milestone 3 DB ingestion sink tests | Completed | 3 tests passed for transactional price batch persistence, data quality event persistence, and rollback on duplicate normalized news inserts | `npm.cmd run test --workspace @stockmarket/db -- ingestion-sink` |
