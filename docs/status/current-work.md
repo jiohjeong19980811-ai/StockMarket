@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T23:03:19-04:00
+Last updated: 2026-05-28T23:07:26-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6: Paper trading |
-| Current task | Mock paper-trading API decision endpoint |
+| Current task | Operator console paper-trading contract visibility |
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
 | Category | Paper trading and auditability |
 | Blockers | None |
-| Next step | Commit the mock paper-trading API slice, then continue with paper-trade persistence or UI visibility |
-| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/paper-trading.test.ts`, `scripts/smoke-api.mjs`, `packages/paper-trading/src/index.ts` |
-| Validation required | Completed: focused API paper-trading test, root CI with 95 unit tests and 16 hook tests, status JSON parse, whitespace check, secret-pattern scan, and live-trading surface scan |
+| Next step | Commit the operator console paper-trading visibility slice, then continue with paper-trade persistence |
+| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `apps/api/src/server.ts` |
+| Validation required | Completed: focused web dashboard test, root CI with 95 unit tests and 16 hook tests, status JSON parse, whitespace check, secret-pattern scan, live-trading surface scan, and local web smoke on port 3001 |
 
 ## Status Vocabulary
 

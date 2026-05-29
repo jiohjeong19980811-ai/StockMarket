@@ -58,6 +58,35 @@ const mockScoringBody = {
   },
 };
 
+const mockPaperTradingBody = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Mock paper-trade decisions are contract evaluations and are not persisted.",
+  },
+  result: {
+    status: "accepted",
+    reasonCodes: [],
+    trade: {
+      mode: "paper",
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      ticker: "MSFT",
+      instrumentType: "stock",
+      status: "open",
+      risk: {
+        maxLoss: 300,
+        riskPctOfEquity: 0.3,
+      },
+    },
+  },
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -67,7 +96,11 @@ describe("operator console shell", () => {
   it("shows research-first safety posture", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => new Response(JSON.stringify(mockScoringBody))),
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = input.toString();
+        const body = url.includes("paper-trading") ? mockPaperTradingBody : mockScoringBody;
+        return new Response(JSON.stringify(body));
+      }),
     );
 
     render(<App />);
@@ -85,6 +118,10 @@ describe("operator console shell", () => {
     expect(screen.getByText("Strategy Policy")).toBeInTheDocument();
     expect(screen.getByText("Momentum")).toBeInTheDocument();
     expect(screen.getByText("MVP Test Now")).toBeInTheDocument();
+    expect(screen.getByText("Paper Trade Contract")).toBeInTheDocument();
+    expect(screen.getByText("Simulated Open")).toBeInTheDocument();
+    expect(screen.getByText("Max Loss")).toBeInTheDocument();
+    expect(screen.getByText("$300")).toBeInTheDocument();
     expect(screen.getByText("Risk Controls")).toBeInTheDocument();
     expect(screen.getByText("83")).toBeInTheDocument();
   });
@@ -101,6 +138,7 @@ describe("operator console shell", () => {
 
     expect(await screen.findByText("API offline")).toBeInTheDocument();
     expect(screen.getByText("Fallback mock snapshot")).toBeInTheDocument();
+    expect(screen.getByText("Paper fallback snapshot")).toBeInTheDocument();
     expect(screen.getAllByText("Watchlist").length).toBeGreaterThan(0);
   });
 });

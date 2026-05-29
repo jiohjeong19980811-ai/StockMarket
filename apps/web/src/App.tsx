@@ -53,9 +53,39 @@ interface MockScoringResponse {
   result: ScoringResult;
 }
 
+interface PaperTradeResponse {
+  mode: "mock";
+  requiresEnv: boolean;
+  liveTradingEnabled: boolean;
+  providerKeysRequired: string[];
+  notRecommendation: boolean;
+  persistence: {
+    scope: string;
+    durable: boolean;
+    note: string;
+  };
+  result: {
+    status: "accepted" | "rejected";
+    reasonCodes: string[];
+    trade?: {
+      mode: "paper";
+      liveTradingEnabled: false;
+      brokerExecution: false;
+      ticker: string;
+      instrumentType: string;
+      status: "open";
+      risk: {
+        maxLoss: number;
+        riskPctOfEquity: number;
+      };
+    };
+  };
+}
+
 type ApiState = "loading" | "online" | "offline";
 
 const scoringEndpoint = "http://127.0.0.1:4000/scoring/mock-evaluation";
+const paperTradingEndpoint = "http://127.0.0.1:4000/paper-trading/mock-decision";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",
@@ -111,6 +141,35 @@ const fallbackScoring: MockScoringResponse = {
   },
 };
 
+const fallbackPaperTrading: PaperTradeResponse = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Mock paper-trade decisions are contract evaluations and are not persisted.",
+  },
+  result: {
+    status: "accepted",
+    reasonCodes: [],
+    trade: {
+      mode: "paper",
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      ticker: "MSFT",
+      instrumentType: "stock",
+      status: "open",
+      risk: {
+        maxLoss: 300,
+        riskPctOfEquity: 0.3,
+      },
+    },
+  },
+};
+
 const decisionLabels: Record<Decision, string> = {
   watchlist: "Watchlist",
   paper_trade: "Paper Trade",
@@ -124,6 +183,15 @@ const mvpDecisionLabels: Record<StrategyPolicy["mvpDecision"], string> = {
   test_later: "Test Later",
   control_layer: "Control Layer",
 };
+
+const paperTradeStatusLabels: Record<PaperTradeResponse["result"]["status"], string> = {
+  accepted: "Simulated Open",
+  rejected: "Blocked",
+};
+
+function formatCurrency(value: number): string {
+  return `$${Math.round(value).toLocaleString("en-US")}`;
+}
 
 function ScoreMeter({ label, value }: { label: string; value: number }) {
   return (
@@ -142,30 +210,40 @@ function ScoreMeter({ label, value }: { label: string; value: number }) {
 export function App() {
   const [apiState, setApiState] = useState<ApiState>("loading");
   const [scoring, setScoring] = useState<MockScoringResponse>(fallbackScoring);
+  const [paperTrading, setPaperTrading] = useState<PaperTradeResponse>(fallbackPaperTrading);
 
   useEffect(() => {
     let active = true;
 
-    async function loadScoring() {
+    async function loadDashboardData() {
       try {
-        const response = await fetch(scoringEndpoint);
-        if (!response.ok) {
-          throw new Error(`Scoring API returned ${response.status}`);
+        const [scoringResponse, paperTradingResponse] = await Promise.all([
+          fetch(scoringEndpoint),
+          fetch(paperTradingEndpoint),
+        ]);
+        if (!scoringResponse.ok) {
+          throw new Error(`Scoring API returned ${scoringResponse.status}`);
         }
-        const body = (await response.json()) as MockScoringResponse;
+        if (!paperTradingResponse.ok) {
+          throw new Error(`Paper-trading API returned ${paperTradingResponse.status}`);
+        }
+        const scoringBody = (await scoringResponse.json()) as MockScoringResponse;
+        const paperTradingBody = (await paperTradingResponse.json()) as PaperTradeResponse;
         if (active) {
-          setScoring(body);
+          setScoring(scoringBody);
+          setPaperTrading(paperTradingBody);
           setApiState("online");
         }
       } catch {
         if (active) {
           setScoring(fallbackScoring);
+          setPaperTrading(fallbackPaperTrading);
           setApiState("offline");
         }
       }
     }
 
-    void loadScoring();
+    void loadDashboardData();
 
     return () => {
       active = false;
@@ -173,6 +251,7 @@ export function App() {
   }, []);
 
   const failedGates = scoring.result.gates.filter((gate) => !gate.passed);
+  const paperTrade = paperTrading.result.trade;
 
   return (
     <main className="app-shell">
@@ -270,6 +349,37 @@ export function App() {
           <p className="panel-copy">{scoring.result.explanation.assumptions[0]}</p>
           <p className="panel-copy">
             {failedGates.length > 0 ? failedGates[0]?.message : "All displayed gates pass."}
+          </p>
+        </article>
+
+        <article className="panel">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Paper Trade Contract</p>
+              <h2>{paperTradeStatusLabels[paperTrading.result.status]}</h2>
+            </div>
+            <span className="status-pill subtle">
+              {apiState === "offline" ? "Paper fallback snapshot" : "Paper API snapshot"}
+            </span>
+          </div>
+          <div className="trade-strip" aria-label="Paper trade risk summary">
+            <div>
+              <span>Mode</span>
+              <strong>{paperTrade?.mode === "paper" ? "Paper Only" : "Review"}</strong>
+            </div>
+            <div>
+              <span>Max Loss</span>
+              <strong>{formatCurrency(paperTrade?.risk.maxLoss ?? 0)}</strong>
+            </div>
+            <div>
+              <span>Risk</span>
+              <strong>{paperTrade?.risk.riskPctOfEquity ?? 0}%</strong>
+            </div>
+          </div>
+          <p className="panel-copy">
+            {paperTrade?.brokerExecution === false
+              ? "No broker execution or durable paper-trade record is created by this mock check."
+              : "Paper-trade contract review is blocked."}
           </p>
         </article>
       </section>

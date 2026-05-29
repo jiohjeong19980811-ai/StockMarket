@@ -188,6 +188,8 @@ Milestone 6 begins with stock-only paper positions. Options paper trading remain
 
 The API exposes `/paper-trading/mock-decision` as a non-durable contract demonstration. It does not persist records, require provider keys, or execute broker actions.
 
+The operator console can display the mock paper-trading contract state beside scoring gates so the operator sees paper-only status, max loss, and risk percent without turning the mock result into a recommendation.
+
 ### Project Status And Roadmap Visibility
 
 Until the application has a database-backed admin UI, lightweight project status lives under `docs/status/`. The future operator UI should include a Project Status / Roadmap dashboard that can surface:
