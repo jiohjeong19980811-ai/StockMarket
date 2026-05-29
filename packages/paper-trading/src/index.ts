@@ -163,12 +163,50 @@ export type PaperTradeCloseDecision =
   | PaperTradeCloseAcceptedDecision
   | PaperTradeCloseRejectedDecision;
 
+export type PaperTradeEvidenceReviewStatus = "needs_more_data" | "ready_for_review" | "blocked";
+
+export type PaperTradeEvidenceReason =
+  | "no_closed_trades"
+  | "insufficient_closed_trades"
+  | "requires_backtest_and_operator_review"
+  | "broker_execution_fields_prohibited"
+  | "live_trading_fields_prohibited"
+  | "non_paper_trade_record_prohibited";
+
+export interface PaperTradeEvidenceSummaryOptions {
+  minimumClosedTradesForReview?: number;
+}
+
+export interface PaperTradeEvidenceSummary {
+  mode: "paper";
+  liveTradingEnabled: false;
+  brokerExecution: false;
+  notRecommendation: true;
+  status: "accepted" | "blocked";
+  reviewStatus: PaperTradeEvidenceReviewStatus;
+  reasonCodes: PaperTradeEvidenceReason[];
+  totalTrades: number;
+  openTrades: number;
+  closedTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  winRatePct: number;
+  realizedPnl: number;
+  averageReturnPct: number;
+  averageRiskPctOfEquity: number;
+  largestWin: number;
+  largestLoss: number;
+  closedTradeAuditLogIds: string[];
+  notes: string[];
+}
+
 const maximumPositionRiskPct = 0.5;
 const maximumSingleNameExposurePct = 5;
 const maximumSectorExposurePct = 20;
 const maximumCorrelatedExposurePct = 15;
 const maximumDailyLossPct = 2;
 const maximumAggregateOptionsPremiumPct = 3;
+const defaultMinimumClosedTradesForReview = 30;
 
 const prohibitedBrokerFields = [
   "brokerOrderId",
@@ -244,6 +282,58 @@ function hasExitEvidence(exit: PaperTradeExitRequest): boolean {
 
 function roundedCurrency(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function emptyEvidenceSummary(
+  totalTrades: number,
+  status: PaperTradeEvidenceSummary["status"],
+  reviewStatus: PaperTradeEvidenceReviewStatus,
+  reasonCodes: PaperTradeEvidenceReason[],
+): PaperTradeEvidenceSummary {
+  return {
+    mode: "paper",
+    liveTradingEnabled: false,
+    brokerExecution: false,
+    notRecommendation: true,
+    status,
+    reviewStatus,
+    reasonCodes,
+    totalTrades,
+    openTrades: 0,
+    closedTrades: 0,
+    winningTrades: 0,
+    losingTrades: 0,
+    winRatePct: 0,
+    realizedPnl: 0,
+    averageReturnPct: 0,
+    averageRiskPctOfEquity: 0,
+    largestWin: 0,
+    largestLoss: 0,
+    closedTradeAuditLogIds: [],
+    notes: [
+      "Paper-trade evidence is a validation input, not a recommendation or performance promise.",
+    ],
+  };
+}
+
+function evidenceSafetyReasons(trades: PaperTradeLifecycle[]): PaperTradeEvidenceReason[] {
+  const reasons: PaperTradeEvidenceReason[] = [];
+  if (trades.some((trade) => (trade as { mode?: unknown }).mode !== "paper")) {
+    reasons.push("non_paper_trade_record_prohibited");
+  }
+  if (
+    trades.some((trade) => (trade as { liveTradingEnabled?: unknown }).liveTradingEnabled !== false)
+  ) {
+    reasons.push("live_trading_fields_prohibited");
+  }
+  if (trades.some((trade) => (trade as { brokerExecution?: unknown }).brokerExecution !== false)) {
+    reasons.push("broker_execution_fields_prohibited");
+  }
+  return [...new Set(reasons)];
+}
+
+function isClosedPaperTrade(trade: PaperTradeLifecycle): trade is PaperTradeClosed {
+  return trade.status === "closed";
 }
 
 function buildPaperTradeId(recommendationId: string, requestedAt: string): string {
@@ -405,5 +495,78 @@ export function closePaperTrade(
         priceTimestamp: exit.priceTimestamp,
       },
     },
+  };
+}
+
+export function summarizePaperTradeEvidence(
+  trades: PaperTradeLifecycle[],
+  options: PaperTradeEvidenceSummaryOptions = {},
+): PaperTradeEvidenceSummary {
+  const safetyReasons = evidenceSafetyReasons(trades);
+  if (safetyReasons.length > 0) {
+    return emptyEvidenceSummary(trades.length, "blocked", "blocked", safetyReasons);
+  }
+
+  const closedTrades = trades.filter(isClosedPaperTrade);
+  const openTrades = trades.filter((trade) => trade.status === "open");
+  const minimumClosedTradesForReview =
+    options.minimumClosedTradesForReview !== undefined && options.minimumClosedTradesForReview > 0
+      ? Math.floor(options.minimumClosedTradesForReview)
+      : defaultMinimumClosedTradesForReview;
+
+  if (closedTrades.length === 0) {
+    return {
+      ...emptyEvidenceSummary(trades.length, "accepted", "needs_more_data", [
+        "no_closed_trades",
+        "insufficient_closed_trades",
+      ]),
+      openTrades: openTrades.length,
+    };
+  }
+
+  const winningTrades = closedTrades.filter((trade) => trade.realizedPnl > 0);
+  const losingTrades = closedTrades.filter((trade) => trade.realizedPnl < 0);
+  const realizedPnl = roundedCurrency(
+    closedTrades.reduce((total, trade) => total + trade.realizedPnl, 0),
+  );
+  const averageReturnPct = roundedPercent(
+    closedTrades.reduce((total, trade) => total + trade.realizedReturnPct, 0) / closedTrades.length,
+  );
+  const averageRiskPctOfEquity = roundedPercent(
+    closedTrades.reduce((total, trade) => total + trade.risk.riskPctOfEquity, 0) /
+      closedTrades.length,
+  );
+  const reviewStatus: PaperTradeEvidenceReviewStatus =
+    closedTrades.length >= minimumClosedTradesForReview ? "ready_for_review" : "needs_more_data";
+  const reasonCodes: PaperTradeEvidenceReason[] =
+    reviewStatus === "ready_for_review"
+      ? ["requires_backtest_and_operator_review"]
+      : ["insufficient_closed_trades"];
+
+  return {
+    mode: "paper",
+    liveTradingEnabled: false,
+    brokerExecution: false,
+    notRecommendation: true,
+    status: "accepted",
+    reviewStatus,
+    reasonCodes,
+    totalTrades: trades.length,
+    openTrades: openTrades.length,
+    closedTrades: closedTrades.length,
+    winningTrades: winningTrades.length,
+    losingTrades: losingTrades.length,
+    winRatePct: roundedPercent((winningTrades.length / closedTrades.length) * 100),
+    realizedPnl,
+    averageReturnPct,
+    averageRiskPctOfEquity,
+    largestWin:
+      winningTrades.length === 0 ? 0 : Math.max(...winningTrades.map((trade) => trade.realizedPnl)),
+    largestLoss:
+      losingTrades.length === 0 ? 0 : Math.min(...losingTrades.map((trade) => trade.realizedPnl)),
+    closedTradeAuditLogIds: closedTrades.map((trade) => trade.exitAudit.auditLogId),
+    notes: [
+      "Paper-trade evidence is a validation input, not a recommendation or performance promise.",
+    ],
   };
 }

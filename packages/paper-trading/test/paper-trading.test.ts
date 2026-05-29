@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Recommendation } from "@stockmarket/core";
 
-import { closePaperTrade, createPaperTrade, type PaperTradeRequest } from "../src/index.js";
+import {
+  closePaperTrade,
+  createPaperTrade,
+  summarizePaperTradeEvidence,
+  type PaperTradeClosed,
+  type PaperTradeRequest,
+} from "../src/index.js";
 
 const baseRecommendation: Recommendation = {
   id: "rec_msft_pead_1",
@@ -79,6 +85,33 @@ function requestWith(overrides: Partial<PaperTradeRequest> = {}): PaperTradeRequ
     },
     ...overrides,
   };
+}
+
+function openAcceptedTrade(overrides: Partial<PaperTradeRequest> = {}) {
+  const opened = createPaperTrade(requestWith(overrides));
+  if (opened.status !== "accepted") {
+    throw new Error(`Expected accepted paper trade, got ${opened.reasonCodes.join(",")}`);
+  }
+  return opened.trade;
+}
+
+function closeAcceptedTrade(
+  exitPrice: number,
+  auditLogId: string,
+  lessonsLearned: string,
+): PaperTradeClosed {
+  const closed = closePaperTrade(openAcceptedTrade(), {
+    exitedAt: "2026-05-06T20:00:00Z",
+    exitPrice,
+    priceTimestamp: "2026-05-06T20:00:00Z",
+    exitReason: "Paper-trade evidence summary test exit.",
+    lessonsLearned,
+    auditLogId,
+  });
+  if (closed.status !== "accepted") {
+    throw new Error(`Expected accepted paper close, got ${closed.reasonCodes.join(",")}`);
+  }
+  return closed.trade;
 }
 
 describe("createPaperTrade", () => {
@@ -315,5 +348,88 @@ describe("createPaperTrade", () => {
     expect(result.status).toBe("rejected");
     expect(result.reasonCodes).toContain("options_paper_trading_deferred");
     expect(result.trade).toBeUndefined();
+  });
+});
+
+describe("summarizePaperTradeEvidence", () => {
+  it("summarizes closed paper trades while separating open trades from performance metrics", () => {
+    const openTrade = openAcceptedTrade();
+    const winner = closeAcceptedTrade(
+      106,
+      "audit_paper_close_win",
+      "Winner followed through before the time stop.",
+    );
+    const loser = closeAcceptedTrade(
+      95,
+      "audit_paper_close_loss",
+      "Loser respected the stop before thesis damage grew.",
+    );
+
+    const summary = summarizePaperTradeEvidence([openTrade, winner, loser]);
+
+    expect(summary).toMatchObject({
+      mode: "paper",
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      notRecommendation: true,
+      status: "accepted",
+      reviewStatus: "needs_more_data",
+      totalTrades: 3,
+      openTrades: 1,
+      closedTrades: 2,
+      winningTrades: 1,
+      losingTrades: 1,
+      winRatePct: 50,
+      realizedPnl: 10,
+      averageReturnPct: 0.5,
+      averageRiskPctOfEquity: 0.3,
+      largestWin: 60,
+      largestLoss: -50,
+    });
+    expect(summary.reasonCodes).toContain("insufficient_closed_trades");
+    expect(summary.closedTradeAuditLogIds).toEqual([
+      "audit_paper_close_win",
+      "audit_paper_close_loss",
+    ]);
+    expect(summary.notes).toContain(
+      "Paper-trade evidence is a validation input, not a recommendation or performance promise.",
+    );
+  });
+
+  it("marks a sufficient paper-trade sample ready for operator review, not promotion", () => {
+    const winner = closeAcceptedTrade(
+      106,
+      "audit_paper_close_ready_win",
+      "Winner followed the target rule.",
+    );
+    const loser = closeAcceptedTrade(
+      95,
+      "audit_paper_close_ready_loss",
+      "Loser respected the stop rule.",
+    );
+
+    const summary = summarizePaperTradeEvidence([winner, loser], {
+      minimumClosedTradesForReview: 2,
+    });
+
+    expect(summary.status).toBe("accepted");
+    expect(summary.reviewStatus).toBe("ready_for_review");
+    expect(summary.reasonCodes).toEqual(["requires_backtest_and_operator_review"]);
+    expect(summary.notRecommendation).toBe(true);
+  });
+
+  it("blocks evidence summaries that contain broker or live-trading shaped records", () => {
+    const unsafeTrade = {
+      ...closeAcceptedTrade(106, "audit_paper_close_unsafe", "Unsafe record should block."),
+      brokerExecution: true,
+    } as unknown as PaperTradeClosed;
+
+    const summary = summarizePaperTradeEvidence([unsafeTrade]);
+
+    expect(summary.status).toBe("blocked");
+    expect(summary.reviewStatus).toBe("blocked");
+    expect(summary.reasonCodes).toContain("broker_execution_fields_prohibited");
+    expect(summary.closedTrades).toBe(0);
+    expect(summary.notRecommendation).toBe(true);
   });
 });

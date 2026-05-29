@@ -117,6 +117,8 @@ Initial paper-only default limits should be conservative and revisited after pap
 - Max aggregate options premium at risk: 2%-3%.
 - Max daily paper loss pause: 1%-2%.
 
+Paper-trade evidence summaries may inform later risk-limit reviews, but they are not performance claims and cannot automatically promote a strategy. Summaries must separate open trades from closed-trade metrics, require close audit IDs, block broker/live-shaped records, and keep operator plus backtest review as a promotion prerequisite.
+
 Initial liquidity defaults:
 
 - Stocks: price above $5 and average daily dollar volume above $20M.

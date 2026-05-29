@@ -149,4 +149,6 @@ Paper-trade closes require timestamped exit price evidence, an exit reason, less
 
 Persisted closes must include close audit linkage and cannot be written twice for the same open paper trade. This preserves a one-entry, one-exit evidence chain for later strategy review.
 
+Paper-trade evidence summaries should aggregate only closed paper trades for performance metrics while counting open trades separately. Summaries must remain `notRecommendation`, block broker/live-shaped records, and require backtest plus operator review before any strategy promotion decision.
+
 Lessons learned should be stored and visible on future recommendations from the same strategy.

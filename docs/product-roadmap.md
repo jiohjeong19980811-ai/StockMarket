@@ -45,6 +45,7 @@ Acceptance criteria:
 - API smoke can verify a mock paper-trade decision is persisted through an in-memory ledger dry run without provider keys or broker execution.
 - API smoke can verify a mock paper trade opens and closes through the in-memory ledger with close audit linkage.
 - Operator console can show simulated paper-trade close outcome, P/L, return percent, exit price, and lessons from the mock close dry run.
+- Paper-trade evidence summaries aggregate closed simulated trades for validation metrics while remaining non-recommendation and review-gated.
 - Backtesting framework exists.
 - Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.
 - Context-only and deferred strategy families cannot bypass the scoring strategy-policy gate.

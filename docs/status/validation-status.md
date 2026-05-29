@@ -1,25 +1,31 @@
 # Validation Status
 
-Last updated: 2026-05-29T08:52:19-04:00
+Last updated: 2026-05-29T08:57:54-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6 paper trading validation |
-| Current task | Add local web CORS for mock API routes |
+| Current task | Add paper-trade evidence summary metrics |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | API and operator UI integration |
+| Category | Paper trading validation evidence |
 | Blockers | None |
-| Next step | Commit the local CORS slice, then continue Milestone 6 with durable paper-trade lifecycle/read APIs or paper-trade evidence summaries. |
-| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/cors.test.ts`, `docs/architecture.md`, `docs/security.md`, `docs/decision-log.md`, `docs/status/` |
+| Next step | Commit the paper-trade evidence summary slice, then continue Milestone 6 with API/UI visibility for paper-trade evidence or durable paper-trade read APIs. |
+| Related docs/files | `packages/paper-trading/src/index.ts`, `packages/paper-trading/test/paper-trading.test.ts`, `docs/backtesting-and-validation.md`, `docs/risk-and-compliance.md`, `docs/architecture.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 paper-trade evidence summary aggregate CI | Completed | Typecheck, lint, format, 118 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding evidence summary metrics | `npm.cmd run ci` |
+| Milestone 6 paper-trade evidence summary focused test | Completed | Red-green paper-trading package tests passed for closed-trade metrics, ready-for-review sample threshold, and broker/live-shaped record blocking | `npm.cmd run test --workspace @stockmarket/paper-trading -- paper-trading` |
+| Milestone 6 paper-trade evidence summary status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-011 | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 paper-trade evidence summary whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 6 paper-trade evidence summary secret-pattern scan | Completed | No secret-shaped tokens found in changed paper-trading/status/doc files | `rg` secret-pattern scan |
+| Milestone 6 paper-trade evidence summary live-trading surface scan | Completed | Matches are documented prohibitions, explicit no-broker wording, or existing safety copy; no live order implementation was introduced | `rg` live-trading/order-surface scan |
 | Milestone 6 local API CORS aggregate CI | Completed | Typecheck, lint, format, 115 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding local CORS handling | `npm.cmd run ci` |
 | Milestone 6 local API CORS focused test | Completed | Red-green API tests passed for allowed local web origin, POST preflight, and disallowed arbitrary browser origin | `npm.cmd run test --workspace @stockmarket/api -- cors` |
 | Milestone 6 local API CORS status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-010 | `python -m json.tool docs/status/work-items.json` |

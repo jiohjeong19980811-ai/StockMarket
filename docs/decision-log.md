@@ -233,3 +233,9 @@ Reason: Operators need performance visibility before paper-trade outcomes can be
 Decision: Add a narrow local CORS policy to the API for `http://127.0.0.1:3001` and `http://localhost:3001`, including `GET`, `POST`, and `OPTIONS` support for the operator web app.
 
 Reason: The Vite web app and Fastify API run on separate local ports. Browser integration needs explicit CORS headers, but the MVP should not use wildcard origins, credentials, or broad API exposure.
+
+## 2026-05-29: Paper-Trade Evidence Summary
+
+Decision: Add `summarizePaperTradeEvidence` to `@stockmarket/paper-trading` so closed simulated trades can produce validation metrics without becoming recommendations or strategy promotions.
+
+Reason: Paper-trading outcomes need a deterministic bridge into validation. The summary must separate open trades from closed performance, require audit-linked closes, block broker/live-shaped records, and keep backtesting plus operator review as prerequisites before any strategy decision changes.
