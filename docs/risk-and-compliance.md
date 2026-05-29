@@ -154,10 +154,12 @@ The first paper-trading package slice is simulated-only. Opening a paper positio
 
 - A core `paper_trade` eligible recommendation.
 - Operator approval metadata and audit log ID.
-- Thesis snapshot, stop rule, target rule, and time stop.
+- Thesis snapshot, stop rule, target rule, numeric stop-loss price, numeric profit-target price, and time stop.
 - Valid paper equity, entry price, quantity, and max loss.
 - Paper exposure inside the conservative MVP caps.
 - No broker, live account, external order, or execution-shaped fields.
+
+Durable paper-trade rows must also preserve recommendation, approval, and entry audit references. The database constrains paper trades to stock-only MVP entries, rejects non-paper or broker-execution flags, rejects ineligible recommendations, and enforces max idea risk, single-name exposure, sector exposure, correlated exposure, and daily paper-loss caps.
 
 Options paper trades remain rejected until the options strategy policy is explicitly promoted after historical options chain and fill-model validation.
 

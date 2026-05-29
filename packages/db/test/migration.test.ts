@@ -147,6 +147,97 @@ async function insertRecommendation(overrides: Record<string, unknown> = {}) {
   );
 }
 
+async function seedPaperTradeDependencies() {
+  await seedRecommendationDependencies();
+  await insertRecommendation({
+    decision: "paper_trade",
+    evidence_status: "paper_trade_eligible",
+    backtest_run_id: "bt_123",
+  });
+  await execute(
+    `INSERT INTO audit_logs
+      (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      "audit_paper_trade_approval_1",
+      "operator_decision",
+      "operator",
+      "operator:test",
+      now,
+      "paper_trade",
+      "paper_trade_1",
+      "pass",
+      "paper_trade",
+    ],
+  );
+  await execute(
+    `INSERT INTO audit_logs
+      (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      "audit_paper_trade_entry_1",
+      "paper_trade_opened",
+      "system",
+      "paper-trading",
+      now,
+      "paper_trade",
+      "paper_trade_1",
+      "pass",
+      "paper_trade",
+    ],
+  );
+}
+
+async function insertPaperTrade(overrides: Record<string, unknown> = {}) {
+  const row = {
+    id: "paper_trade_1",
+    recommendation_id: "rec_1",
+    account_id: "paper_account_default",
+    mode: "paper",
+    status: "open",
+    ticker: "MSFT",
+    instrument_type: "stock",
+    strategy_version_id: "strategy_earnings_v0",
+    operator_approval_audit_log_id: "audit_paper_trade_approval_1",
+    entry_audit_log_id: "audit_paper_trade_entry_1",
+    thesis_snapshot: "Positive earnings surprise research candidate.",
+    entry_reason: "Operator approved a simulated long-stock paper trade after risk gates passed.",
+    downside_scenario: "Shares reverse below the event gap.",
+    invalidation_conditions_json: '["Close below event low"]',
+    entry_type: "market",
+    requested_entry_price: 410,
+    simulated_entry_price: 410,
+    quantity: 2,
+    entered_at: now,
+    stop_loss: 395,
+    profit_target: 435,
+    time_stop_at: "2026-05-15T20:00:00Z",
+    max_loss_amount: 300,
+    risk_pct_of_equity: 0.3,
+    account_equity_at_entry: 100000,
+    single_name_exposure_pct: 0.82,
+    sector_exposure_pct: 8,
+    correlated_exposure_pct: 10,
+    daily_loss_pct_at_entry: 0.4,
+    live_trading_enabled: 0,
+    broker_execution: 0,
+    closed_at: null,
+    exit_price: null,
+    exit_reason: null,
+    lessons_learned: null,
+    created_at: now,
+    updated_at: now,
+    ...overrides,
+  };
+
+  const columns = Object.keys(row);
+  const placeholders = columns.map(() => "?").join(", ");
+  await execute(
+    `INSERT INTO paper_trades (${columns.join(", ")}) VALUES (${placeholders})`,
+    Object.values(row),
+  );
+}
+
 describe("database migrations", () => {
   beforeEach(async () => {
     client = await createLocalClient();
@@ -164,6 +255,7 @@ describe("database migrations", () => {
     expect(result.rows.map((row) => row.name)).toEqual([
       "0000_initial_research_schema.sql",
       "0001_normalized_ingestion_tables.sql",
+      "0002_paper_trades.sql",
     ]);
     for (const row of result.rows) {
       expect(row.checksum).toEqual(expect.stringMatching(/^[a-f0-9]{64}$/));
@@ -756,5 +848,87 @@ describe("database migrations", () => {
 
     const result = await client.execute("SELECT COUNT(*) AS count FROM recommendations");
     expect(result.rows[0]?.count).toBe(1);
+  });
+
+  it("accepts a stock paper trade with operator approval, entry rules, and risk snapshots", async () => {
+    await seedPaperTradeDependencies();
+
+    await insertPaperTrade();
+
+    const result = await client.execute(
+      "SELECT mode, status, live_trading_enabled, broker_execution FROM paper_trades",
+    );
+    expect(result.rows[0]).toMatchObject({
+      mode: "paper",
+      status: "open",
+      live_trading_enabled: 0,
+      broker_execution: 0,
+    });
+  });
+
+  it("rejects paper trades for recommendations that are not paper-trade eligible", async () => {
+    await seedRecommendationDependencies();
+    await insertRecommendation();
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "audit_paper_trade_approval_1",
+        "operator_decision",
+        "operator",
+        "operator:test",
+        now,
+        "paper_trade",
+        "paper_trade_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "audit_paper_trade_entry_1",
+        "paper_trade_opened",
+        "system",
+        "paper-trading",
+        now,
+        "paper_trade",
+        "paper_trade_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+
+    await expect(insertPaperTrade()).rejects.toThrow();
+  });
+
+  it("rejects paper trades that try to persist live trading or broker execution flags", async () => {
+    await seedPaperTradeDependencies();
+
+    await expect(insertPaperTrade({ live_trading_enabled: 1 })).rejects.toThrow();
+    await expect(insertPaperTrade({ id: "paper_trade_2", broker_execution: 1 })).rejects.toThrow();
+  });
+
+  it("rejects paper trades with inconsistent risk percent snapshots", async () => {
+    await seedPaperTradeDependencies();
+
+    await expect(insertPaperTrade({ risk_pct_of_equity: 0.1 })).rejects.toThrow();
+  });
+
+  it("rejects options paper trades until the options strategy policy is promoted", async () => {
+    await seedPaperTradeDependencies();
+
+    await expect(insertPaperTrade({ instrument_type: "long_call" })).rejects.toThrow();
+  });
+
+  it("rejects stock paper trades without explicit stop, target, and time-stop rules", async () => {
+    await seedPaperTradeDependencies();
+
+    await expect(insertPaperTrade({ stop_loss: null })).rejects.toThrow();
+    await expect(insertPaperTrade({ id: "paper_trade_2", profit_target: null })).rejects.toThrow();
+    await expect(insertPaperTrade({ id: "paper_trade_3", time_stop_at: "" })).rejects.toThrow();
   });
 });

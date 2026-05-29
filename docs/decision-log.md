@@ -185,3 +185,15 @@ Reason: Paper trading should create auditable learning evidence without introduc
 Decision: Expose `/paper-trading/mock-decision` as a non-durable API contract check for simulated paper entries.
 
 Reason: The operator UI and future workflows need to inspect paper-trading decisions before DB persistence exists, while keeping provider keys, broker execution, and durable trade records out of the mock endpoint.
+
+## 2026-05-28: Paper-Trade Persistence Ledger
+
+Decision: Add a stock-only `paper_trades` table and DB ledger helper for durable simulated paper entries. Persisted rows require paper-trade eligible recommendations, operator approval and entry audit references, thesis/downside/invalidation snapshots, numeric stop-loss and profit-target prices, time stops, and conservative paper exposure caps. The persistence path sets paper mode internally and stores no live execution state.
+
+Reason: Paper-trading outcomes cannot become validation evidence unless entries are durable, auditable, and tied to the original thesis and risk plan. Keeping the table stock-only for MVP avoids premature options confidence before historical options-chain and fill-model validation exist.
+
+## 2026-05-28: Numeric Paper Exit Levels
+
+Decision: Tighten the paper-trading contract so accepted stock paper trades must include valid numeric stop-loss and profit-target prices in addition to text exit rules and a time stop.
+
+Reason: Text rules are useful for operator review, but database constraints and later P/L validation need numeric levels to enforce max-loss assumptions, detect invalid entries, and compare exits against the original approved plan.

@@ -22,7 +22,7 @@ Capabilities:
 - Daily opportunity generation.
 - Dashboard shell with top opportunities.
 - Ticker and opportunity detail pages.
-- Paper-trading ledger contracts, starting stock-only and simulated-only.
+- Paper-trading ledger contracts and durable DB rows, starting stock-only and simulated-only.
 - Basic backtesting framework.
 - Risk manager module and no-trade rules.
 - Data freshness and audit logs.
@@ -39,6 +39,7 @@ Acceptance criteria:
 - Operator can paper trade a recommendation.
 - Paper-trade performance is visible.
 - Paper-trade entries require operator approval metadata, explicit stop/target/time-stop rules, audit references, and conservative paper exposure limits.
+- Durable paper-trade records remain paper-only, stock-only for MVP, and cannot store live-trading or broker-execution flags.
 - Backtesting framework exists.
 - Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.
 - Context-only and deferred strategy families cannot bypass the scoring strategy-policy gate.

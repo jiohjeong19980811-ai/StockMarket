@@ -143,6 +143,8 @@ const mockPaperTradeRequest: PaperTradeRequest = {
     requestedAt: "2026-05-28T15:00:00.000Z",
     quantity: 10,
     entryPrice: 100,
+    stopLossPrice: 95,
+    profitTargetPrice: 108,
     maxLoss: 300,
     thesisSnapshot: mockPaperTradeRecommendation.thesis,
     stopRule: "Exit on close below the mock breakout level.",

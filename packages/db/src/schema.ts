@@ -492,6 +492,141 @@ export const recommendations = sqliteTable(
   ],
 );
 
+export const paperTrades = sqliteTable(
+  "paper_trades",
+  {
+    id: text("id").primaryKey(),
+    recommendationId: text("recommendation_id")
+      .notNull()
+      .references(() => recommendations.id),
+    accountId: text("account_id").notNull(),
+    mode: text("mode", { enum: ["paper"] })
+      .notNull()
+      .default("paper"),
+    status: text("status", { enum: ["open", "closed", "cancelled"] }).notNull(),
+    ticker: text("ticker").notNull(),
+    instrumentType: text("instrument_type", { enum: ["stock"] }).notNull(),
+    strategyVersionId: text("strategy_version_id")
+      .notNull()
+      .references(() => strategyVersions.id),
+    operatorApprovalAuditLogId: text("operator_approval_audit_log_id")
+      .notNull()
+      .references(() => auditLogs.id),
+    entryAuditLogId: text("entry_audit_log_id")
+      .notNull()
+      .references(() => auditLogs.id),
+    thesisSnapshot: text("thesis_snapshot").notNull(),
+    entryReason: text("entry_reason").notNull(),
+    downsideScenario: text("downside_scenario").notNull(),
+    invalidationConditionsJson: text("invalidation_conditions_json").notNull(),
+    entryType: text("entry_type", { enum: ["market", "limit"] }).notNull(),
+    requestedEntryPrice: real("requested_entry_price").notNull(),
+    simulatedEntryPrice: real("simulated_entry_price").notNull(),
+    quantity: integer("quantity").notNull(),
+    enteredAt: text("entered_at").notNull(),
+    stopLoss: real("stop_loss").notNull(),
+    profitTarget: real("profit_target").notNull(),
+    timeStopAt: text("time_stop_at").notNull(),
+    maxLossAmount: real("max_loss_amount").notNull(),
+    riskPctOfEquity: real("risk_pct_of_equity").notNull(),
+    accountEquityAtEntry: real("account_equity_at_entry").notNull(),
+    singleNameExposurePct: real("single_name_exposure_pct").notNull(),
+    sectorExposurePct: real("sector_exposure_pct").notNull(),
+    correlatedExposurePct: real("correlated_exposure_pct").notNull(),
+    dailyLossPctAtEntry: real("daily_loss_pct_at_entry").notNull(),
+    liveTradingEnabled: integer("live_trading_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    brokerExecution: integer("broker_execution", { mode: "boolean" }).notNull().default(false),
+    closedAt: text("closed_at"),
+    exitPrice: real("exit_price"),
+    exitReason: text("exit_reason"),
+    lessonsLearned: text("lessons_learned"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("paper_trades_recommendation_unique").on(table.recommendationId),
+    index("paper_trades_ticker_status_idx").on(table.ticker, table.status),
+    index("paper_trades_strategy_version_idx").on(table.strategyVersionId),
+    index("paper_trades_account_status_idx").on(table.accountId, table.status),
+    check("paper_trades_mode_paper_only", sql`${table.mode} = 'paper'`),
+    check("paper_trades_stock_only_mvp", sql`${table.instrumentType} = 'stock'`),
+    check("paper_trades_no_live_trading", sql`${table.liveTradingEnabled} = 0`),
+    check("paper_trades_no_broker_execution", sql`${table.brokerExecution} = 0`),
+    check("paper_trades_account_nonempty", sql`length(${table.accountId}) > 0`),
+    check("paper_trades_ticker_nonempty", sql`length(${table.ticker}) > 0`),
+    check("paper_trades_thesis_nonempty", sql`length(${table.thesisSnapshot}) > 0`),
+    check("paper_trades_entry_reason_nonempty", sql`length(${table.entryReason}) > 0`),
+    check("paper_trades_downside_nonempty", sql`length(${table.downsideScenario}) > 0`),
+    check(
+      "paper_trades_invalidation_conditions_valid",
+      sql`
+        json_valid(${table.invalidationConditionsJson})
+        AND json_type(${table.invalidationConditionsJson}) = 'array'
+        AND json_array_length(${table.invalidationConditionsJson}) > 0
+      `,
+    ),
+    check("paper_trades_requested_entry_positive", sql`${table.requestedEntryPrice} > 0`),
+    check("paper_trades_simulated_entry_positive", sql`${table.simulatedEntryPrice} > 0`),
+    check("paper_trades_quantity_positive", sql`${table.quantity} > 0`),
+    check("paper_trades_entered_at_nonempty", sql`length(${table.enteredAt}) > 0`),
+    check(
+      "paper_trades_stop_loss_valid",
+      sql`${table.stopLoss} > 0 AND ${table.stopLoss} < ${table.simulatedEntryPrice}`,
+    ),
+    check(
+      "paper_trades_profit_target_valid",
+      sql`${table.profitTarget} > ${table.simulatedEntryPrice}`,
+    ),
+    check("paper_trades_time_stop_nonempty", sql`length(${table.timeStopAt}) > 0`),
+    check("paper_trades_max_loss_positive", sql`${table.maxLossAmount} > 0`),
+    check("paper_trades_account_equity_positive", sql`${table.accountEquityAtEntry} > 0`),
+    check(
+      "paper_trades_max_loss_cap",
+      sql`${table.maxLossAmount} <= ${table.accountEquityAtEntry} * 0.005`,
+    ),
+    check(
+      "paper_trades_risk_pct_cap",
+      sql`${table.riskPctOfEquity} >= 0 AND ${table.riskPctOfEquity} <= 0.5`,
+    ),
+    check(
+      "paper_trades_risk_pct_matches_max_loss",
+      sql`abs(${table.riskPctOfEquity} - ((${table.maxLossAmount} / ${table.accountEquityAtEntry}) * 100)) <= 0.0001`,
+    ),
+    check(
+      "paper_trades_single_name_cap",
+      sql`${table.singleNameExposurePct} >= 0 AND ${table.singleNameExposurePct} <= 5`,
+    ),
+    check(
+      "paper_trades_sector_cap",
+      sql`${table.sectorExposurePct} >= 0 AND ${table.sectorExposurePct} <= 20`,
+    ),
+    check(
+      "paper_trades_correlated_cap",
+      sql`${table.correlatedExposurePct} >= 0 AND ${table.correlatedExposurePct} <= 15`,
+    ),
+    check(
+      "paper_trades_daily_loss_cap",
+      sql`${table.dailyLossPctAtEntry} >= 0 AND ${table.dailyLossPctAtEntry} <= 2`,
+    ),
+    check(
+      "paper_trades_closed_exit_details",
+      sql`
+        ${table.status} != 'closed'
+        OR (
+          ${table.closedAt} IS NOT NULL AND length(${table.closedAt}) > 0
+          AND ${table.exitPrice} IS NOT NULL AND ${table.exitPrice} > 0
+          AND ${table.exitReason} IS NOT NULL AND length(${table.exitReason}) > 0
+          AND ${table.lessonsLearned} IS NOT NULL AND length(${table.lessonsLearned}) > 0
+        )
+      `,
+    ),
+    check("paper_trades_created_at_nonempty", sql`length(${table.createdAt}) > 0`),
+    check("paper_trades_updated_at_nonempty", sql`length(${table.updatedAt}) > 0`),
+  ],
+);
+
 export const recommendationCitations = sqliteTable(
   "recommendation_citations",
   {

@@ -15,6 +15,8 @@ export interface PaperTradeEntryRequest {
   requestedAt: string;
   quantity: number;
   entryPrice: number;
+  stopLossPrice: number;
+  profitTargetPrice: number;
   maxLoss: number;
   thesisSnapshot: string;
   stopRule: string;
@@ -43,6 +45,7 @@ export type PaperTradeRejectReason =
   | "entry_rules_missing"
   | "invalid_account_equity"
   | "invalid_entry_price_or_quantity"
+  | "invalid_exit_prices"
   | "invalid_max_loss"
   | "position_risk_limit_exceeded"
   | "single_name_exposure_limit_exceeded"
@@ -85,6 +88,8 @@ export interface PaperTrade {
   openedAt: string;
   quantity: number;
   entryPrice: number;
+  stopLossPrice: number;
+  profitTargetPrice: number;
   thesisSnapshot: string;
   stopRule: string;
   targetRule: string;
@@ -159,7 +164,22 @@ function hasOperatorApproval(approval: PaperTradeOperatorApproval): boolean {
 }
 
 function hasEntryRules(entry: PaperTradeEntryRequest): boolean {
-  return hasText(entry.thesisSnapshot) && hasText(entry.stopRule) && hasText(entry.targetRule);
+  return (
+    hasText(entry.thesisSnapshot) &&
+    hasText(entry.stopRule) &&
+    hasText(entry.targetRule) &&
+    hasText(entry.timeStop)
+  );
+}
+
+function hasValidExitPrices(entry: PaperTradeEntryRequest): boolean {
+  return (
+    isPositiveNumber(entry.stopLossPrice) &&
+    isPositiveNumber(entry.profitTargetPrice) &&
+    isPositiveNumber(entry.entryPrice) &&
+    entry.stopLossPrice < entry.entryPrice &&
+    entry.profitTargetPrice > entry.entryPrice
+  );
 }
 
 function buildPaperTradeId(recommendationId: string, requestedAt: string): string {
@@ -191,6 +211,9 @@ export function createPaperTrade(request: PaperTradeRequest): PaperTradeDecision
   }
   if (!isPositiveNumber(entry.entryPrice) || !isPositiveNumber(entry.quantity)) {
     reasons.push("invalid_entry_price_or_quantity");
+  }
+  if (!hasValidExitPrices(entry)) {
+    reasons.push("invalid_exit_prices");
   }
   if (!isPositiveNumber(entry.maxLoss)) {
     reasons.push("invalid_max_loss");
@@ -241,6 +264,8 @@ export function createPaperTrade(request: PaperTradeRequest): PaperTradeDecision
       openedAt: entry.requestedAt,
       quantity: entry.quantity,
       entryPrice: entry.entryPrice,
+      stopLossPrice: entry.stopLossPrice,
+      profitTargetPrice: entry.profitTargetPrice,
       thesisSnapshot: entry.thesisSnapshot,
       stopRule: entry.stopRule,
       targetRule: entry.targetRule,

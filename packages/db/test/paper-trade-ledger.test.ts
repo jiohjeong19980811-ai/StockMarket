@@ -1,0 +1,208 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createLocalClient, persistPaperTrade, runMigrations } from "../src/index.js";
+import type { Client } from "@libsql/client";
+
+const now = "2026-05-01T12:00:00Z";
+
+let client: Client;
+
+async function execute(sql: string, args: unknown[] = []) {
+  return client.execute({ sql, args });
+}
+
+async function seedPaperTradeDependencies(decision = "paper_trade") {
+  await execute(
+    `INSERT INTO strategy_definitions
+      (id, family, name, description, allowed_instrument_types_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)`,
+    ["strategy_earnings", "earnings", "PEAD", "Post-earnings drift research.", '["stock"]', now],
+  );
+  await execute(
+    `INSERT INTO strategy_versions
+      (id, strategy_definition_id, version, validation_status, promotion_state, required_data_json, risk_policy_version, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      "strategy_earnings_v0",
+      "strategy_earnings",
+      "v0",
+      "paper_trade_eligible",
+      "paper_trade_eligible",
+      '["prices","earnings"]',
+      "risk-v0",
+      now,
+    ],
+  );
+  await execute(
+    `INSERT INTO audit_logs
+      (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      "audit_recommendation_1",
+      "operator_decision",
+      "operator",
+      "operator:test",
+      now,
+      "recommendation",
+      "rec_1",
+      "pass",
+      decision,
+    ],
+  );
+  await execute(
+    `INSERT INTO recommendations
+      (id, ticker, instrument_type, strategy_version_id, decision, evidence_status, thesis, bull_case,
+       bear_case, downside_scenario, invalidation_conditions_json, why_system_might_be_wrong,
+       primary_citation_title, primary_citation_url, primary_citation_source,
+       primary_citation_published_at, primary_citation_retrieved_at, freshness_status,
+       freshness_as_of, freshness_notes_json, risk_score, confidence_score, liquidity_score,
+       liquidity_decision, risk_decision, backtest_run_id, operator_audit_log_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      "rec_1",
+      "MSFT",
+      "stock",
+      "strategy_earnings_v0",
+      decision,
+      decision === "paper_trade" ? "paper_trade_eligible" : "watchlist_eligible",
+      "Positive earnings surprise research candidate.",
+      "Liquidity and surprise support follow-through research.",
+      "Move may be exhausted.",
+      "Shares reverse below the event gap.",
+      '["Close below event low"]',
+      "Guidance may matter more than surprise.",
+      "Example earnings release",
+      "https://example.com/earnings",
+      "example",
+      now,
+      now,
+      "fresh",
+      now,
+      "[]",
+      45,
+      62,
+      88,
+      "pass",
+      "pass",
+      decision === "paper_trade" ? "bt_123" : null,
+      "audit_recommendation_1",
+      now,
+      now,
+    ],
+  );
+  for (const auditId of ["audit_paper_trade_approval_1", "audit_paper_trade_entry_1"]) {
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        auditId,
+        auditId.endsWith("approval_1") ? "operator_decision" : "paper_trade_opened",
+        auditId.endsWith("approval_1") ? "operator" : "system",
+        auditId.endsWith("approval_1") ? "operator:test" : "paper-trading",
+        now,
+        "paper_trade",
+        "paper_trade_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+  }
+}
+
+describe("paper trade ledger persistence", () => {
+  beforeEach(async () => {
+    client = await createLocalClient();
+    await runMigrations(client);
+  });
+
+  afterEach(() => {
+    client.close();
+  });
+
+  it("persists an accepted stock paper trade as a paper-only audit-linked ledger row", async () => {
+    await seedPaperTradeDependencies();
+
+    await persistPaperTrade(client, {
+      id: "paper_trade_1",
+      recommendationId: "rec_1",
+      accountId: "paper_account_default",
+      ticker: "MSFT",
+      instrumentType: "stock",
+      strategyVersionId: "strategy_earnings_v0",
+      operatorApprovalAuditLogId: "audit_paper_trade_approval_1",
+      entryAuditLogId: "audit_paper_trade_entry_1",
+      thesisSnapshot: "Positive earnings surprise research candidate.",
+      entryReason: "Operator approved a simulated long-stock paper trade after risk gates passed.",
+      downsideScenario: "Shares reverse below the event gap.",
+      invalidationConditions: ["Close below event low"],
+      entryType: "market",
+      requestedEntryPrice: 410,
+      simulatedEntryPrice: 410,
+      quantity: 2,
+      enteredAt: now,
+      stopLoss: 395,
+      profitTarget: 435,
+      timeStopAt: "2026-05-15T20:00:00Z",
+      maxLossAmount: 300,
+      accountEquityAtEntry: 100000,
+      singleNameExposurePct: 0.82,
+      sectorExposurePct: 8,
+      correlatedExposurePct: 10,
+      dailyLossPctAtEntry: 0.4,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const result = await client.execute(
+      `SELECT mode, status, live_trading_enabled, broker_execution, risk_pct_of_equity, invalidation_conditions_json
+       FROM paper_trades WHERE id = ?`,
+      ["paper_trade_1"],
+    );
+    expect(result.rows[0]).toMatchObject({
+      mode: "paper",
+      status: "open",
+      live_trading_enabled: 0,
+      broker_execution: 0,
+      risk_pct_of_equity: 0.3,
+      invalidation_conditions_json: '["Close below event low"]',
+    });
+  });
+
+  it("inherits database safety gates when a recommendation is not paper-trade eligible", async () => {
+    await seedPaperTradeDependencies("watchlist");
+
+    await expect(
+      persistPaperTrade(client, {
+        id: "paper_trade_1",
+        recommendationId: "rec_1",
+        accountId: "paper_account_default",
+        ticker: "MSFT",
+        instrumentType: "stock",
+        strategyVersionId: "strategy_earnings_v0",
+        operatorApprovalAuditLogId: "audit_paper_trade_approval_1",
+        entryAuditLogId: "audit_paper_trade_entry_1",
+        thesisSnapshot: "Positive earnings surprise research candidate.",
+        entryReason:
+          "Operator approved a simulated long-stock paper trade after risk gates passed.",
+        downsideScenario: "Shares reverse below the event gap.",
+        invalidationConditions: ["Close below event low"],
+        entryType: "market",
+        requestedEntryPrice: 410,
+        simulatedEntryPrice: 410,
+        quantity: 2,
+        enteredAt: now,
+        stopLoss: 395,
+        profitTarget: 435,
+        timeStopAt: "2026-05-15T20:00:00Z",
+        maxLossAmount: 300,
+        accountEquityAtEntry: 100000,
+        singleNameExposurePct: 0.82,
+        sectorExposurePct: 8,
+        correlatedExposurePct: 10,
+        dailyLossPctAtEntry: 0.4,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ).rejects.toThrow(/paper-trade eligible recommendation/i);
+  });
+});

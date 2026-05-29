@@ -1,25 +1,35 @@
 # Validation Status
 
-Last updated: 2026-05-28T23:07:26-04:00
+Last updated: 2026-05-28T23:22:00-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6 paper trading validation |
-| Current task | Operator console paper-trading contract visibility |
+| Current task | Durable paper-trade persistence ledger |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
 | Category | Paper trading and auditability |
 | Blockers | None |
-| Next step | Commit the operator console paper-trading visibility slice, then continue with paper-trade persistence |
-| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `docs/status/` |
+| Next step | Commit the paper-trade persistence ledger slice, then continue with API/database integration for durable paper entries |
+| Related docs/files | `packages/db/migrations/0002_paper_trades.sql`, `packages/db/src/paper-trade-ledger.ts`, `packages/db/src/schema.ts`, `packages/db/test/paper-trade-ledger.test.ts`, `packages/db/test/migration.test.ts`, `packages/paper-trading/src/index.ts`, `packages/paper-trading/test/paper-trading.test.ts`, `apps/api/src/server.ts`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 paper-trade persistence aggregate CI | Completed | Typecheck, lint, format, 104 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding the durable paper-trade ledger | `npm.cmd run ci` |
+| Milestone 6 paper-trade persistence DB package tests | Completed | 35 DB tests passed across migrations, ingestion sink, and paper-trade ledger persistence | `npm.cmd run test --workspace @stockmarket/db` |
+| Milestone 6 paper-trade persistence DB migration tests | Completed | 28 migration tests passed, including `0002_paper_trades.sql`, paper-only flags, eligible-recommendation trigger, risk-percent consistency, options deferral, and required stop/target/time-stop constraints | `npm.cmd run test --workspace @stockmarket/db -- migration` |
+| Milestone 6 paper-trade persistence DB ledger tests | Completed | 2 ledger tests passed for durable paper-only audit-linked row insertion and inherited DB rejection of non-paper-trade-eligible recommendations | `npm.cmd run test --workspace @stockmarket/db -- paper-trade-ledger` |
+| Milestone 6 paper-trade persistence package tests | Completed | 6 paper-trading tests passed, including numeric stop-loss/profit-target validation and time-stop enforcement | `npm.cmd run test --workspace @stockmarket/paper-trading` |
+| Milestone 6 paper-trade persistence API focused test | Completed | Mock paper-trading API test passed after adding numeric stop-loss and profit-target fields to the request contract | `npm.cmd run test --workspace @stockmarket/api -- paper-trading` |
+| Milestone 6 paper-trade persistence status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-004 | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 paper-trade persistence whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 6 paper-trade persistence secret-pattern scan | Completed | No secret-shaped tokens found in changed app, package, and status/doc files | `rg` secret-pattern scan |
+| Milestone 6 paper-trade persistence live-trading surface scan | Completed | Matches are documented prohibitions, broker-field rejection tests, or explicit no-broker-execution UI/test copy; no live order implementation was introduced | `rg` live-trading/order-surface scan |
 | Milestone 6 paper-trading UI aggregate CI | Completed | Typecheck, lint, format, 95 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after the console paper-trading panel update | `npm.cmd run ci` |
 | Milestone 6 paper-trading UI status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after paper-trading UI status updates | `python -m json.tool docs/status/work-items.json` |
 | Milestone 6 paper-trading UI whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |

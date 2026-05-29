@@ -186,6 +186,8 @@ The paper-trading package starts as a pure simulated ledger contract. It accepts
 
 Milestone 6 begins with stock-only paper positions. Options paper trading remains blocked until a future options policy review promotes the strategy family and historical options chain validation is available.
 
+Paper-trade persistence is now represented by a dedicated `paper_trades` migration and DB ledger helper. The durable record is stock-only for MVP, stores operator approval and entry audit references, requires numeric stop-loss, profit-target, and time-stop fields, enforces conservative paper exposure caps, and hard-codes `mode = paper`, `live_trading_enabled = 0`, and `broker_execution = 0`.
+
 The API exposes `/paper-trading/mock-decision` as a non-durable contract demonstration. It does not persist records, require provider keys, or execute broker actions.
 
 The operator console can display the mock paper-trading contract state beside scoring gates so the operator sees paper-only status, max loss, and risk percent without turning the mock result into a recommendation.

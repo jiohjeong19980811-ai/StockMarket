@@ -63,6 +63,8 @@ function requestWith(overrides: Partial<PaperTradeRequest> = {}): PaperTradeRequ
       requestedAt: "2026-05-01T13:00:00Z",
       quantity: 10,
       entryPrice: 100,
+      stopLossPrice: 95,
+      profitTargetPrice: 108,
       maxLoss: 300,
       thesisSnapshot: baseRecommendation.thesis,
       stopRule: "Exit on close below post-earnings low.",
@@ -96,6 +98,8 @@ describe("createPaperTrade", () => {
       openedAt: "2026-05-01T13:00:00Z",
       quantity: 10,
       entryPrice: 100,
+      stopLossPrice: 95,
+      profitTargetPrice: 108,
       thesisSnapshot: baseRecommendation.thesis,
       stopRule: "Exit on close below post-earnings low.",
       targetRule: "Review after 5% paper gain or thesis invalidation.",
@@ -158,6 +162,40 @@ describe("createPaperTrade", () => {
     expect(result.reasonCodes).toContain("position_risk_limit_exceeded");
     expect(result.reasonCodes).toContain("sector_exposure_limit_exceeded");
     expect(result.trade).toBeUndefined();
+  });
+
+  it("rejects paper trades without explicit time stops or valid stop and target prices", () => {
+    const missingTimeStop = createPaperTrade(
+      requestWith({
+        entry: {
+          ...requestWith().entry,
+          timeStop: "",
+        },
+      }),
+    );
+    const invalidStop = createPaperTrade(
+      requestWith({
+        entry: {
+          ...requestWith().entry,
+          stopLossPrice: 101,
+        },
+      }),
+    );
+    const invalidTarget = createPaperTrade(
+      requestWith({
+        entry: {
+          ...requestWith().entry,
+          profitTargetPrice: 99,
+        },
+      }),
+    );
+
+    expect(missingTimeStop.status).toBe("rejected");
+    expect(missingTimeStop.reasonCodes).toContain("entry_rules_missing");
+    expect(invalidStop.status).toBe("rejected");
+    expect(invalidStop.reasonCodes).toContain("invalid_exit_prices");
+    expect(invalidTarget.status).toBe("rejected");
+    expect(invalidTarget.reasonCodes).toContain("invalid_exit_prices");
   });
 
   it("rejects options paper trades until the options policy is explicitly promoted", () => {
