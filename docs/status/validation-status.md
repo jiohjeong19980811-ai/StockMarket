@@ -1,25 +1,31 @@
 # Validation Status
 
-Last updated: 2026-05-29T08:35:16-04:00
+Last updated: 2026-05-29T08:39:33-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6 paper trading validation |
-| Current task | DB paper-trade close persistence |
+| Current task | Mock paper-trade close API dry run |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
 | Category | Paper trading and auditability |
 | Blockers | None |
-| Next step | Commit the DB paper-trade close persistence slice, then continue with UI performance visibility or API close dry-run integration |
-| Related docs/files | `packages/db/migrations/0003_paper_trade_closes.sql`, `packages/db/src/paper-trade-ledger.ts`, `packages/db/src/schema.ts`, `packages/db/test/paper-trade-ledger.test.ts`, `packages/db/test/migration.test.ts`, `docs/architecture.md`, `docs/risk-and-compliance.md`, `docs/backtesting-and-validation.md`, `docs/product-roadmap.md`, `docs/decision-log.md`, `docs/status/` |
+| Next step | Commit the API paper-trade close dry-run slice, then continue with UI paper-trade performance visibility |
+| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/paper-trading.test.ts`, `scripts/smoke-api.mjs`, `docs/architecture.md`, `docs/product-roadmap.md`, `docs/decision-log.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 paper-trade close API aggregate CI | Completed | Typecheck, lint, format, 112 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding `/paper-trading/mock-close-dry-run` | `npm.cmd run ci` |
+| Milestone 6 paper-trade close API focused test | Completed | 3 API paper-trading route tests passed, including mock open, ledger dry run, and close dry run with close audit linkage | `npm.cmd run test --workspace @stockmarket/api -- paper-trading` |
+| Milestone 6 paper-trade close API status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-008 | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 paper-trade close API whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 6 paper-trade close API secret-pattern scan | Completed | No secret-shaped tokens found in changed API, smoke, and status/doc files | `rg` secret-pattern scan |
+| Milestone 6 paper-trade close API live-trading surface scan | Completed | Matches are documented prohibitions, negative tests, or explicit no-broker-execution wording; no live order implementation was introduced | `rg` live-trading/order-surface scan |
 | Milestone 6 DB paper-trade close persistence aggregate CI | Completed | Typecheck, lint, format, 111 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding close persistence | `npm.cmd run ci` |
 | Milestone 6 DB paper-trade close persistence DB package tests | Completed | 38 DB tests passed across migrations, ingestion sink, and paper-trade ledger persistence | `npm.cmd run test --workspace @stockmarket/db` |
 | Milestone 6 DB paper-trade close persistence migration tests | Completed | 29 migration tests passed, including `0003_paper_trade_closes.sql` and close audit linkage rejection | `npm.cmd run test --workspace @stockmarket/db -- migration` |

@@ -13,12 +13,18 @@ import {
   type IngestionClock,
 } from "@stockmarket/data";
 import {
+  closePersistedPaperTrade,
   createLocalClient,
   persistIngestionBatch,
   persistPaperTrade,
   runMigrations,
 } from "@stockmarket/db";
-import { createPaperTrade, type PaperTradeRequest } from "@stockmarket/paper-trading";
+import {
+  closePaperTrade,
+  createPaperTrade,
+  type PaperTradeExitRequest,
+  type PaperTradeRequest,
+} from "@stockmarket/paper-trading";
 import { listStrategyPolicies, scoreOpportunity, type ScoringInput } from "@stockmarket/scoring";
 import type { Recommendation } from "@stockmarket/core";
 import type { ApiEnv } from "./env.js";
@@ -167,6 +173,15 @@ const mockPaperTradeRequest: PaperTradeRequest = {
     auditLogId: "audit_mock_paper_open_1",
     notes: "Mock paper-only approval.",
   },
+};
+
+const mockPaperTradeExitRequest: PaperTradeExitRequest = {
+  exitedAt: "2026-05-31T20:00:00.000Z",
+  exitPrice: 106,
+  priceTimestamp: "2026-05-31T20:00:00.000Z",
+  exitReason: "Mock profit-target review hit during paper-trade validation.",
+  lessonsLearned: "Mock paper trade followed through before the time stop.",
+  auditLogId: "audit_mock_paper_close_1",
 };
 
 async function countRows(client: LocalClient, tableName: DryRunTableName) {
@@ -318,6 +333,27 @@ async function seedMockPaperTradeLedgerDependencies(client: LocalClient, paperTr
   );
 }
 
+async function seedMockPaperTradeCloseAuditLog(client: LocalClient, paperTradeId: string) {
+  await client.execute({
+    sql: `INSERT INTO audit_logs
+      (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id,
+       risk_decision, operator_decision, operator_notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      mockPaperTradeExitRequest.auditLogId,
+      "paper_trade_closed",
+      "system",
+      "paper-trading",
+      mockPaperTradeExitRequest.exitedAt,
+      "paper_trade",
+      paperTradeId,
+      "pass",
+      "paper_trade",
+      mockPaperTradeExitRequest.exitReason,
+    ],
+  });
+}
+
 export function buildServer(env: ApiEnv) {
   const server = fastify({
     logger: env.APP_ENV !== "test",
@@ -459,6 +495,124 @@ export function buildServer(env: ApiEnv) {
                 brokerExecution: ledgerRow.broker_execution === 1,
                 ticker: ledgerRow.ticker,
                 riskPctOfEquity: Number(ledgerRow.risk_pct_of_equity),
+              },
+      };
+    } finally {
+      client.close();
+    }
+  });
+
+  server.post("/paper-trading/mock-close-dry-run", async () => {
+    const client = await createLocalClient();
+    const openResult = createPaperTrade(mockPaperTradeRequest);
+
+    try {
+      await runMigrations(client);
+
+      if (openResult.status !== "accepted" || openResult.trade.instrumentType !== "stock") {
+        return {
+          mode: "mock",
+          requiresEnv: false,
+          liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+          providerKeysRequired: [],
+          notRecommendation: true,
+          persistence: {
+            scope: "in_memory",
+            durable: false,
+            note: "Dry-run paper-trade close data is discarded after the response.",
+          },
+          openResult,
+          closeResult: null,
+          persistedInMemory: {
+            recommendations: await countRows(client, "recommendations"),
+            auditLogs: await countRows(client, "audit_logs"),
+            paperTrades: await countRows(client, "paper_trades"),
+          },
+          ledger: null,
+        };
+      }
+
+      await seedMockPaperTradeLedgerDependencies(client, openResult.trade.id);
+      await persistPaperTrade(client, {
+        id: openResult.trade.id,
+        recommendationId: openResult.trade.recommendationId,
+        accountId: "paper_account_mock",
+        ticker: openResult.trade.ticker,
+        instrumentType: openResult.trade.instrumentType,
+        strategyVersionId: openResult.trade.strategyVersion,
+        operatorApprovalAuditLogId: openResult.trade.audit.auditLogId,
+        entryAuditLogId: "audit_mock_paper_entry_1",
+        thesisSnapshot: openResult.trade.thesisSnapshot,
+        entryReason: "Mock API close dry-run accepted a simulated stock paper entry.",
+        downsideScenario: mockPaperTradeRecommendation.downsideScenario,
+        invalidationConditions: mockPaperTradeRecommendation.invalidationConditions,
+        entryType: "market",
+        requestedEntryPrice: mockPaperTradeRequest.entry.entryPrice,
+        simulatedEntryPrice: openResult.trade.entryPrice,
+        quantity: openResult.trade.quantity,
+        enteredAt: openResult.trade.openedAt,
+        stopLoss: openResult.trade.stopLossPrice,
+        profitTarget: openResult.trade.profitTargetPrice,
+        timeStopAt: "2026-06-11T20:00:00.000Z",
+        maxLossAmount: openResult.trade.risk.maxLoss,
+        accountEquityAtEntry: openResult.trade.risk.accountEquityAtOpen,
+        singleNameExposurePct: openResult.trade.risk.singleNameExposurePct,
+        sectorExposurePct: openResult.trade.risk.sectorExposurePct,
+        correlatedExposurePct: openResult.trade.risk.correlatedExposurePct,
+        dailyLossPctAtEntry: openResult.trade.risk.currentDailyLossPct,
+        createdAt: openResult.trade.openedAt,
+        updatedAt: openResult.trade.openedAt,
+      });
+
+      const closeResult = closePaperTrade(openResult.trade, mockPaperTradeExitRequest);
+      if (closeResult.status === "accepted") {
+        await seedMockPaperTradeCloseAuditLog(client, closeResult.trade.id);
+        await closePersistedPaperTrade(client, {
+          id: closeResult.trade.id,
+          closeAuditLogId: closeResult.trade.exitAudit.auditLogId,
+          closedAt: closeResult.trade.closedAt,
+          exitPrice: closeResult.trade.exitPrice,
+          exitReason: closeResult.trade.exitReason,
+          lessonsLearned: closeResult.trade.lessons[closeResult.trade.lessons.length - 1] ?? "",
+          updatedAt: closeResult.trade.closedAt,
+        });
+      }
+
+      const ledgerResult = await client.execute({
+        sql: `SELECT status, exit_audit_log_id, exit_price, exit_reason, lessons_learned
+          FROM paper_trades
+          LIMIT 1`,
+        args: [],
+      });
+      const ledgerRow = ledgerResult.rows[0];
+
+      return {
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+          note: "Dry-run paper-trade close data is discarded after the response.",
+        },
+        openResult,
+        closeResult,
+        persistedInMemory: {
+          recommendations: await countRows(client, "recommendations"),
+          auditLogs: await countRows(client, "audit_logs"),
+          paperTrades: await countRows(client, "paper_trades"),
+        },
+        ledger:
+          ledgerRow === undefined
+            ? null
+            : {
+                status: ledgerRow.status,
+                exitAuditLogId: ledgerRow.exit_audit_log_id,
+                exitPrice: Number(ledgerRow.exit_price),
+                exitReason: ledgerRow.exit_reason,
+                lessonsLearned: ledgerRow.lessons_learned,
               },
       };
     } finally {

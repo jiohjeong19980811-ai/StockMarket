@@ -215,3 +215,9 @@ Reason: Paper trades only become useful validation evidence after exits are tied
 Decision: Add `0003_paper_trade_closes.sql` and `closePersistedPaperTrade` so DB-backed paper trades can be closed exactly once with close audit linkage, closed timestamp, exit price, exit reason, and lessons learned.
 
 Reason: Paper-trade validation evidence needs a durable one-entry, one-exit audit chain. The database should reject missing close audit IDs and the helper should reject duplicate close attempts instead of silently overwriting outcomes.
+
+## 2026-05-29: Paper-Trade Close API Dry Run
+
+Decision: Add `/paper-trading/mock-close-dry-run` so the API can open and close one mock paper trade through an in-memory DB ledger with close audit linkage and simulated P/L output.
+
+Reason: The API needs a repeatable end-to-end lifecycle smoke path before real durable application state is introduced. Keeping the route in-memory and mock-only preserves the no-provider-key and no-broker-execution MVP boundary.

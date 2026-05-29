@@ -153,6 +153,30 @@ try {
     throw new Error(`Unexpected mock paper-trade ledger response: ${paperLedgerResponse.body}`);
   }
 
+  const paperCloseResponse = await server.inject({
+    method: "POST",
+    url: "/paper-trading/mock-close-dry-run",
+  });
+
+  if (paperCloseResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /paper-trading/mock-close-dry-run to return 200, got ${paperCloseResponse.statusCode}`,
+    );
+  }
+
+  const paperCloseBody = paperCloseResponse.json();
+  if (
+    paperCloseBody.requiresEnv !== false ||
+    paperCloseBody.liveTradingEnabled !== false ||
+    paperCloseBody.persistence?.durable !== false ||
+    paperCloseBody.closeResult?.status !== "accepted" ||
+    paperCloseBody.closeResult?.trade?.brokerExecution !== false ||
+    paperCloseBody.persistedInMemory?.paperTrades !== 1 ||
+    paperCloseBody.ledger?.status !== "closed"
+  ) {
+    throw new Error(`Unexpected mock paper-trade close response: ${paperCloseResponse.body}`);
+  }
+
   console.log("API smoke ok");
 } finally {
   await server.close();

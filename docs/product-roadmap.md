@@ -43,6 +43,7 @@ Acceptance criteria:
 - DB paper-trade closes require close audit linkage and reject duplicate close attempts.
 - Durable paper-trade records remain paper-only, stock-only for MVP, and cannot store live-trading or broker-execution flags.
 - API smoke can verify a mock paper-trade decision is persisted through an in-memory ledger dry run without provider keys or broker execution.
+- API smoke can verify a mock paper trade opens and closes through the in-memory ledger with close audit linkage.
 - Backtesting framework exists.
 - Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.
 - Context-only and deferred strategy families cannot bypass the scoring strategy-policy gate.

@@ -90,4 +90,57 @@ describe("mock paper-trading route", () => {
       await server.close();
     }
   });
+
+  it("runs a mock paper-trade close dry run with exit audit linkage", async () => {
+    const server = buildServer({
+      APP_ENV: "test",
+      API_PORT: 4000,
+      LIVE_TRADING_ENABLED: false,
+    });
+
+    try {
+      const response = await server.inject({
+        method: "POST",
+        url: "/paper-trading/mock-close-dry-run",
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body).toMatchObject({
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: false,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+        },
+        closeResult: {
+          status: "accepted",
+          reasonCodes: [],
+          trade: {
+            status: "closed",
+            exitPrice: 106,
+            realizedPnl: 60,
+            realizedReturnPct: 6,
+            brokerExecution: false,
+          },
+        },
+        persistedInMemory: {
+          recommendations: 1,
+          auditLogs: 4,
+          paperTrades: 1,
+        },
+        ledger: {
+          status: "closed",
+          exitAuditLogId: "audit_mock_paper_close_1",
+          exitPrice: 106,
+          lessonsLearned: "Mock paper trade followed through before the time stop.",
+        },
+      });
+    } finally {
+      await server.close();
+    }
+  });
 });
