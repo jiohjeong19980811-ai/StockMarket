@@ -82,10 +82,57 @@ interface PaperTradeResponse {
   };
 }
 
+interface PaperTradeCloseResponse {
+  mode: "mock";
+  requiresEnv: boolean;
+  liveTradingEnabled: boolean;
+  providerKeysRequired: string[];
+  notRecommendation: boolean;
+  persistence: {
+    scope: string;
+    durable: boolean;
+    note: string;
+  };
+  closeResult: {
+    status: "accepted" | "rejected";
+    reasonCodes: string[];
+    trade?: {
+      mode: "paper";
+      liveTradingEnabled: false;
+      brokerExecution: false;
+      ticker: string;
+      instrumentType: string;
+      status: "closed";
+      entryPrice: number;
+      exitPrice: number;
+      quantity: number;
+      realizedPnl: number;
+      realizedReturnPct: number;
+      lessons: string[];
+      exitAudit: {
+        auditLogId: string;
+        priceTimestamp: string;
+      };
+    };
+  };
+  persistedInMemory: {
+    recommendations: number;
+    auditLogs: number;
+    paperTrades: number;
+  };
+  ledger?: {
+    status: "closed";
+    exitAuditLogId: string;
+    exitPrice: number;
+    lessonsLearned: string;
+  };
+}
+
 type ApiState = "loading" | "online" | "offline";
 
 const scoringEndpoint = "http://127.0.0.1:4000/scoring/mock-evaluation";
 const paperTradingEndpoint = "http://127.0.0.1:4000/paper-trading/mock-decision";
+const paperTradeCloseEndpoint = "http://127.0.0.1:4000/paper-trading/mock-close-dry-run";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",
@@ -170,6 +217,52 @@ const fallbackPaperTrading: PaperTradeResponse = {
   },
 };
 
+const fallbackPaperClose: PaperTradeCloseResponse = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Mock paper-trade close dry runs use an in-memory ledger only.",
+  },
+  closeResult: {
+    status: "accepted",
+    reasonCodes: [],
+    trade: {
+      mode: "paper",
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      ticker: "MSFT",
+      instrumentType: "stock",
+      status: "closed",
+      entryPrice: 100,
+      exitPrice: 106,
+      quantity: 10,
+      realizedPnl: 60,
+      realizedReturnPct: 6,
+      lessons: ["Mock paper trade followed through before the time stop."],
+      exitAudit: {
+        auditLogId: "audit_mock_paper_close_1",
+        priceTimestamp: "2026-05-31T20:00:00.000Z",
+      },
+    },
+  },
+  persistedInMemory: {
+    recommendations: 1,
+    auditLogs: 4,
+    paperTrades: 1,
+  },
+  ledger: {
+    status: "closed",
+    exitAuditLogId: "audit_mock_paper_close_1",
+    exitPrice: 106,
+    lessonsLearned: "Mock paper trade followed through before the time stop.",
+  },
+};
+
 const decisionLabels: Record<Decision, string> = {
   watchlist: "Watchlist",
   paper_trade: "Paper Trade",
@@ -189,8 +282,20 @@ const paperTradeStatusLabels: Record<PaperTradeResponse["result"]["status"], str
   rejected: "Blocked",
 };
 
+const paperTradeCloseStatusLabels: Record<
+  PaperTradeCloseResponse["closeResult"]["status"],
+  string
+> = {
+  accepted: "Simulated Closed",
+  rejected: "Close Blocked",
+};
+
 function formatCurrency(value: number): string {
   return `$${Math.round(value).toLocaleString("en-US")}`;
+}
+
+function formatPercent(value: number): string {
+  return `${value.toFixed(2).replace(/\.?0+$/, "")}%`;
 }
 
 function ScoreMeter({ label, value }: { label: string; value: number }) {
@@ -211,15 +316,17 @@ export function App() {
   const [apiState, setApiState] = useState<ApiState>("loading");
   const [scoring, setScoring] = useState<MockScoringResponse>(fallbackScoring);
   const [paperTrading, setPaperTrading] = useState<PaperTradeResponse>(fallbackPaperTrading);
+  const [paperClose, setPaperClose] = useState<PaperTradeCloseResponse>(fallbackPaperClose);
 
   useEffect(() => {
     let active = true;
 
     async function loadDashboardData() {
       try {
-        const [scoringResponse, paperTradingResponse] = await Promise.all([
+        const [scoringResponse, paperTradingResponse, paperCloseResponse] = await Promise.all([
           fetch(scoringEndpoint),
           fetch(paperTradingEndpoint),
+          fetch(paperTradeCloseEndpoint, { method: "POST" }),
         ]);
         if (!scoringResponse.ok) {
           throw new Error(`Scoring API returned ${scoringResponse.status}`);
@@ -227,17 +334,23 @@ export function App() {
         if (!paperTradingResponse.ok) {
           throw new Error(`Paper-trading API returned ${paperTradingResponse.status}`);
         }
+        if (!paperCloseResponse.ok) {
+          throw new Error(`Paper-trade close API returned ${paperCloseResponse.status}`);
+        }
         const scoringBody = (await scoringResponse.json()) as MockScoringResponse;
         const paperTradingBody = (await paperTradingResponse.json()) as PaperTradeResponse;
+        const paperCloseBody = (await paperCloseResponse.json()) as PaperTradeCloseResponse;
         if (active) {
           setScoring(scoringBody);
           setPaperTrading(paperTradingBody);
+          setPaperClose(paperCloseBody);
           setApiState("online");
         }
       } catch {
         if (active) {
           setScoring(fallbackScoring);
           setPaperTrading(fallbackPaperTrading);
+          setPaperClose(fallbackPaperClose);
           setApiState("offline");
         }
       }
@@ -252,6 +365,9 @@ export function App() {
 
   const failedGates = scoring.result.gates.filter((gate) => !gate.passed);
   const paperTrade = paperTrading.result.trade;
+  const paperCloseTrade = paperClose.closeResult.trade;
+  const closeLesson =
+    paperCloseTrade?.lessons[0] ?? paperClose.ledger?.lessonsLearned ?? "Close review is blocked.";
 
   return (
     <main className="app-shell">
@@ -380,6 +496,40 @@ export function App() {
             {paperTrade?.brokerExecution === false
               ? "No broker execution or durable paper-trade record is created by this mock check."
               : "Paper-trade contract review is blocked."}
+          </p>
+        </article>
+
+        <article className="panel">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Paper Trade Outcome</p>
+              <h2>{paperTradeCloseStatusLabels[paperClose.closeResult.status]}</h2>
+            </div>
+            <span className="status-pill subtle">
+              {apiState === "offline"
+                ? "Paper close fallback snapshot"
+                : "Paper close API snapshot"}
+            </span>
+          </div>
+          <div className="outcome-strip" aria-label="Paper trade performance summary">
+            <div>
+              <span>P/L</span>
+              <strong>{formatCurrency(paperCloseTrade?.realizedPnl ?? 0)}</strong>
+            </div>
+            <div>
+              <span>Return</span>
+              <strong>{formatPercent(paperCloseTrade?.realizedReturnPct ?? 0)}</strong>
+            </div>
+            <div>
+              <span>Exit</span>
+              <strong>{formatCurrency(paperCloseTrade?.exitPrice ?? 0)}</strong>
+            </div>
+          </div>
+          <p className="panel-copy">{closeLesson}</p>
+          <p className="panel-copy">
+            {paperCloseTrade?.brokerExecution === false
+              ? "Close audit is linked to the in-memory ledger; no broker execution occurred."
+              : "Paper-trade close review is blocked."}
           </p>
         </article>
       </section>

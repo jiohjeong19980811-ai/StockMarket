@@ -1,25 +1,32 @@
 # Validation Status
 
-Last updated: 2026-05-29T08:39:33-04:00
+Last updated: 2026-05-29T08:47:26-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6 paper trading validation |
-| Current task | Mock paper-trade close API dry run |
+| Current task | Show paper-trade close outcome in the operator console |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Paper trading and auditability |
+| Category | Paper trading UI and auditability |
 | Blockers | None |
-| Next step | Commit the API paper-trade close dry-run slice, then continue with UI paper-trade performance visibility |
-| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/paper-trading.test.ts`, `scripts/smoke-api.mjs`, `docs/architecture.md`, `docs/product-roadmap.md`, `docs/decision-log.md`, `docs/status/` |
+| Next step | Commit the close-outcome UI slice, then continue Milestone 6 with durable paper-trade lifecycle/read APIs or paper-trade evidence summaries. |
+| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `docs/architecture.md`, `docs/product-roadmap.md`, `docs/decision-log.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 paper-trade close UI aggregate CI | Completed | Typecheck, lint, format, 112 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding the paper-trade close outcome panel | `npm.cmd run ci` |
+| Milestone 6 paper-trade close UI focused test | Completed | Red-green web test passed for API-online simulated close outcome display and API-offline close fallback snapshot | `npm.cmd run test --workspace @stockmarket/web -- App` |
+| Milestone 6 paper-trade close UI status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-009 | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 paper-trade close UI whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 6 paper-trade close UI secret-pattern scan | Completed | No secret-shaped tokens found in changed web/status/doc files | `rg` secret-pattern scan |
+| Milestone 6 paper-trade close UI live-trading surface scan | Completed | Matches are documented prohibitions or explicit no-broker-execution UI/test copy; no live order implementation was introduced | `rg` live-trading/order-surface scan |
+| Milestone 6 paper-trade close UI local web smoke | Completed | Existing Vite dev server on `http://127.0.0.1:3001` returned HTTP 200 after the close-outcome panel update | `Invoke-WebRequest http://127.0.0.1:3001` |
 | Milestone 6 paper-trade close API aggregate CI | Completed | Typecheck, lint, format, 112 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding `/paper-trading/mock-close-dry-run` | `npm.cmd run ci` |
 | Milestone 6 paper-trade close API focused test | Completed | 3 API paper-trading route tests passed, including mock open, ledger dry run, and close dry run with close audit linkage | `npm.cmd run test --workspace @stockmarket/api -- paper-trading` |
 | Milestone 6 paper-trade close API status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-008 | `python -m json.tool docs/status/work-items.json` |

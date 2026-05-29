@@ -87,6 +87,52 @@ const mockPaperTradingBody = {
   },
 };
 
+const mockPaperCloseBody = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Mock paper-trade close dry runs use an in-memory ledger only.",
+  },
+  closeResult: {
+    status: "accepted",
+    reasonCodes: [],
+    trade: {
+      mode: "paper",
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      ticker: "MSFT",
+      instrumentType: "stock",
+      status: "closed",
+      entryPrice: 100,
+      exitPrice: 106,
+      quantity: 10,
+      realizedPnl: 60,
+      realizedReturnPct: 6,
+      lessons: ["Mock paper trade followed through before the time stop."],
+      exitAudit: {
+        auditLogId: "audit_mock_paper_close_1",
+        priceTimestamp: "2026-05-31T20:00:00.000Z",
+      },
+    },
+  },
+  persistedInMemory: {
+    recommendations: 1,
+    auditLogs: 4,
+    paperTrades: 1,
+  },
+  ledger: {
+    status: "closed",
+    exitAuditLogId: "audit_mock_paper_close_1",
+    exitPrice: 106,
+    lessonsLearned: "Mock paper trade followed through before the time stop.",
+  },
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -98,7 +144,11 @@ describe("operator console shell", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = input.toString();
-        const body = url.includes("paper-trading") ? mockPaperTradingBody : mockScoringBody;
+        const body = url.includes("mock-close-dry-run")
+          ? mockPaperCloseBody
+          : url.includes("paper-trading")
+            ? mockPaperTradingBody
+            : mockScoringBody;
         return new Response(JSON.stringify(body));
       }),
     );
@@ -122,6 +172,17 @@ describe("operator console shell", () => {
     expect(screen.getByText("Simulated Open")).toBeInTheDocument();
     expect(screen.getByText("Max Loss")).toBeInTheDocument();
     expect(screen.getByText("$300")).toBeInTheDocument();
+    expect(screen.getByText("Paper Trade Outcome")).toBeInTheDocument();
+    expect(screen.getByText("Simulated Closed")).toBeInTheDocument();
+    expect(screen.getByText("P/L")).toBeInTheDocument();
+    expect(screen.getByText("$60")).toBeInTheDocument();
+    expect(screen.getByText("Return")).toBeInTheDocument();
+    expect(screen.getByText("6%")).toBeInTheDocument();
+    expect(screen.getByText("Exit")).toBeInTheDocument();
+    expect(screen.getByText("$106")).toBeInTheDocument();
+    expect(
+      screen.getByText("Mock paper trade followed through before the time stop."),
+    ).toBeInTheDocument();
     expect(screen.getByText("Risk Controls")).toBeInTheDocument();
     expect(screen.getByText("83")).toBeInTheDocument();
   });
@@ -139,6 +200,7 @@ describe("operator console shell", () => {
     expect(await screen.findByText("API offline")).toBeInTheDocument();
     expect(screen.getByText("Fallback mock snapshot")).toBeInTheDocument();
     expect(screen.getByText("Paper fallback snapshot")).toBeInTheDocument();
+    expect(screen.getByText("Paper close fallback snapshot")).toBeInTheDocument();
     expect(screen.getAllByText("Watchlist").length).toBeGreaterThan(0);
   });
 });

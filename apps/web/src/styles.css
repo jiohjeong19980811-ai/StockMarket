@@ -165,7 +165,8 @@ h2 {
 }
 
 .policy-strip,
-.trade-strip {
+.trade-strip,
+.outcome-strip {
   border: 1px solid #d8e0e4;
   border-radius: 8px;
   display: grid;
@@ -176,19 +177,22 @@ h2 {
 }
 
 .policy-strip div,
-.trade-strip div {
+.trade-strip div,
+.outcome-strip div {
   border-right: 1px solid #d8e0e4;
   min-width: 0;
   padding: 12px;
 }
 
 .policy-strip div:last-child,
-.trade-strip div:last-child {
+.trade-strip div:last-child,
+.outcome-strip div:last-child {
   border-right: 0;
 }
 
 .policy-strip span,
-.trade-strip span {
+.trade-strip span,
+.outcome-strip span {
   color: #53616b;
   display: block;
   font-size: 0.76rem;
@@ -198,7 +202,8 @@ h2 {
 }
 
 .policy-strip strong,
-.trade-strip strong {
+.trade-strip strong,
+.outcome-strip strong {
   color: #172026;
   display: block;
   font-size: 0.94rem;
@@ -287,24 +292,29 @@ h2 {
   .dashboard-grid,
   .kpi-row,
   .policy-strip,
-  .trade-strip {
+  .trade-strip,
+  .outcome-strip {
     grid-template-columns: 1fr;
   }
 
   .policy-strip div,
   .policy-strip div:last-child,
   .trade-strip div,
-  .trade-strip div:last-child {
+  .trade-strip div:last-child,
+  .outcome-strip div,
+  .outcome-strip div:last-child {
     border-right: 0;
   }
 
   .policy-strip div,
-  .trade-strip div {
+  .trade-strip div,
+  .outcome-strip div {
     border-bottom: 1px solid #d8e0e4;
   }
 
   .policy-strip div:last-child,
-  .trade-strip div:last-child {
+  .trade-strip div:last-child,
+  .outcome-strip div:last-child {
     border-bottom: 0;
   }
 

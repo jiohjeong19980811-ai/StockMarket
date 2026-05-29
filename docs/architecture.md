@@ -198,7 +198,7 @@ The API also exposes `/paper-trading/mock-ledger-dry-run` as an in-memory persis
 
 The API close dry run, `/paper-trading/mock-close-dry-run`, opens and closes one mock stock paper trade in an in-memory ledger. It verifies the package close contract, DB close helper, close audit linkage, and closed ledger state without durable storage, provider keys, or broker execution.
 
-The operator console can display the mock paper-trading contract state beside scoring gates so the operator sees paper-only status, max loss, and risk percent without turning the mock result into a recommendation.
+The operator console can display the mock paper-trading contract state beside scoring gates so the operator sees paper-only status, max loss, and risk percent without turning the mock result into a recommendation. It also displays the mock close dry-run outcome with simulated P/L, return percent, exit price, lessons learned, and close audit linkage so performance visibility stays tied to paper-only evidence.
 
 ### Project Status And Roadmap Visibility
 

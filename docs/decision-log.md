@@ -221,3 +221,9 @@ Reason: Paper-trade validation evidence needs a durable one-entry, one-exit audi
 Decision: Add `/paper-trading/mock-close-dry-run` so the API can open and close one mock paper trade through an in-memory DB ledger with close audit linkage and simulated P/L output.
 
 Reason: The API needs a repeatable end-to-end lifecycle smoke path before real durable application state is introduced. Keeping the route in-memory and mock-only preserves the no-provider-key and no-broker-execution MVP boundary.
+
+## 2026-05-29: Paper-Trade Close Outcome UI
+
+Decision: Show `/paper-trading/mock-close-dry-run` in the operator console as a simulated paper-trade outcome panel with P/L, return percent, exit price, lessons learned, and a close-audit linkage note.
+
+Reason: Operators need performance visibility before paper-trade outcomes can become validation evidence. Surfacing the close dry run in the UI keeps the workflow paper-only, auditable, and explicitly separated from broker execution or investment recommendations.
