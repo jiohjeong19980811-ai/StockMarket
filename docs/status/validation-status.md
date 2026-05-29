@@ -1,25 +1,31 @@
 # Validation Status
 
-Last updated: 2026-05-28T22:51:13-04:00
+Last updated: 2026-05-28T22:59:37-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 4 scoring and risk validation |
-| Current task | Strategy policy catalog, API route, and operator console visibility |
+| Current phase | Milestone 6 paper trading validation |
+| Current task | Simulated paper-trading contract skeleton |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Strategy policy and scoring visibility |
+| Category | Paper trading and auditability |
 | Blockers | None |
-| Next step | Commit the strategy policy slice, then continue with paper-trading contracts or strategy-specific signal inputs |
-| Related docs/files | `packages/scoring/src/index.ts`, `apps/api/src/server.ts`, `apps/web/src/App.tsx`, `docs/status/` |
+| Next step | Commit the paper-trading contract slice, then continue with paper-trade persistence or API visibility |
+| Related docs/files | `packages/paper-trading/src/index.ts`, `packages/paper-trading/test/paper-trading.test.ts`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 paper-trading aggregate CI | Completed | Typecheck, lint, format, 94 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
+| Milestone 6 paper-trading status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after paper-trading status updates | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 paper-trading whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 6 paper-trading secret-pattern scan | Completed | No secret-shaped tokens found in changed paper-trading, docs, or package-lock files | `rg` secret-pattern scan |
+| Milestone 6 paper-trading live-trading surface scan | Completed | Matches are documented prohibitions or explicit broker-field rejection tests; no live order implementation was introduced | `rg` live-trading/order-surface scan |
+| Milestone 6 paper-trading focused tests | Completed | Red-green tests passed for simulated stock paper entry, ineligible recommendation rejection, broker-shaped field rejection, exposure-limit rejection, and options deferral | `npm.cmd run test --workspace @stockmarket/paper-trading -- paper-trading` |
 | Milestone 4 strategy policy aggregate CI | Completed | Typecheck, lint, format, 89 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed; smoke now checks strategy policies | `npm.cmd run ci` |
 | Milestone 4 strategy policy status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after strategy policy status updates | `python -m json.tool docs/status/work-items.json` |
 | Milestone 4 strategy policy whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |

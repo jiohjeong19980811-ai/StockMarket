@@ -180,6 +180,12 @@ The UI is an operator console, not a marketing site. It should be dense, scan-fr
 - Audit log.
 - Decision buttons: watch, paper trade, reject, needs review.
 
+### Paper Trading
+
+The paper-trading package starts as a pure simulated ledger contract. It accepts only core `paper_trade` eligible recommendations, operator approval metadata, explicit entry/exit rules, and conservative paper-exposure limits. It returns a simulated paper position with audit fields and no broker execution surface.
+
+Milestone 6 begins with stock-only paper positions. Options paper trading remains blocked until a future options policy review promotes the strategy family and historical options chain validation is available.
+
 ### Project Status And Roadmap Visibility
 
 Until the application has a database-backed admin UI, lightweight project status lives under `docs/status/`. The future operator UI should include a Project Status / Roadmap dashboard that can surface:

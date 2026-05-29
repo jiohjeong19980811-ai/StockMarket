@@ -148,6 +148,19 @@ A strategy can move from research candidate to paper-trade candidate only when:
 
 No strategy can move to live trading until a future phase adds production-grade backtesting, paper-trading performance, broker sandbox integration, approval workflow, kill switch, max daily loss, max position sizing, full audit logs, and explicit operator approval.
 
+## Paper-Trading Contract Controls
+
+The first paper-trading package slice is simulated-only. Opening a paper position requires:
+
+- A core `paper_trade` eligible recommendation.
+- Operator approval metadata and audit log ID.
+- Thesis snapshot, stop rule, target rule, and time stop.
+- Valid paper equity, entry price, quantity, and max loss.
+- Paper exposure inside the conservative MVP caps.
+- No broker, live account, external order, or execution-shaped fields.
+
+Options paper trades remain rejected until the options strategy policy is explicitly promoted after historical options chain and fill-model validation.
+
 ## Audit Requirements
 
 Audit records must capture:

@@ -173,3 +173,9 @@ Reason: The platform needs explainable triage without implying guaranteed return
 Decision: Encode MVP strategy-family policy in `@stockmarket/scoring`, expose it through `/strategies/policies`, and show the active policy in the operator console. `test_now` families may be evaluated for paper trading after evidence and risk gates pass; `context_only`, `test_later`, and `control_layer` families cannot bypass the strategy-policy gate.
 
 Reason: Strategy categories from the quant research phase need to become auditable product behavior, not just documentation. Operators should see why a family is testable, contextual, deferred, or risk-control-only before any candidate is promoted.
+
+## 2026-05-28: Paper-Trading Contract Boundary
+
+Decision: Start paper trading with a pure simulated contract in `@stockmarket/paper-trading`. It accepts only core paper-trade eligible stock recommendations with operator approval, explicit stop/target/time-stop rules, audit references, and conservative paper exposure limits. It rejects broker-shaped fields and options paper trades until options policy is explicitly promoted.
+
+Reason: Paper trading should create auditable learning evidence without introducing live broker execution, false options confidence, or ambiguous order semantics.

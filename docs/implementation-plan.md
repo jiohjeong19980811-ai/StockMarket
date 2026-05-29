@@ -151,10 +151,12 @@ Proposed GitHub issues:
 
 Tasks:
 
-- Add paper-trading ledger.
+- Add paper-trading ledger contracts.
 - Add operator decisions.
 - Track entries, exits, stops, targets, P/L, and lessons learned.
 - Display active and closed paper trades.
+
+Initial Milestone 6 scope is stock-only and simulated-only. Options paper trades remain deferred until options strategy policy is promoted and historical options chain validation exists.
 
 Proposed GitHub issues:
 
