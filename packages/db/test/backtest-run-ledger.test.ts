@@ -214,4 +214,35 @@ describe("backtest run ledger", () => {
       ),
     ).rejects.toThrow(/notRecommendation/i);
   });
+
+  it("rejects result snapshots that do not match the evaluated input", async () => {
+    const result = evaluateStockBacktest(backtestInput);
+
+    await expect(
+      persistStockBacktestRun(
+        client,
+        {
+          ...backtestInput,
+          trades: backtestInput.trades.slice(0, 3),
+        },
+        result,
+        now,
+      ),
+    ).rejects.toThrow(/evaluated input/i);
+
+    await expect(
+      persistStockBacktestRun(
+        client,
+        backtestInput,
+        {
+          ...result,
+          metrics: {
+            ...result.metrics,
+            tradeCount: result.metrics.tradeCount + 1,
+          },
+        },
+        now,
+      ),
+    ).rejects.toThrow(/evaluated input/i);
+  });
 });

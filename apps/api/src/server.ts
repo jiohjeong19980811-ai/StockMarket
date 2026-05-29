@@ -129,6 +129,7 @@ const mockPaperTradeRecommendation: Recommendation = {
   strategyVersion: "momentum-v0",
   decision: "paper_trade",
   evidenceStatus: "paper_trade_eligible",
+  evidenceGate: "verified",
   sourceCitations: [
     {
       title: "Mock daily price history",
@@ -342,7 +343,7 @@ async function seedMockPaperTradeLedgerDependencies(client: LocalClient, paperTr
       },
       {
         sql: `INSERT INTO recommendations
-          (id, ticker, instrument_type, strategy_version_id, decision, evidence_status,
+          (id, ticker, instrument_type, strategy_version_id, decision, evidence_status, evidence_gate,
            thesis, bull_case, bear_case, downside_scenario, invalidation_conditions_json,
            why_system_might_be_wrong, primary_citation_title, primary_citation_url,
            primary_citation_source, primary_citation_published_at,
@@ -350,7 +351,7 @@ async function seedMockPaperTradeLedgerDependencies(client: LocalClient, paperTr
            freshness_notes_json, risk_score, confidence_score, liquidity_score,
            liquidity_decision, risk_decision, backtest_run_id, operator_audit_log_id,
            created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           mockPaperTradeRecommendation.id,
           mockPaperTradeRecommendation.ticker,
@@ -358,6 +359,7 @@ async function seedMockPaperTradeLedgerDependencies(client: LocalClient, paperTr
           mockPaperTradeRecommendation.strategyVersion,
           mockPaperTradeRecommendation.decision,
           mockPaperTradeRecommendation.evidenceStatus,
+          mockPaperTradeRecommendation.evidenceGate ?? "verified",
           mockPaperTradeRecommendation.thesis,
           mockPaperTradeRecommendation.bullCase,
           mockPaperTradeRecommendation.bearCase,
@@ -439,7 +441,7 @@ async function seedMockEvidenceCandidateRecommendation(
       },
       {
         sql: `INSERT INTO recommendations
-          (id, ticker, instrument_type, strategy_version_id, decision, evidence_status,
+          (id, ticker, instrument_type, strategy_version_id, decision, evidence_status, evidence_gate,
            thesis, bull_case, bear_case, downside_scenario, invalidation_conditions_json,
            why_system_might_be_wrong, primary_citation_title, primary_citation_url,
            primary_citation_source, primary_citation_published_at,
@@ -447,7 +449,7 @@ async function seedMockEvidenceCandidateRecommendation(
            freshness_notes_json, risk_score, confidence_score, liquidity_score,
            liquidity_decision, risk_decision, paper_trade_evidence_id,
            operator_audit_log_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           candidateRecommendationId,
           mockPaperTradeRecommendation.ticker,
@@ -455,6 +457,7 @@ async function seedMockEvidenceCandidateRecommendation(
           mockPaperTradeRecommendation.strategyVersion,
           "paper_trade",
           "paper_trade_eligible",
+          "verified",
           mockPaperTradeRecommendation.thesis,
           mockPaperTradeRecommendation.bullCase,
           mockPaperTradeRecommendation.bearCase,

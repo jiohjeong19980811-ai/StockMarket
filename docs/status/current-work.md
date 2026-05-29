@@ -1,6 +1,6 @@
 # Current Work Status
 
-Last updated: 2026-05-29T14:09:42-04:00
+Last updated: 2026-05-29T14:26:22-04:00
 
 ## Current Focus
 
@@ -13,9 +13,9 @@ Last updated: 2026-05-29T14:09:42-04:00
 | Priority | High |
 | Category | Backtesting validation evidence |
 | Blockers | None |
-| Next step | Request focused quant/risk/QA/architecture review for M7-002 and fix any blockers before merge. |
+| Next step | Request focused re-review for the evidence-gate and backtest-integrity hardening before merge. |
 | Related docs/files | `packages/backtesting/src/index.ts`, `packages/backtesting/test/backtesting.test.ts`, `packages/db`, `docs/backtesting-and-validation.md`, `docs/superpowers/specs/2026-05-29-milestone-7-backtest-persistence-design.md`, `docs/superpowers/plans/2026-05-29-milestone-7-backtest-persistence.md` |
-| Validation required | M7-002 validation passed locally; focused review is still required before merge. |
+| Validation required | Review hardening validation passed locally; focused re-review is required before merge. |
 
 ## Status Vocabulary
 

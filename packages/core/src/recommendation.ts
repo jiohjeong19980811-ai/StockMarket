@@ -14,6 +14,10 @@ export const instrumentTypes = ["stock", "long_call", "long_put", "debit_spread"
 
 export type InstrumentType = (typeof instrumentTypes)[number];
 
+export const evidenceGates = ["verified", "needs_more_data", "blocked"] as const;
+
+export type EvidenceGate = (typeof evidenceGates)[number];
+
 export const paperTradeMinimumLiquidityScore = 70;
 
 export interface SourceCitation {
@@ -59,6 +63,7 @@ export interface Recommendation {
   strategyVersion: string;
   decision: OpportunityDecision;
   evidenceStatus: EvidenceStatus;
+  evidenceGate?: EvidenceGate;
   sourceCitations: SourceCitation[];
   dataFreshness: DataFreshness;
   scores: ScoreSet;
@@ -147,6 +152,9 @@ export function isPaperTradeEligible(recommendation: Recommendation): boolean {
     return false;
   }
   if (recommendation.evidenceStatus !== "paper_trade_eligible") {
+    return false;
+  }
+  if (recommendation.evidenceGate !== "verified") {
     return false;
   }
   if (!recommendation.backtestRunId && !recommendation.paperTradeEvidenceId) {

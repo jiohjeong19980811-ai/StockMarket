@@ -159,7 +159,7 @@ Paper-trade evidence summaries should aggregate only closed paper trades for per
 
 Durable paper-trade evidence verification now starts in the DB package through the recommendation evidence resolver. Backtesting consumers should resolve recommendation evidence IDs through this helper before trusting a paper-trade evidence reference. A paper-trade evidence item is verified only when it resolves to a closed persisted paper trade, remains paper-only, has broker execution disabled, and matches the recommendation ticker, instrument type, and strategy version.
 
-Durable stock backtest evidence verification is now also handled by the DB evidence resolver. A stored backtest evidence item is verified only when the referenced run is stock-only, marked `notRecommendation`, has `options_proxy = 0`, reaches `ready_for_review`, matches the recommendation ticker/instrument/strategy cohort, and includes at least one persisted trade row for the recommendation ticker. Missing, `needs_more_data`, blocked, unsafe, or cohort-mismatched runs downgrade or block the evidence gate and cannot by themselves make a recommendation operational.
+Durable stock backtest evidence verification is now also handled by the DB evidence resolver. A stored backtest evidence item is verified only when the referenced run is stock-only, marked `notRecommendation`, has `options_proxy = 0`, reaches `ready_for_review`, has clean stored reason codes, fresh data, reviewable assumptions, coherent metrics, matches the recommendation ticker/instrument/strategy cohort, and includes enough persisted trade rows for that recommendation ticker to satisfy the run's minimum trade-count assumption. Missing, `needs_more_data`, blocked, unsafe, thin-sample, or cohort-mismatched runs downgrade or block the evidence gate and cannot by themselves make a recommendation operational.
 
 Lessons learned should be stored and visible on future recommendations from the same strategy.
 
@@ -181,7 +181,9 @@ Returned stock backtest metrics and trade rows are computed only from eligible s
 
 M7-002 persists stock backtest evaluator output in the DB package without recalculating strategy performance. The `backtest_runs` table stores strategy version, family, stock-only instrument type, universe, period, benchmark return, promotion gate, reason codes, metrics, assumptions, citations, freshness, safety flags, and timestamps. The `backtest_run_trades` table stores the eligible trade rows tied to the run.
 
-Persistence remains stock-only for MVP. The helper rejects non-stock inputs, options-family proxies, `optionsProxy: true`, and any result that is not explicitly `notRecommendation`. Persisted backtest evidence can support recommendation evidence detail and later operator review, but it does not promote strategies automatically and does not replace paper trading, risk review, or out-of-sample validation.
+Persistence remains stock-only for MVP. The helper rejects non-stock inputs, options-family proxies, `optionsProxy: true`, any result that is not explicitly `notRecommendation`, and any result snapshot that does not match a fresh evaluation of the supplied input. Persisted backtest evidence can support recommendation evidence detail and later operator review, but it does not promote strategies automatically and does not replace paper trading, risk review, or out-of-sample validation.
+
+Paper-trade eligibility now requires a resolved evidence gate of `verified`; a raw `backtestRunId` or `paperTradeEvidenceId` is not enough. In the DB, paper-trade recommendations are blocked unless `evidence_gate = verified`, so unresolved or blocked evidence cannot silently flow into paper-trade creation.
 
 Deferred follow-up work:
 

@@ -101,7 +101,7 @@ async function seedRecommendation(
 
   await execute(
     `INSERT INTO recommendations
-      (id, ticker, instrument_type, strategy_version_id, decision, evidence_status,
+      (id, ticker, instrument_type, strategy_version_id, decision, evidence_status, evidence_gate,
        thesis, bull_case, bear_case, downside_scenario, invalidation_conditions_json,
        why_system_might_be_wrong, primary_citation_title, primary_citation_url,
        primary_citation_source, primary_citation_published_at,
@@ -109,7 +109,7 @@ async function seedRecommendation(
        freshness_notes_json, risk_score, confidence_score, liquidity_score,
        liquidity_decision, risk_decision, backtest_run_id, paper_trade_evidence_id,
        operator_audit_log_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       ticker,
@@ -117,6 +117,7 @@ async function seedRecommendation(
       "momentum-v0",
       "paper_trade",
       "paper_trade_eligible",
+      "verified",
       "Momentum continuation research candidate.",
       "Paper evidence supports continued research.",
       "Momentum can reverse quickly.",
@@ -430,6 +431,64 @@ describe("recommendation evidence resolver", () => {
       netReturnPct: 18.2815,
       maxDrawdownPct: 6.25,
       benchmarkRelativeReturnPct: 14.2815,
+    });
+  });
+
+  it("blocks ready backtest rows with inconsistent stored validation details", async () => {
+    const result = await persistBacktestEvidence();
+    await execute("PRAGMA ignore_check_constraints = ON");
+    await execute(
+      `UPDATE backtest_runs
+       SET freshness_status = ?, reason_codes_json = ?, assumptions_json = ?
+       WHERE id = ?`,
+      [
+        "stale",
+        '["missing_data_freshness"]',
+        JSON.stringify({
+          pointInTimeData: false,
+          survivorshipBiasControl: true,
+          lookaheadBiasControl: true,
+          minTradesForReview: 4,
+          costStressMultipliers: [1, 2, 3],
+        }),
+        result.id,
+      ],
+    );
+    await execute("PRAGMA ignore_check_constraints = OFF");
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id);
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("backtest_evidence_unsafe");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "backtest_run",
+      id: result.id,
+      status: "blocked",
+      reasonCodes: ["backtest_evidence_unsafe"],
+    });
+  });
+
+  it("keeps ticker-level backtest evidence unresolved when the ticker sample is too small", async () => {
+    const baseInput = stockBacktestInput();
+    const input = stockBacktestInput({
+      trades: baseInput.trades.map((trade, index) =>
+        index === 0 ? trade : { ...trade, id: `aapl-${index}`, ticker: "AAPL" },
+      ),
+    });
+    const result = await persistBacktestEvidence(input);
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id);
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("needs_more_data");
+    expect(detail.reasonCodes).toContain("backtest_evidence_needs_more_data");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "backtest_run",
+      id: result.id,
+      status: "unresolved",
+      reasonCodes: ["backtest_evidence_needs_more_data"],
+      promotionGate: "ready_for_review",
     });
   });
 

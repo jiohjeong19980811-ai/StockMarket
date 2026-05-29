@@ -57,13 +57,13 @@ async function seedPaperTradeDependencies(decision = "paper_trade") {
   );
   await execute(
     `INSERT INTO recommendations
-      (id, ticker, instrument_type, strategy_version_id, decision, evidence_status, thesis, bull_case,
+      (id, ticker, instrument_type, strategy_version_id, decision, evidence_status, evidence_gate, thesis, bull_case,
        bear_case, downside_scenario, invalidation_conditions_json, why_system_might_be_wrong,
        primary_citation_title, primary_citation_url, primary_citation_source,
        primary_citation_published_at, primary_citation_retrieved_at, freshness_status,
        freshness_as_of, freshness_notes_json, risk_score, confidence_score, liquidity_score,
        liquidity_decision, risk_decision, backtest_run_id, operator_audit_log_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       "rec_1",
       "MSFT",
@@ -71,6 +71,7 @@ async function seedPaperTradeDependencies(decision = "paper_trade") {
       "strategy_earnings_v0",
       decision,
       decision === "paper_trade" ? "paper_trade_eligible" : "watchlist_eligible",
+      decision === "paper_trade" ? "verified" : "needs_more_data",
       "Positive earnings surprise research candidate.",
       "Liquidity and surprise support follow-through research.",
       "Move may be exhausted.",

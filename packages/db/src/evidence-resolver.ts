@@ -146,6 +146,108 @@ function parseStringArray(value: string, label: string): string[] {
   return parsed;
 }
 
+function tryParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringArrayValue(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isFiniteNumberValue(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function hasValidIsoTimestamp(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
+function hasValidBacktestCitation(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+  const publishedAt = value.publishedAt;
+  const retrievedAt = value.retrievedAt;
+  return (
+    typeof value.title === "string" &&
+    value.title.trim().length > 0 &&
+    typeof value.url === "string" &&
+    value.url.trim().length > 0 &&
+    typeof value.source === "string" &&
+    value.source.trim().length > 0 &&
+    hasValidIsoTimestamp(publishedAt) &&
+    hasValidIsoTimestamp(retrievedAt) &&
+    Date.parse(retrievedAt) >= Date.parse(publishedAt)
+  );
+}
+
+function includesRequiredCostStress(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    [1, 2, 3].every((required) =>
+      value.some((item) => isFiniteNumberValue(item) && item === required),
+    )
+  );
+}
+
+function isReviewableBacktestAssumptions(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    isFiniteNumberValue(value.slippageBps) &&
+    value.slippageBps >= 0 &&
+    isFiniteNumberValue(value.spreadBps) &&
+    value.spreadBps >= 0 &&
+    isFiniteNumberValue(value.feePerTrade) &&
+    value.feePerTrade >= 0 &&
+    isFiniteNumberValue(value.minTradesForReview) &&
+    value.minTradesForReview > 0 &&
+    isFiniteNumberValue(value.minAverageDailyDollarVolume) &&
+    value.minAverageDailyDollarVolume >= 0 &&
+    value.pointInTimeData === true &&
+    value.survivorshipBiasControl === true &&
+    value.lookaheadBiasControl === true &&
+    isFiniteNumberValue(value.rejectedParameterSets) &&
+    value.rejectedParameterSets >= 0 &&
+    includesRequiredCostStress(value.costStressMultipliers) &&
+    isStringArrayValue(value.notes)
+  );
+}
+
+function metricMatches(metrics: Record<string, unknown>, key: string, expected: number): boolean {
+  const value = metrics[key];
+  return isFiniteNumberValue(value) && Math.abs(value - expected) <= 0.0001;
+}
+
+function hasCoherentStoredMetrics(
+  value: unknown,
+  expected: {
+    tradeCount: number;
+    netReturnPct: number;
+    maxDrawdownPct: number;
+    benchmarkRelativeReturnPct: number;
+  },
+): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    metricMatches(value, "tradeCount", expected.tradeCount) &&
+    metricMatches(value, "netReturnPct", expected.netReturnPct) &&
+    metricMatches(value, "maxDrawdownPct", expected.maxDrawdownPct) &&
+    metricMatches(value, "benchmarkRelativeReturnPct", expected.benchmarkRelativeReturnPct)
+  );
+}
+
 function uniqueReasons(reasons: RecommendationEvidenceReason[]): RecommendationEvidenceReason[] {
   return [...new Set(reasons)];
 }
@@ -330,7 +432,8 @@ async function resolveBacktestEvidence(
   const result = await client.execute({
     sql: `SELECT id, strategy_version_id, instrument_type, promotion_gate,
         trade_count, net_return_pct, max_drawdown_pct, benchmark_relative_return_pct,
-        options_proxy, not_recommendation
+        options_proxy, not_recommendation, reason_codes_json, metrics_json,
+        assumptions_json, source_citations_json, freshness_status
       FROM backtest_runs
       WHERE id = ?
       LIMIT 1`,
@@ -355,6 +458,11 @@ async function resolveBacktestEvidence(
   const benchmarkRelativeReturnPct = readNumber(row, "benchmark_relative_return_pct");
   const optionsProxyRaw = readNumber(row, "options_proxy");
   const notRecommendationRaw = readNumber(row, "not_recommendation");
+  const storedReasonCodes = tryParseJson(readString(row, "reason_codes_json"));
+  const storedMetrics = tryParseJson(readString(row, "metrics_json"));
+  const storedAssumptions = tryParseJson(readString(row, "assumptions_json"));
+  const storedSourceCitations = tryParseJson(readString(row, "source_citations_json"));
+  const freshnessStatus = readString(row, "freshness_status");
   const reasonCodes: RecommendationEvidenceReason[] = [];
 
   if (notRecommendationRaw !== 1 || optionsProxyRaw !== 0) {
@@ -367,14 +475,23 @@ async function resolveBacktestEvidence(
     reasonCodes.push("backtest_evidence_cohort_mismatch");
   }
 
-  const tickerMembership = await client.execute({
-    sql: `SELECT 1
+  const tradeCounts = await client.execute({
+    sql: `SELECT
+        COUNT(*) AS total_trade_count,
+        SUM(CASE WHEN ticker = ? THEN 1 ELSE 0 END) AS ticker_trade_count
       FROM backtest_run_trades
-      WHERE backtest_run_id = ? AND ticker = ?
-      LIMIT 1`,
-    args: [evidenceId, recommendation.ticker],
+      WHERE backtest_run_id = ?`,
+    args: [recommendation.ticker, evidenceId],
   });
-  if (tickerMembership.rows.length === 0) {
+  const tradeCountRow = tradeCounts.rows[0] as Record<string, unknown> | undefined;
+  const totalTradeCount =
+    typeof tradeCountRow?.total_trade_count === "number" ? tradeCountRow.total_trade_count : 0;
+  const tickerTradeCount =
+    typeof tradeCountRow?.ticker_trade_count === "number" ? tradeCountRow.ticker_trade_count : 0;
+  if (totalTradeCount !== tradeCount) {
+    reasonCodes.push("backtest_evidence_unsafe");
+  }
+  if (tickerTradeCount === 0) {
     reasonCodes.push("backtest_evidence_cohort_mismatch");
   }
 
@@ -382,6 +499,31 @@ async function resolveBacktestEvidence(
     reasonCodes.push("backtest_evidence_needs_more_data");
   } else if (promotionGate !== "ready_for_review") {
     reasonCodes.push("backtest_evidence_not_ready");
+  } else {
+    if (
+      !isStringArrayValue(storedReasonCodes) ||
+      storedReasonCodes.length > 0 ||
+      freshnessStatus !== "fresh" ||
+      !isReviewableBacktestAssumptions(storedAssumptions) ||
+      !Array.isArray(storedSourceCitations) ||
+      storedSourceCitations.length === 0 ||
+      storedSourceCitations.some((citation) => !hasValidBacktestCitation(citation)) ||
+      !hasCoherentStoredMetrics(storedMetrics, {
+        tradeCount,
+        netReturnPct,
+        maxDrawdownPct,
+        benchmarkRelativeReturnPct,
+      })
+    ) {
+      reasonCodes.push("backtest_evidence_unsafe");
+    }
+
+    if (isReviewableBacktestAssumptions(storedAssumptions) && tickerTradeCount > 0) {
+      const minTradesForReview = storedAssumptions.minTradesForReview;
+      if (isFiniteNumberValue(minTradesForReview) && tickerTradeCount < minTradesForReview) {
+        reasonCodes.push("backtest_evidence_needs_more_data");
+      }
+    }
   }
 
   const unique = uniqueReasons(reasonCodes);

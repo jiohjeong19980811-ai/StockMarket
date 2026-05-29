@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T14:09:42-04:00",
+  "lastUpdated": "2026-05-29T14:26:22-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -1224,7 +1224,7 @@
       "priority": "High",
       "category": "Backtesting validation evidence",
       "blockers": [],
-      "nextStep": "Review M7-002 with focused quant, risk, QA, and architecture agents; fix blockers before merge.",
+      "nextStep": "Focused re-review of evidence gates, snapshot coherence, and stricter resolver checks before merge.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",
@@ -1239,6 +1239,9 @@
         "DB migration tests",
         "DB backtest-run ledger tests",
         "DB evidence resolver tests",
+        "Core recommendation tests",
+        "Paper-trading tests",
+        "API paper-trading tests",
         "Root CI",
         "Status JSON parse",
         "Whitespace check",

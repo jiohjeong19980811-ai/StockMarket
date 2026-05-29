@@ -381,6 +381,11 @@ export const recommendations = sqliteTable(
         "needs_more_data",
       ],
     }).notNull(),
+    evidenceGate: text("evidence_gate", {
+      enum: ["verified", "needs_more_data", "blocked"],
+    })
+      .notNull()
+      .default("needs_more_data"),
     thesis: text("thesis").notNull(),
     bullCase: text("bull_case").notNull(),
     bearCase: text("bear_case").notNull(),
@@ -470,6 +475,7 @@ export const recommendations = sqliteTable(
       ${table.decision} != 'paper_trade'
       OR (
         ${table.evidenceStatus} = 'paper_trade_eligible'
+        AND ${table.evidenceGate} = 'verified'
         AND (
           length(coalesce(${table.backtestRunId}, '')) > 0
           OR length(coalesce(${table.paperTradeEvidenceId}, '')) > 0

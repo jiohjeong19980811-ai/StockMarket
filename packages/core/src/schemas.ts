@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   instrumentTypes,
+  evidenceGates,
   isPaperTradeEligible,
   opportunityDecisions,
   type Recommendation,
@@ -74,6 +75,7 @@ export const recommendationSchema: z.ZodType<Recommendation> = z
     strategyVersion: nonemptyString,
     decision: z.enum(opportunityDecisions),
     evidenceStatus: z.enum(evidenceStatuses),
+    evidenceGate: z.enum(evidenceGates).optional(),
     sourceCitations: z.array(sourceCitationSchema).min(1),
     dataFreshness: dataFreshnessSchema,
     scores: scoreSetSchema,

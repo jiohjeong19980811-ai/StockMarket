@@ -73,10 +73,22 @@ describe("recommendation contract", () => {
       ...baseRecommendation,
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_123",
     };
 
     expect(isPaperTradeEligible(recommendation)).toBe(true);
+  });
+
+  it("blocks raw backtest IDs until evidence has been resolved as verified", () => {
+    const recommendation: Recommendation = {
+      ...baseRecommendation,
+      decision: "paper_trade",
+      evidenceStatus: "paper_trade_eligible",
+      backtestRunId: "bt_unresolved",
+    };
+
+    expect(isPaperTradeEligible(recommendation)).toBe(false);
   });
 
   it("blocks paper trade eligibility when evidence is missing", () => {
@@ -94,6 +106,7 @@ describe("recommendation contract", () => {
       ...baseRecommendation,
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_123",
       dataFreshness: {
         ...baseRecommendation.dataFreshness,
@@ -109,6 +122,7 @@ describe("recommendation contract", () => {
       ...baseRecommendation,
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_123",
       scores: {
         ...baseRecommendation.scores,
@@ -124,6 +138,7 @@ describe("recommendation contract", () => {
       ...baseRecommendation,
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_123",
       scores: {
         ...baseRecommendation.scores,
@@ -139,6 +154,7 @@ describe("recommendation contract", () => {
       ...baseRecommendation,
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_123",
       downsideScenario: "",
     };
@@ -151,6 +167,7 @@ describe("recommendation contract", () => {
       ...baseRecommendation,
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_123",
       operatorDecision: {
         ...baseRecommendation.operatorDecision,
@@ -168,6 +185,7 @@ describe("recommendation contract", () => {
       strategyFamily: "options",
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_456",
       optionsRiskDetails: {
         ...validOptionsRiskDetails,
@@ -185,6 +203,7 @@ describe("recommendation contract", () => {
       strategyFamily: "options",
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_456",
       optionsRiskDetails: {
         maxLoss: 250,
@@ -207,6 +226,7 @@ describe("recommendation contract", () => {
       strategyFamily: "options",
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_456",
       optionsRiskDetails: validOptionsRiskDetails,
     };
@@ -221,6 +241,7 @@ describe("recommendation contract", () => {
       strategyFamily: "options",
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_456",
       optionsRiskDetails: {
         ...validOptionsRiskDetails,
@@ -238,6 +259,7 @@ describe("recommendation contract", () => {
       strategyFamily: "options",
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_456",
       optionsRiskDetails: {
         ...validOptionsRiskDetails,
@@ -255,6 +277,7 @@ describe("recommendation contract", () => {
       strategyFamily: "options",
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_456",
       optionsRiskDetails: {
         ...validOptionsRiskDetails,

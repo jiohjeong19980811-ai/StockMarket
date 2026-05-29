@@ -97,6 +97,7 @@ async function insertRecommendation(overrides: Record<string, unknown> = {}) {
     strategy_version_id: "strategy_earnings_v0",
     decision: "watchlist",
     evidence_status: "watchlist_eligible",
+    evidence_gate: overrides.decision === "paper_trade" ? "verified" : "needs_more_data",
     thesis: "Positive earnings surprise research candidate.",
     bull_case: "Liquidity and surprise support follow-through research.",
     bear_case: "Move may be exhausted.",
@@ -152,6 +153,7 @@ async function seedPaperTradeDependencies() {
   await insertRecommendation({
     decision: "paper_trade",
     evidence_status: "paper_trade_eligible",
+    evidence_gate: "verified",
     backtest_run_id: "bt_123",
   });
   await execute(
@@ -298,6 +300,7 @@ describe("database migrations", () => {
       "0002_paper_trades.sql",
       "0003_paper_trade_closes.sql",
       "0004_backtest_runs.sql",
+      "0005_recommendation_evidence_gate.sql",
     ]);
     for (const row of result.rows) {
       expect(row.checksum).toEqual(expect.stringMatching(/^[a-f0-9]{64}$/));
@@ -488,6 +491,31 @@ describe("database migrations", () => {
     await expect(
       insertBacktestRun({ id: "backtest_run_4", reason_codes_json: "not-json" }),
     ).rejects.toThrow();
+  });
+
+  it("requires verified evidence gates for paper-trade recommendations", async () => {
+    await seedRecommendationDependencies();
+
+    await expect(
+      insertRecommendation({
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        backtest_run_id: "bt_unresolved",
+        evidence_gate: "needs_more_data",
+      }),
+    ).rejects.toThrow();
+
+    await insertRecommendation({
+      decision: "paper_trade",
+      evidence_status: "paper_trade_eligible",
+      backtest_run_id: "bt_verified",
+      evidence_gate: "verified",
+    });
+
+    const result = await client.execute("SELECT evidence_gate FROM recommendations WHERE id = ?", [
+      "rec_1",
+    ]);
+    expect(result.rows[0]?.evidence_gate).toBe("verified");
   });
 
   it("accepts normalized ingestion rows linked to provider records", async () => {

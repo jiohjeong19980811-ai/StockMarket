@@ -18,6 +18,7 @@ const baseRecommendation: Recommendation = {
   strategyVersion: "earnings-pead-v0",
   decision: "paper_trade",
   evidenceStatus: "paper_trade_eligible",
+  evidenceGate: "verified",
   sourceCitations: [
     {
       title: "Example earnings release",

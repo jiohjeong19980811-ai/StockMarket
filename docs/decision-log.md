@@ -311,3 +311,9 @@ Reason: Blocked backtest runs should not return inflated evidence metrics from r
 Decision: Add `backtest_runs` and `backtest_run_trades` persistence plus recommendation evidence resolver support for stock-only backtest IDs. Persisted runs must remain `notRecommendation`, stock-only, non-options-proxy, and validation-only; resolver verification requires `ready_for_review`, matching strategy/instrument cohort, and at least one persisted trade for the recommendation ticker.
 
 Reason: Strategy evidence needs a durable, auditable record before recommendation detail, UI inspection, or later promotion workflows can trust backtest IDs. The resolver should conservatively downgrade missing, unsafe, incomplete, or cohort-mismatched evidence instead of letting stored IDs imply a profitable or actionable strategy.
+
+## 2026-05-29: Backtest Evidence Review Hardening
+
+Decision: Tighten M7-002 after focused review by requiring persisted backtest results to match a fresh evaluator run, making the resolver inspect stored reason codes, freshness, assumptions, citations, metrics, and ticker-level sample size, and adding a recommendation `evidence_gate` that must be `verified` before paper-trade eligibility.
+
+Reason: A raw evidence ID or stale stored `ready_for_review` flag is not enough proof. The platform must prevent mismatched evaluator snapshots, thin ticker samples, unsafe stored rows, and unresolved evidence from silently becoming paper-trade candidates.

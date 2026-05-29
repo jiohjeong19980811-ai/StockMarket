@@ -1,5 +1,9 @@
 import type { Client } from "@libsql/client";
-import type { StockBacktestInput, StockBacktestResult } from "@stockmarket/backtesting";
+import {
+  evaluateStockBacktest,
+  type StockBacktestInput,
+  type StockBacktestResult,
+} from "@stockmarket/backtesting";
 
 function json(value: unknown): string {
   return JSON.stringify(value);
@@ -26,6 +30,20 @@ function assertMatchingBacktestInput(input: StockBacktestInput, result: StockBac
   }
 }
 
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value);
+}
+
+function assertResultMatchesEvaluatedInput(
+  input: StockBacktestInput,
+  result: StockBacktestResult,
+): void {
+  const expected = evaluateStockBacktest(input);
+  if (canonicalJson(expected) !== canonicalJson(result)) {
+    throw new Error("Backtest result must match the evaluated input snapshot.");
+  }
+}
+
 export async function persistStockBacktestRun(
   client: Client,
   input: StockBacktestInput,
@@ -42,6 +60,7 @@ export async function persistStockBacktestRun(
     throw new Error("Backtest persistence requires notRecommendation evidence.");
   }
   assertMatchingBacktestInput(input, result);
+  assertResultMatchesEvaluatedInput(input, result);
   assertFiniteIsoTimestamp(persistedAt, "persistedAt");
 
   const runArgs = [
