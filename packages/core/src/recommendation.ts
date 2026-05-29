@@ -54,6 +54,15 @@ export interface OperatorDecisionRecord {
   notes: string;
 }
 
+export interface EvidenceReviewRecord {
+  resolver: "db_recommendation_evidence_resolver";
+  recommendationId: string;
+  evidenceGate: EvidenceGate;
+  evidenceIds: string[];
+  reasonCodes: string[];
+  resolvedAt: string;
+}
+
 export interface Recommendation {
   id: string;
   ticker: string;
@@ -64,6 +73,7 @@ export interface Recommendation {
   decision: OpportunityDecision;
   evidenceStatus: EvidenceStatus;
   evidenceGate?: EvidenceGate;
+  evidenceReview?: EvidenceReviewRecord;
   sourceCitations: SourceCitation[];
   dataFreshness: DataFreshness;
   scores: ScoreSet;
@@ -139,6 +149,35 @@ function hasValidOptionsRiskDetails(recommendation: Recommendation): boolean {
   );
 }
 
+function hasVerifiedEvidenceReview(recommendation: Recommendation): boolean {
+  const review = recommendation.evidenceReview;
+  const recommendationEvidenceIds = [
+    recommendation.backtestRunId,
+    recommendation.paperTradeEvidenceId,
+  ].filter(hasText);
+  const reviewEvidenceIds = Array.isArray(review?.evidenceIds) ? review.evidenceIds : [];
+  const uniqueRecommendationEvidenceIds = new Set(recommendationEvidenceIds);
+  const uniqueReviewEvidenceIds = new Set(reviewEvidenceIds);
+  return Boolean(
+    recommendation.evidenceGate === "verified" &&
+    review &&
+    review.resolver === "db_recommendation_evidence_resolver" &&
+    review.recommendationId === recommendation.id &&
+    review.evidenceGate === "verified" &&
+    Array.isArray(review.reasonCodes) &&
+    review.reasonCodes.length === 0 &&
+    hasText(review.resolvedAt) &&
+    Number.isFinite(Date.parse(review.resolvedAt)) &&
+    Array.isArray(review.evidenceIds) &&
+    reviewEvidenceIds.length > 0 &&
+    uniqueReviewEvidenceIds.size === reviewEvidenceIds.length &&
+    uniqueRecommendationEvidenceIds.size === recommendationEvidenceIds.length &&
+    uniqueReviewEvidenceIds.size === uniqueRecommendationEvidenceIds.size &&
+    reviewEvidenceIds.every((evidenceId) => hasText(evidenceId)) &&
+    recommendationEvidenceIds.every((evidenceId) => uniqueReviewEvidenceIds.has(evidenceId)),
+  );
+}
+
 function isOptionsInstrument(instrumentType: InstrumentType): boolean {
   return (
     instrumentType === "long_call" ||
@@ -154,7 +193,7 @@ export function isPaperTradeEligible(recommendation: Recommendation): boolean {
   if (recommendation.evidenceStatus !== "paper_trade_eligible") {
     return false;
   }
-  if (recommendation.evidenceGate !== "verified") {
+  if (!hasVerifiedEvidenceReview(recommendation)) {
     return false;
   }
   if (!recommendation.backtestRunId && !recommendation.paperTradeEvidenceId) {

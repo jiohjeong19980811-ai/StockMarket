@@ -51,6 +51,14 @@ const baseRecommendation: Recommendation = {
     notes: "Approved for paper-trading contract testing.",
   },
   backtestRunId: "bt_msft_pead_1",
+  evidenceReview: {
+    resolver: "db_recommendation_evidence_resolver",
+    recommendationId: "rec_msft_pead_1",
+    evidenceGate: "verified",
+    evidenceIds: ["bt_msft_pead_1"],
+    reasonCodes: [],
+    resolvedAt: "2026-05-01T12:15:00Z",
+  },
   createdAt: "2026-05-01T12:10:00Z",
   updatedAt: "2026-05-01T12:10:00Z",
 };
@@ -273,6 +281,21 @@ describe("createPaperTrade", () => {
           decision: "watchlist",
           evidenceStatus: "watchlist_eligible",
           backtestRunId: undefined,
+        },
+      }),
+    );
+
+    expect(result.status).toBe("rejected");
+    expect(result.reasonCodes).toContain("recommendation_not_paper_trade_eligible");
+    expect(result.trade).toBeUndefined();
+  });
+
+  it("rejects raw verified flags without resolver evidence review provenance", () => {
+    const result = createPaperTrade(
+      requestWith({
+        recommendation: {
+          ...baseRecommendation,
+          evidenceReview: undefined,
         },
       }),
     );

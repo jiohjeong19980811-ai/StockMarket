@@ -194,7 +194,8 @@ function includesRequiredCostStress(value: unknown): boolean {
     Array.isArray(value) &&
     [1, 2, 3].every((required) =>
       value.some((item) => isFiniteNumberValue(item) && item === required),
-    )
+    ) &&
+    value.every((item) => isFiniteNumberValue(item) && item > 0)
   );
 }
 
@@ -206,17 +207,19 @@ function isReviewableBacktestAssumptions(value: unknown): value is Record<string
     isFiniteNumberValue(value.slippageBps) &&
     value.slippageBps >= 0 &&
     isFiniteNumberValue(value.spreadBps) &&
-    value.spreadBps >= 0 &&
+    value.spreadBps > 0 &&
     isFiniteNumberValue(value.feePerTrade) &&
     value.feePerTrade >= 0 &&
     isFiniteNumberValue(value.minTradesForReview) &&
+    Number.isInteger(value.minTradesForReview) &&
     value.minTradesForReview > 0 &&
     isFiniteNumberValue(value.minAverageDailyDollarVolume) &&
-    value.minAverageDailyDollarVolume >= 0 &&
+    value.minAverageDailyDollarVolume > 0 &&
     value.pointInTimeData === true &&
     value.survivorshipBiasControl === true &&
     value.lookaheadBiasControl === true &&
     isFiniteNumberValue(value.rejectedParameterSets) &&
+    Number.isInteger(value.rejectedParameterSets) &&
     value.rejectedParameterSets >= 0 &&
     includesRequiredCostStress(value.costStressMultipliers) &&
     isStringArrayValue(value.notes)
@@ -228,10 +231,35 @@ function metricMatches(metrics: Record<string, unknown>, key: string, expected: 
   return isFiniteNumberValue(value) && Math.abs(value - expected) <= 0.0001;
 }
 
+function metricHasFiniteNumber(metrics: Record<string, unknown>, key: string): boolean {
+  return isFiniteNumberValue(metrics[key]);
+}
+
+function hasValidProfitFactor(value: unknown): boolean {
+  return value === null || isFiniteNumberValue(value);
+}
+
+function hasValidCostSensitivity(value: unknown): boolean {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+  return [1, 2, 3].every((requiredMultiplier) =>
+    value.some(
+      (item) =>
+        isRecord(item) &&
+        item.multiplier === requiredMultiplier &&
+        isFiniteNumberValue(item.netReturnPct) &&
+        isFiniteNumberValue(item.averageReturnPct) &&
+        hasValidProfitFactor(item.profitFactor),
+    ),
+  );
+}
+
 function hasCoherentStoredMetrics(
   value: unknown,
   expected: {
     tradeCount: number;
+    winRatePct: number;
     netReturnPct: number;
     maxDrawdownPct: number;
     benchmarkRelativeReturnPct: number;
@@ -242,9 +270,18 @@ function hasCoherentStoredMetrics(
   }
   return (
     metricMatches(value, "tradeCount", expected.tradeCount) &&
+    metricMatches(value, "winRatePct", expected.winRatePct) &&
+    metricHasFiniteNumber(value, "averageReturnPct") &&
+    metricHasFiniteNumber(value, "medianReturnPct") &&
     metricMatches(value, "netReturnPct", expected.netReturnPct) &&
     metricMatches(value, "maxDrawdownPct", expected.maxDrawdownPct) &&
-    metricMatches(value, "benchmarkRelativeReturnPct", expected.benchmarkRelativeReturnPct)
+    metricMatches(value, "benchmarkRelativeReturnPct", expected.benchmarkRelativeReturnPct) &&
+    metricHasFiniteNumber(value, "bestTradeReturnPct") &&
+    metricHasFiniteNumber(value, "worstTradeReturnPct") &&
+    metricHasFiniteNumber(value, "averageHoldingDays") &&
+    metricHasFiniteNumber(value, "grossReturnPct") &&
+    hasValidProfitFactor(value.profitFactor) &&
+    hasValidCostSensitivity(value.costSensitivity)
   );
 }
 
@@ -431,9 +468,9 @@ async function resolveBacktestEvidence(
 ): Promise<RecommendationEvidenceItem> {
   const result = await client.execute({
     sql: `SELECT id, strategy_version_id, instrument_type, promotion_gate,
-        trade_count, net_return_pct, max_drawdown_pct, benchmark_relative_return_pct,
+        trade_count, win_rate_pct, net_return_pct, max_drawdown_pct, benchmark_relative_return_pct,
         options_proxy, not_recommendation, reason_codes_json, metrics_json,
-        assumptions_json, source_citations_json, freshness_status
+        assumptions_json, source_citations_json, freshness_status, freshness_as_of, period_end
       FROM backtest_runs
       WHERE id = ?
       LIMIT 1`,
@@ -453,6 +490,7 @@ async function resolveBacktestEvidence(
   const instrumentType = readString(row, "instrument_type");
   const promotionGate = readString(row, "promotion_gate");
   const tradeCount = readNumber(row, "trade_count");
+  const winRatePct = readNumber(row, "win_rate_pct");
   const netReturnPct = readNumber(row, "net_return_pct");
   const maxDrawdownPct = readNumber(row, "max_drawdown_pct");
   const benchmarkRelativeReturnPct = readNumber(row, "benchmark_relative_return_pct");
@@ -463,6 +501,8 @@ async function resolveBacktestEvidence(
   const storedAssumptions = tryParseJson(readString(row, "assumptions_json"));
   const storedSourceCitations = tryParseJson(readString(row, "source_citations_json"));
   const freshnessStatus = readString(row, "freshness_status");
+  const freshnessAsOf = readString(row, "freshness_as_of");
+  const periodEnd = readString(row, "period_end");
   const reasonCodes: RecommendationEvidenceReason[] = [];
 
   if (notRecommendationRaw !== 1 || optionsProxyRaw !== 0) {
@@ -504,12 +544,16 @@ async function resolveBacktestEvidence(
       !isStringArrayValue(storedReasonCodes) ||
       storedReasonCodes.length > 0 ||
       freshnessStatus !== "fresh" ||
+      !hasValidIsoTimestamp(freshnessAsOf) ||
+      !hasValidIsoTimestamp(periodEnd) ||
+      Date.parse(freshnessAsOf) < Date.parse(periodEnd) ||
       !isReviewableBacktestAssumptions(storedAssumptions) ||
       !Array.isArray(storedSourceCitations) ||
       storedSourceCitations.length === 0 ||
       storedSourceCitations.some((citation) => !hasValidBacktestCitation(citation)) ||
       !hasCoherentStoredMetrics(storedMetrics, {
         tradeCount,
+        winRatePct,
         netReturnPct,
         maxDrawdownPct,
         benchmarkRelativeReturnPct,

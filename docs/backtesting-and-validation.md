@@ -8,7 +8,7 @@ Backtesting exists to prevent attractive narratives from becoming recommendation
 
 The MVP should start with a small, custom, auditable backtesting harness. Mature frameworks such as QuantConnect LEAN, vectorbt, Qlib, Backtrader, Zipline Reloaded, and QuantStats should be used as references or later comparison tools, not as the MVP's core dependency. This keeps evidence gates, assumptions, and audit records aligned with the product domain from day one.
 
-Milestone 7 starts with a pure package-level stock backtest evaluator in `@stockmarket/backtesting`. It consumes closed long-stock trade observations, source citations, freshness state, and explicit assumptions, then returns metrics and conservative evidence gates. M7-002 adds durable DB persistence for stock-only backtest runs and conservative recommendation evidence resolution for stored backtest IDs. The milestone still does not fetch provider data, expose API routes, optimize parameters, evaluate options, automate strategy promotion, or make performance claims.
+Milestone 7 starts with a pure package-level stock backtest evaluator in `@stockmarket/backtesting`. It consumes closed long-stock trade observations, source citations, freshness state, and explicit assumptions, then returns metrics and conservative evidence gates. M7-002 adds durable DB persistence for stock-only backtest runs, snapshot-coherence checks against a fresh evaluator run, and conservative recommendation evidence resolution for stored backtest IDs. The milestone still does not fetch provider data, expose API routes, optimize parameters, evaluate options, automate strategy promotion, or make performance claims.
 
 ## Strategy Types
 
@@ -179,11 +179,11 @@ Returned stock backtest metrics and trade rows are computed only from eligible s
 
 ## Milestone 7 Backtest Persistence
 
-M7-002 persists stock backtest evaluator output in the DB package without recalculating strategy performance. The `backtest_runs` table stores strategy version, family, stock-only instrument type, universe, period, benchmark return, promotion gate, reason codes, metrics, assumptions, citations, freshness, safety flags, and timestamps. The `backtest_run_trades` table stores the eligible trade rows tied to the run.
+M7-002 persists stock backtest evaluator output in the DB package only after recomputing the evaluator result from the supplied input and confirming the stored result matches that snapshot. The `backtest_runs` table stores strategy version, family, stock-only instrument type, universe, period, benchmark return, promotion gate, reason codes, metrics, assumptions, citations, freshness, safety flags, and timestamps. The `backtest_run_trades` table stores the eligible trade rows tied to the run.
 
 Persistence remains stock-only for MVP. The helper rejects non-stock inputs, options-family proxies, `optionsProxy: true`, any result that is not explicitly `notRecommendation`, and any result snapshot that does not match a fresh evaluation of the supplied input. Persisted backtest evidence can support recommendation evidence detail and later operator review, but it does not promote strategies automatically and does not replace paper trading, risk review, or out-of-sample validation.
 
-Paper-trade eligibility now requires a resolved evidence gate of `verified`; a raw `backtestRunId` or `paperTradeEvidenceId` is not enough. In the DB, paper-trade recommendations are blocked unless `evidence_gate = verified`, so unresolved or blocked evidence cannot silently flow into paper-trade creation.
+Paper-trade eligibility now requires a resolved evidence gate of `verified`; a raw `backtestRunId` or `paperTradeEvidenceId` is not enough. In the core contract, the recommendation must carry a resolver-backed evidence review whose evidence IDs exactly match the referenced backtest or paper-trade evidence. In the DB, paper-trade recommendations and persisted paper-trade rows are blocked unless `evidence_gate = verified` and the referenced evidence row is coherent, fresh, reviewable, and cohort-compatible, so unresolved or blocked evidence cannot silently flow into paper-trade creation.
 
 Deferred follow-up work:
 

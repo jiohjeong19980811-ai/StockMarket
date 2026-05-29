@@ -8,6 +8,7 @@ const baseStockInput: ScoringInput = {
   instrumentType: "stock",
   strategyFamily: "momentum",
   evidenceStatus: "paper_trade_eligible",
+  evidenceGate: "verified",
   evidenceIds: ["backtest-run-1"],
   dataFreshness: {
     status: "fresh",
@@ -101,6 +102,21 @@ describe("scoreOpportunity", () => {
       inputWith({
         evidenceStatus: "research_only",
         evidenceIds: [],
+      }),
+    );
+
+    expect(result.decision).toBe("watchlist");
+    expect(result.gates.find((gate) => gate.id === "paper_trade_evidence")).toMatchObject({
+      passed: false,
+      impact: "paper_trade_block",
+    });
+  });
+
+  it("keeps raw evidence IDs at watchlist until evidence is resolved as verified", () => {
+    const result = scoreOpportunity(
+      inputWith({
+        evidenceGate: "needs_more_data",
+        evidenceIds: ["backtest-run-1"],
       }),
     );
 

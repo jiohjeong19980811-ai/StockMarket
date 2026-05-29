@@ -1,5 +1,6 @@
 import type {
   DataFreshness,
+  EvidenceGate,
   InstrumentType,
   OpportunityDecision,
   OptionsRiskDetails,
@@ -68,6 +69,7 @@ export interface ScoringInput {
   instrumentType: InstrumentType;
   strategyFamily: StrategyFamily;
   evidenceStatus: EvidenceStatus;
+  evidenceGate: EvidenceGate;
   evidenceIds: string[];
   dataFreshness: DataFreshness;
   sourceCitations: SourceCitation[];
@@ -473,7 +475,11 @@ function hasValidOptionsRiskDetails(details: OptionsRiskDetails | undefined): bo
 }
 
 function hasPaperEvidence(input: ScoringInput): boolean {
-  return input.evidenceStatus === "paper_trade_eligible" && input.evidenceIds.length > 0;
+  return (
+    input.evidenceStatus === "paper_trade_eligible" &&
+    input.evidenceGate === "verified" &&
+    input.evidenceIds.length > 0
+  );
 }
 
 export function evaluateRiskGates(input: ScoringInput): RiskGateResult[] {

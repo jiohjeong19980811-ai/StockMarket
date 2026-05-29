@@ -17,6 +17,70 @@ async function execute(sql: string, args: unknown[] = []) {
   return client.execute({ sql, args });
 }
 
+async function insertBacktestRun(overrides: Record<string, unknown> = {}) {
+  const row = {
+    id: "bt_123",
+    strategy_version_id: "strategy_earnings_v0",
+    strategy_family: "earnings",
+    strategy_version_label: "earnings-v0",
+    instrument_type: "stock",
+    universe: "mock-liquid-large-cap",
+    period_start: "2026-01-02T14:30:00.000Z",
+    period_end: "2026-04-30T20:00:00.000Z",
+    benchmark_return_pct: 4,
+    promotion_gate: "ready_for_review",
+    reason_codes_json: "[]",
+    metrics_json:
+      '{"tradeCount":4,"winRatePct":75,"averageReturnPct":4.499,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":18.2815,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685}]}',
+    assumptions_json:
+      '{"slippageBps":5,"spreadBps":10,"feePerTrade":1,"minTradesForReview":4,"minAverageDailyDollarVolume":20000000,"pointInTimeData":true,"survivorshipBiasControl":true,"lookaheadBiasControl":true,"rejectedParameterSets":2,"costStressMultipliers":[1,2,3],"notes":["Mock run uses adjusted close values and conservative cost stress."]}',
+    source_citations_json:
+      '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-04-30T19:55:00.000Z","retrievedAt":"2026-04-30T20:00:00.000Z"}]',
+    freshness_status: "fresh",
+    freshness_as_of: "2026-04-30T20:00:00.000Z",
+    freshness_notes_json: "[]",
+    trade_count: 4,
+    win_rate_pct: 75,
+    max_drawdown_pct: 6.25,
+    net_return_pct: 18.2815,
+    benchmark_relative_return_pct: 14.2815,
+    options_proxy: 0,
+    not_recommendation: 1,
+    created_at: now,
+    updated_at: now,
+    ...overrides,
+  };
+
+  const columns = Object.keys(row);
+  const placeholders = columns.map(() => "?").join(", ");
+  await execute(
+    `INSERT INTO backtest_runs (${columns.join(", ")}) VALUES (${placeholders})`,
+    Object.values(row),
+  );
+}
+
+async function insertBacktestTradeRows(backtestRunId = "bt_123", ticker = "MSFT") {
+  for (let index = 0; index < 4; index += 1) {
+    await execute(
+      `INSERT INTO backtest_run_trades
+        (id, backtest_run_id, source_trade_id, ticker, net_return_pct,
+         gross_return_pct, holding_days, exit_order, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        `${backtestRunId}_trade_${index + 1}`,
+        backtestRunId,
+        `trade-${index + 1}`,
+        ticker,
+        index === 1 ? -6.25 : 9.75,
+        index === 1 ? -6 : 10,
+        7.2,
+        index,
+        now,
+      ],
+    );
+  }
+}
+
 async function seedPaperTradeDependencies(decision = "paper_trade") {
   await execute(
     `INSERT INTO strategy_definitions
@@ -39,6 +103,10 @@ async function seedPaperTradeDependencies(decision = "paper_trade") {
       now,
     ],
   );
+  if (decision === "paper_trade") {
+    await insertBacktestRun();
+    await insertBacktestTradeRows();
+  }
   await execute(
     `INSERT INTO audit_logs
       (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
@@ -373,6 +441,6 @@ describe("paper trade ledger persistence", () => {
         createdAt: now,
         updatedAt: now,
       }),
-    ).rejects.toThrow(/paper-trade eligible recommendation/i);
+    ).rejects.toThrow(/paper-trade eligible recommendation|verified evidence recommendation/i);
   });
 });

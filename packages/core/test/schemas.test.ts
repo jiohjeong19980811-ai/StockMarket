@@ -43,6 +43,14 @@ const validRecommendation: Recommendation = {
     notes: "Approved for schema contract testing.",
   },
   backtestRunId: "bt_123",
+  evidenceReview: {
+    resolver: "db_recommendation_evidence_resolver",
+    recommendationId: "rec_schema_1",
+    evidenceGate: "verified",
+    evidenceIds: ["bt_123"],
+    reasonCodes: [],
+    resolvedAt: "2026-05-01T12:15:00Z",
+  },
   createdAt: "2026-05-01T12:10:00Z",
   updatedAt: "2026-05-01T12:10:00Z",
 };

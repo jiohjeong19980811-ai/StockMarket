@@ -87,6 +87,7 @@ async function seedRecommendation(
   ticker: string,
   paperTradeEvidenceId?: string | null,
   backtestRunId?: string,
+  decision: "paper_trade" | "watchlist" = "paper_trade",
 ) {
   await seedAuditLog(
     `audit_${id}`,
@@ -115,9 +116,9 @@ async function seedRecommendation(
       ticker,
       "stock",
       "momentum-v0",
-      "paper_trade",
-      "paper_trade_eligible",
-      "verified",
+      decision,
+      decision === "paper_trade" ? "paper_trade_eligible" : "watchlist_eligible",
+      decision === "paper_trade" ? "verified" : "needs_more_data",
       "Momentum continuation research candidate.",
       "Paper evidence supports continued research.",
       "Momentum can reverse quickly.",
@@ -260,7 +261,10 @@ async function persistBacktestEvidence(input = stockBacktestInput()) {
 }
 
 async function seedClosedEvidencePaperTrade() {
-  await seedRecommendation("rec_source_1", "MSFT", "paper_trade_evidence_seed");
+  const backtestResult = await persistBacktestEvidence(
+    stockBacktestInput({ id: "backtest_run_source" }),
+  );
+  await seedRecommendation("rec_source_1", "MSFT", null, backtestResult.id);
   await seedAuditLog(
     "audit_evidence_approval_1",
     "operator_decision",
@@ -412,7 +416,7 @@ describe("recommendation evidence resolver", () => {
 
   it("verifies persisted ready backtest evidence for a matching recommendation cohort", async () => {
     const result = await persistBacktestEvidence();
-    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id);
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id, "watchlist");
 
     const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
 
@@ -455,7 +459,7 @@ describe("recommendation evidence resolver", () => {
       ],
     );
     await execute("PRAGMA ignore_check_constraints = OFF");
-    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id);
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id, "watchlist");
 
     const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
 
@@ -469,6 +473,30 @@ describe("recommendation evidence resolver", () => {
     });
   });
 
+  it("blocks ready backtest rows with evaluator-invalid assumptions or freshness timestamps", async () => {
+    const result = await persistBacktestEvidence();
+    const invalidAssumptions = {
+      ...stockBacktestInput().assumptions,
+      spreadBps: 0,
+      minAverageDailyDollarVolume: 0,
+      rejectedParameterSets: 1.5,
+    };
+    await execute("PRAGMA ignore_check_constraints = ON");
+    await execute(
+      `UPDATE backtest_runs
+       SET assumptions_json = ?, freshness_as_of = ?
+       WHERE id = ?`,
+      [JSON.stringify(invalidAssumptions), "not-a-timestamp", result.id],
+    );
+    await execute("PRAGMA ignore_check_constraints = OFF");
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id, "watchlist");
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("backtest_evidence_unsafe");
+  });
+
   it("keeps ticker-level backtest evidence unresolved when the ticker sample is too small", async () => {
     const baseInput = stockBacktestInput();
     const input = stockBacktestInput({
@@ -477,7 +505,7 @@ describe("recommendation evidence resolver", () => {
       ),
     });
     const result = await persistBacktestEvidence(input);
-    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id);
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id, "watchlist");
 
     const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
 
@@ -494,7 +522,7 @@ describe("recommendation evidence resolver", () => {
 
   it("blocks persisted backtest evidence from a different ticker cohort", async () => {
     const result = await persistBacktestEvidence();
-    await seedRecommendation("rec_candidate_1", "AAPL", null, result.id);
+    await seedRecommendation("rec_candidate_1", "AAPL", null, result.id, "watchlist");
 
     const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
 
@@ -515,7 +543,7 @@ describe("recommendation evidence resolver", () => {
       },
     });
     const result = await persistBacktestEvidence(input);
-    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id);
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id, "watchlist");
 
     const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
 
@@ -532,7 +560,13 @@ describe("recommendation evidence resolver", () => {
 
   it("blocks paper-trade evidence from a different ticker cohort", async () => {
     await seedClosedEvidencePaperTrade();
-    await seedRecommendation("rec_candidate_1", "AAPL", "paper_trade_evidence_1");
+    await seedRecommendation(
+      "rec_candidate_1",
+      "AAPL",
+      "paper_trade_evidence_1",
+      undefined,
+      "watchlist",
+    );
 
     const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
 
@@ -581,7 +615,13 @@ describe("recommendation evidence resolver", () => {
       ["live", 1, 1, "paper_trade_evidence_1"],
     );
     await execute("PRAGMA ignore_check_constraints = OFF");
-    await seedRecommendation("rec_candidate_1", "MSFT", "paper_trade_evidence_1");
+    await seedRecommendation(
+      "rec_candidate_1",
+      "MSFT",
+      "paper_trade_evidence_1",
+      undefined,
+      "watchlist",
+    );
 
     const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
 

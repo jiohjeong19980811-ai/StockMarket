@@ -65,6 +65,15 @@ export const operatorDecisionRecordSchema = z.object({
   notes: z.string(),
 });
 
+export const evidenceReviewRecordSchema = z.object({
+  resolver: z.literal("db_recommendation_evidence_resolver"),
+  recommendationId: nonemptyString,
+  evidenceGate: z.enum(evidenceGates),
+  evidenceIds: z.array(nonemptyString).min(1),
+  reasonCodes: z.array(z.string()),
+  resolvedAt: isoTimestamp,
+});
+
 export const recommendationSchema: z.ZodType<Recommendation> = z
   .object({
     id: nonemptyString,
@@ -76,6 +85,7 @@ export const recommendationSchema: z.ZodType<Recommendation> = z
     decision: z.enum(opportunityDecisions),
     evidenceStatus: z.enum(evidenceStatuses),
     evidenceGate: z.enum(evidenceGates).optional(),
+    evidenceReview: evidenceReviewRecordSchema.optional(),
     sourceCitations: z.array(sourceCitationSchema).min(1),
     dataFreshness: dataFreshnessSchema,
     scores: scoreSetSchema,

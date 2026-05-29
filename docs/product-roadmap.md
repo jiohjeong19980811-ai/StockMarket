@@ -59,8 +59,8 @@ Acceptance criteria:
 - Backtesting framework exists.
 - Initial backtesting framework can evaluate stock-only closed trade observations with documented assumptions, source citations, data freshness, anti-bias controls, and cost sensitivity while returning `notRecommendation`.
 - DB can persist stock-only backtest runs and eligible trade rows with strategy version, assumptions, citations, freshness, metrics, reason codes, and safety flags.
-- Recommendation evidence detail can verify stored stock backtest evidence only when the run is stock-only, `notRecommendation`, not an options proxy, `ready_for_review`, cohort-compatible, and tied to the recommendation ticker.
-- Paper-trade eligibility requires a resolved `verified` evidence gate; raw evidence IDs are insufficient.
+- Recommendation evidence detail can verify stored stock backtest evidence only when the run is stock-only, `notRecommendation`, not an options proxy, `ready_for_review`, cohort-compatible, tied to the recommendation ticker, and backed by coherent stored metrics, assumptions, citations, freshness, and cost sensitivity.
+- Paper-trade eligibility requires a resolved `verified` evidence gate plus resolver-backed evidence review provenance; raw evidence IDs or caller-set verified flags are insufficient.
 - Missing, `needs_more_data`, blocked, unsafe, or cohort-mismatched backtest evidence downgrades or blocks the evidence gate instead of being treated as proof.
 - Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.
 - Context-only and deferred strategy families cannot bypass the scoring strategy-policy gate.

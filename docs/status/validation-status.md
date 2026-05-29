@@ -1,6 +1,6 @@
 # Validation Status
 
-Last updated: 2026-05-29T14:26:22-04:00
+Last updated: 2026-05-29T14:54:00-04:00
 
 ## Current State
 
@@ -13,13 +13,14 @@ Last updated: 2026-05-29T14:26:22-04:00
 | Priority | High |
 | Category | Backtesting validation evidence |
 | Blockers | None |
-| Next step | Request focused re-review after evidence-gate and backtest-integrity hardening. |
+| Next step | Request focused re-review after resolver-backed evidence-gate and DB trigger hardening. |
 | Related docs/files | `packages/backtesting/src/index.ts`, `packages/backtesting/test/backtesting.test.ts`, `packages/db`, `docs/backtesting-and-validation.md`, `docs/superpowers/plans/2026-05-29-milestone-7-backtest-persistence.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 7 resolver-backed evidence gate hardening | Completed | Focused regressions and root CI passed after requiring core evidence-review provenance, making scoring require verified evidence gates, tightening resolver assumptions/metrics/freshness checks, strengthening DB recommendation and paper-trade triggers, and seeding API/ledger tests with real persisted backtest evidence. Root CI passed with typecheck, lint, format check, 176 unit tests, 16 hook tests, dependency audit, production build, and API smoke. Status JSON parse and whitespace check passed; secret scan found no token-shaped matches; live-trading surface scan matched only broker/live-shaped safety constants and regression tests. | `npm.cmd run test --workspace @stockmarket/core -- recommendation`; `npm.cmd run test --workspace @stockmarket/core -- schemas`; `npm.cmd run test --workspace @stockmarket/scoring -- scoring`; `npm.cmd run test --workspace @stockmarket/paper-trading -- paper-trading`; `npm.cmd run test --workspace @stockmarket/db -- evidence-resolver`; `npm.cmd run test --workspace @stockmarket/db -- migration`; `npm.cmd run test --workspace @stockmarket/db -- paper-trade-ledger`; `npm.cmd run test --workspace @stockmarket/api -- paper-trading`; `npm.cmd run ci`; `python -m json.tool docs/status/work-items.json`; `git diff --check`; secret-pattern scan; live-trading surface scan |
 | Milestone 7 stock backtest contract aggregate CI | Completed | Typecheck, lint, format check, 156 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after eligible-metrics hardening for duplicate trades, out-of-period trades, citation chronology, freshness chronology, cost, timestamp, liquidity, options-proxy, drawdown, and parameter-search gates | `npm.cmd run ci` |
 | Milestone 7 stock backtest contract merged-main CI | Completed | Fast-forward merge to `main` completed; merged `main` passed typecheck, lint, format check, 156 unit tests, 16 hook tests, dependency audit, production build, and API smoke | `git merge --ff-only feature/milestone-7-backtesting-framework`; `npm.cmd run ci` |
 | Milestone 7 stock backtest contract focused regression | Completed | 19 backtesting package tests passed after adding gates for out-of-period trades, duplicate trade IDs, duplicate observations independent of quantity, eligible-only returned metrics/trades, freshness chronology, and citations retrieved before publication | `npm.cmd run test --workspace @stockmarket/backtesting` |

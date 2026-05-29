@@ -317,3 +317,9 @@ Reason: Strategy evidence needs a durable, auditable record before recommendatio
 Decision: Tighten M7-002 after focused review by requiring persisted backtest results to match a fresh evaluator run, making the resolver inspect stored reason codes, freshness, assumptions, citations, metrics, and ticker-level sample size, and adding a recommendation `evidence_gate` that must be `verified` before paper-trade eligibility.
 
 Reason: A raw evidence ID or stale stored `ready_for_review` flag is not enough proof. The platform must prevent mismatched evaluator snapshots, thin ticker samples, unsafe stored rows, and unresolved evidence from silently becoming paper-trade candidates.
+
+## 2026-05-29: Resolver-Backed Paper-Trade Evidence Gates
+
+Decision: Require resolver-backed evidence review provenance in the core paper-trade eligibility contract and strengthen DB evidence gates so paper-trade recommendations and persisted paper-trade rows require verified, coherent, cohort-compatible backtest or paper-trade evidence.
+
+Reason: Caller-controlled `verified` flags are not evidence. The paper-trading path must prove that referenced evidence was resolved, that in-memory evidence IDs exactly match the resolver review, and that database writes cannot bypass freshness, assumption, metric, cost-sensitivity, ticker-sample, and paper-only safety checks.

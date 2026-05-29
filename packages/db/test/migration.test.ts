@@ -150,6 +150,8 @@ async function insertRecommendation(overrides: Record<string, unknown> = {}) {
 
 async function seedPaperTradeDependencies() {
   await seedRecommendationDependencies();
+  await insertBacktestRun({ id: "bt_123" });
+  await insertBacktestTradeRows("bt_123");
   await insertRecommendation({
     decision: "paper_trade",
     evidence_status: "paper_trade_eligible",
@@ -253,8 +255,10 @@ async function insertBacktestRun(overrides: Record<string, unknown> = {}) {
     benchmark_return_pct: 4,
     promotion_gate: "ready_for_review",
     reason_codes_json: "[]",
-    metrics_json: '{"tradeCount":4,"winRatePct":75,"maxDrawdownPct":6.25,"netReturnPct":18.2815}',
-    assumptions_json: '{"slippageBps":5,"spreadBps":10,"feePerTrade":1}',
+    metrics_json:
+      '{"tradeCount":4,"winRatePct":75,"averageReturnPct":4.499,"medianReturnPct":7.2479,"maxDrawdownPct":6.25,"profitFactor":3.8793,"bestTradeReturnPct":9.75,"worstTradeReturnPct":-6.25,"averageHoldingDays":7.2292,"grossReturnPct":4.75,"netReturnPct":18.2815,"benchmarkRelativeReturnPct":14.2815,"costSensitivity":[{"multiplier":1,"netReturnPct":18.2815,"averageReturnPct":4.499,"profitFactor":3.8793},{"multiplier":2,"netReturnPct":17.1444,"averageReturnPct":4.2479,"profitFactor":3.6141},{"multiplier":3,"netReturnPct":16.0154,"averageReturnPct":3.9969,"profitFactor":3.3685}]}',
+    assumptions_json:
+      '{"slippageBps":5,"spreadBps":10,"feePerTrade":1,"minTradesForReview":4,"minAverageDailyDollarVolume":20000000,"pointInTimeData":true,"survivorshipBiasControl":true,"lookaheadBiasControl":true,"rejectedParameterSets":2,"costStressMultipliers":[1,2,3],"notes":["Mock run uses adjusted close values and conservative cost stress."]}',
     source_citations_json:
       '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-05-28T19:55:00.000Z","retrievedAt":"2026-05-28T20:00:00.000Z"}]',
     freshness_status: "fresh",
@@ -278,6 +282,28 @@ async function insertBacktestRun(overrides: Record<string, unknown> = {}) {
     `INSERT INTO backtest_runs (${columns.join(", ")}) VALUES (${placeholders})`,
     Object.values(row),
   );
+}
+
+async function insertBacktestTradeRows(backtestRunId = "backtest_run_1", ticker = "MSFT") {
+  for (let index = 0; index < 4; index += 1) {
+    await execute(
+      `INSERT INTO backtest_run_trades
+        (id, backtest_run_id, source_trade_id, ticker, net_return_pct,
+         gross_return_pct, holding_days, exit_order, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        `${backtestRunId}_trade_${index + 1}`,
+        backtestRunId,
+        `trade-${index + 1}`,
+        ticker,
+        index === 1 ? -6.25 : 9.75,
+        index === 1 ? -6 : 10,
+        7.2,
+        index,
+        now,
+      ],
+    );
+  }
 }
 
 describe("database migrations", () => {
@@ -505,6 +531,17 @@ describe("database migrations", () => {
       }),
     ).rejects.toThrow();
 
+    await expect(
+      insertRecommendation({
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        backtest_run_id: "bt_verified",
+        evidence_gate: "verified",
+      }),
+    ).rejects.toThrow();
+
+    await insertBacktestRun({ id: "bt_verified" });
+    await insertBacktestTradeRows("bt_verified");
     await insertRecommendation({
       decision: "paper_trade",
       evidence_status: "paper_trade_eligible",
@@ -516,6 +553,84 @@ describe("database migrations", () => {
       "rec_1",
     ]);
     expect(result.rows[0]?.evidence_gate).toBe("verified");
+  });
+
+  it("rejects caller-verified recommendations when backtest evidence has unsafe assumptions or timestamps", async () => {
+    await seedRecommendationDependencies();
+    await insertBacktestRun({
+      id: "bt_unsafe",
+      assumptions_json: JSON.stringify({
+        slippageBps: 5,
+        spreadBps: 10,
+        feePerTrade: 1,
+        minTradesForReview: 4,
+        minAverageDailyDollarVolume: 20_000_000,
+        pointInTimeData: true,
+        survivorshipBiasControl: true,
+        lookaheadBiasControl: true,
+        rejectedParameterSets: 1.5,
+        costStressMultipliers: [1, 2, 3],
+        notes: ["Rejected parameter set count must be a whole number."],
+      }),
+      freshness_as_of: "not-a-timestamp",
+    });
+    await insertBacktestTradeRows("bt_unsafe");
+
+    await expect(
+      insertRecommendation({
+        decision: "paper_trade",
+        evidence_status: "paper_trade_eligible",
+        backtest_run_id: "bt_unsafe",
+        evidence_gate: "verified",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects paper trades for upgraded recommendations without verified evidence gates", async () => {
+    await seedRecommendationDependencies();
+    await insertBacktestRun({ id: "bt_legacy" });
+    await insertBacktestTradeRows("bt_legacy");
+    await execute("DROP TRIGGER recommendations_verified_evidence_gate_insert");
+    await insertRecommendation({
+      decision: "paper_trade",
+      evidence_status: "paper_trade_eligible",
+      evidence_gate: "needs_more_data",
+      backtest_run_id: "bt_legacy",
+    });
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "audit_paper_trade_approval_1",
+        "operator_decision",
+        "operator",
+        "operator:test",
+        now,
+        "paper_trade",
+        "paper_trade_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+    await execute(
+      `INSERT INTO audit_logs
+        (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "audit_paper_trade_entry_1",
+        "paper_trade_opened",
+        "system",
+        "paper-trading",
+        now,
+        "paper_trade",
+        "paper_trade_1",
+        "pass",
+        "paper_trade",
+      ],
+    );
+
+    await expect(insertPaperTrade()).rejects.toThrow();
   });
 
   it("accepts normalized ingestion rows linked to provider records", async () => {

@@ -63,19 +63,43 @@ const validOptionsRiskDetails = {
   historicalOptionsEvidenceId: "options_bt_123",
 };
 
+function evidenceReviewFor(recommendation: Recommendation): Recommendation["evidenceReview"] {
+  const evidenceIds = [recommendation.backtestRunId, recommendation.paperTradeEvidenceId].filter(
+    (evidenceId): evidenceId is string => typeof evidenceId === "string",
+  );
+  return {
+    resolver: "db_recommendation_evidence_resolver",
+    recommendationId: recommendation.id,
+    evidenceGate: "verified",
+    evidenceIds,
+    reasonCodes: [],
+    resolvedAt: "2026-05-01T12:15:00Z",
+  };
+}
+
+function eligibleRecommendation(overrides: Partial<Recommendation> = {}): Recommendation {
+  const recommendation: Recommendation = {
+    ...baseRecommendation,
+    decision: "paper_trade",
+    evidenceStatus: "paper_trade_eligible",
+    evidenceGate: "verified",
+    backtestRunId: "bt_123",
+    ...overrides,
+  };
+  return {
+    ...recommendation,
+    evidenceReview: evidenceReviewFor(recommendation),
+    ...overrides,
+  };
+}
+
 describe("recommendation contract", () => {
   it("keeps no-trade outcomes first class", () => {
     expect(opportunityDecisions).toEqual(["watchlist", "paper_trade", "avoid", "needs_more_data"]);
   });
 
   it("allows stock paper trades only when evidence and risk fields are present", () => {
-    const recommendation: Recommendation = {
-      ...baseRecommendation,
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_123",
-    };
+    const recommendation = eligibleRecommendation();
 
     expect(isPaperTradeEligible(recommendation)).toBe(true);
   });
@@ -85,8 +109,41 @@ describe("recommendation contract", () => {
       ...baseRecommendation,
       decision: "paper_trade",
       evidenceStatus: "paper_trade_eligible",
+      evidenceGate: "verified",
       backtestRunId: "bt_unresolved",
     };
+
+    expect(isPaperTradeEligible(recommendation)).toBe(false);
+  });
+
+  it("blocks resolver evidence reviews that do not exactly match every evidence ID", () => {
+    const recommendation = eligibleRecommendation({
+      backtestRunId: "bt_123",
+      paperTradeEvidenceId: "paper_trade_123",
+    });
+
+    expect(
+      isPaperTradeEligible({
+        ...recommendation,
+        evidenceReview: {
+          ...recommendation.evidenceReview!,
+          evidenceIds: ["bt_123", "bt_123"],
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects malformed resolver evidence reviews without throwing", () => {
+    const recommendation = eligibleRecommendation({
+      evidenceReview: {
+        resolver: "db_recommendation_evidence_resolver",
+        recommendationId: "rec_test_1",
+        evidenceGate: "verified",
+        evidenceIds: undefined,
+        reasonCodes: [],
+        resolvedAt: "2026-05-01T12:15:00Z",
+      } as unknown as Recommendation["evidenceReview"],
+    });
 
     expect(isPaperTradeEligible(recommendation)).toBe(false);
   });
@@ -103,11 +160,7 @@ describe("recommendation contract", () => {
 
   it("blocks paper trade eligibility when data is stale", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_123",
+      ...eligibleRecommendation(),
       dataFreshness: {
         ...baseRecommendation.dataFreshness,
         status: "stale",
@@ -119,11 +172,7 @@ describe("recommendation contract", () => {
 
   it("blocks paper trade eligibility when liquidity is weak", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_123",
+      ...eligibleRecommendation(),
       scores: {
         ...baseRecommendation.scores,
         liquidity: 50,
@@ -135,11 +184,7 @@ describe("recommendation contract", () => {
 
   it("blocks paper trade eligibility when scores are outside range", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_123",
+      ...eligibleRecommendation(),
       scores: {
         ...baseRecommendation.scores,
         risk: 101,
@@ -151,11 +196,7 @@ describe("recommendation contract", () => {
 
   it("blocks paper trade eligibility without downside and uncertainty narratives", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_123",
+      ...eligibleRecommendation(),
       downsideScenario: "",
     };
 
@@ -164,11 +205,7 @@ describe("recommendation contract", () => {
 
   it("blocks paper trade eligibility without an audit record", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_123",
+      ...eligibleRecommendation(),
       operatorDecision: {
         ...baseRecommendation.operatorDecision,
         auditLogId: "",
@@ -180,13 +217,11 @@ describe("recommendation contract", () => {
 
   it("blocks options paper trades without historical options evidence", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
+      ...eligibleRecommendation({
+        backtestRunId: "bt_456",
+      }),
       instrumentType: "long_call",
       strategyFamily: "options",
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_456",
       optionsRiskDetails: {
         ...validOptionsRiskDetails,
         historicalOptionsEvidenceId: undefined,
@@ -198,13 +233,11 @@ describe("recommendation contract", () => {
 
   it("blocks options paper trades without contract-level liquidity fields", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
+      ...eligibleRecommendation({
+        backtestRunId: "bt_456",
+      }),
       instrumentType: "long_call",
       strategyFamily: "options",
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_456",
       optionsRiskDetails: {
         maxLoss: 250,
         expiration: "2026-06-19",
@@ -221,13 +254,11 @@ describe("recommendation contract", () => {
 
   it("allows options paper trades only with historical evidence and passing liquidity details", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
+      ...eligibleRecommendation({
+        backtestRunId: "bt_456",
+      }),
       instrumentType: "long_call",
       strategyFamily: "options",
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_456",
       optionsRiskDetails: validOptionsRiskDetails,
     };
 
@@ -236,13 +267,11 @@ describe("recommendation contract", () => {
 
   it("blocks options paper trades when liquidity fails", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
+      ...eligibleRecommendation({
+        backtestRunId: "bt_456",
+      }),
       instrumentType: "long_call",
       strategyFamily: "options",
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_456",
       optionsRiskDetails: {
         ...validOptionsRiskDetails,
         liquidityPass: false,
@@ -254,13 +283,11 @@ describe("recommendation contract", () => {
 
   it("blocks options paper trades without valid max loss", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
+      ...eligibleRecommendation({
+        backtestRunId: "bt_456",
+      }),
       instrumentType: "long_call",
       strategyFamily: "options",
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_456",
       optionsRiskDetails: {
         ...validOptionsRiskDetails,
         maxLoss: 0,
@@ -272,13 +299,11 @@ describe("recommendation contract", () => {
 
   it("blocks options paper trades with non-finite max loss", () => {
     const recommendation: Recommendation = {
-      ...baseRecommendation,
+      ...eligibleRecommendation({
+        backtestRunId: "bt_456",
+      }),
       instrumentType: "long_call",
       strategyFamily: "options",
-      decision: "paper_trade",
-      evidenceStatus: "paper_trade_eligible",
-      evidenceGate: "verified",
-      backtestRunId: "bt_456",
       optionsRiskDetails: {
         ...validOptionsRiskDetails,
         maxLoss: Number.POSITIVE_INFINITY,

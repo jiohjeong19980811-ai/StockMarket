@@ -119,9 +119,9 @@ Initial paper-only default limits should be conservative and revisited after pap
 
 Paper-trade evidence summaries may inform later risk-limit reviews, but they are not performance claims and cannot automatically promote a strategy. Summaries must separate open trades from closed-trade metrics, require close audit IDs, block broker/live-shaped records, reject mixed ticker/instrument/strategy/version cohorts, and keep operator plus backtest review as a promotion prerequisite.
 
-Recommendation evidence detail must be resolved from stored data, not caller-provided claims. The DB evidence resolver verifies paper-trade evidence only when the referenced row is closed, paper-only, broker-disabled, and in the same ticker/instrument/strategy cohort as the recommendation. It verifies stock backtest evidence only when the referenced run is stock-only, marked `notRecommendation`, not an options proxy, `ready_for_review`, cohort-compatible, tied to the recommendation ticker through enough persisted trade rows, and backed by coherent stored reason codes, metrics, assumptions, citations, and freshness. Missing, open, unsafe, thin-sample, `needs_more_data`, blocked, or mismatched evidence blocks or downgrades the evidence gate.
+Recommendation evidence detail must be resolved from stored data, not caller-provided claims. The DB evidence resolver verifies paper-trade evidence only when the referenced row is closed, paper-only, broker-disabled, and in the same ticker/instrument/strategy cohort as the recommendation. It verifies stock backtest evidence only when the referenced run is stock-only, marked `notRecommendation`, not an options proxy, `ready_for_review`, cohort-compatible, tied to the recommendation ticker through enough persisted trade rows, and backed by coherent stored reason codes, metrics, assumptions, citations, and freshness. Database triggers apply the same safety posture before `paper_trade` recommendations or persisted paper trades can be written. Missing, open, unsafe, thin-sample, `needs_more_data`, blocked, or mismatched evidence blocks or downgrades the evidence gate.
 
-Paper-trade eligibility requires the resolved evidence gate to be `verified`. A raw `backtest_run_id` or `paper_trade_evidence_id` is only a reference and cannot make a recommendation operational by itself.
+Paper-trade eligibility requires the resolved evidence gate to be `verified` and, in the core contract, a resolver-backed evidence review whose evidence IDs exactly match the recommendation's evidence references. A raw `backtest_run_id` or `paper_trade_evidence_id` is only a reference and cannot make a recommendation operational by itself.
 
 When the operator UI cannot reach the API, paper-trading metrics should be hidden behind a `Data unavailable` state. Offline fixture data may support smoke tests, but it must not look like an operational recommendation, strategy promotion, or current paper-trade decision.
 
@@ -156,7 +156,7 @@ Backtest evidence controls:
 - Heavy parameter searches downgrade evidence until overfitting risk is reviewed.
 - Durable stock backtest rows must remain validation-only: `notRecommendation = 1`, `instrument_type = stock`, `options_proxy = 0`, and no broker/live-trading fields.
 - Stored backtest evidence cannot be verified unless the recommendation ticker appears in the persisted run trades and the strategy/instrument cohort matches the recommendation.
-- Stored backtest evidence cannot be verified when the stored gate conflicts with reason codes, stale freshness, incomplete assumptions, incoherent metrics, or too few ticker-specific trades.
+- Stored backtest evidence cannot be verified when the stored gate conflicts with reason codes, stale or invalid freshness timestamps, incomplete assumptions, incoherent metrics or cost-sensitivity details, invalid citations, or too few ticker-specific trades.
 
 ## Promotion Gates
 

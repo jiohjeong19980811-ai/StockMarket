@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T14:26:22-04:00",
+  "lastUpdated": "2026-05-29T14:54:00-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -1224,7 +1224,7 @@
       "priority": "High",
       "category": "Backtesting validation evidence",
       "blockers": [],
-      "nextStep": "Focused re-review of evidence gates, snapshot coherence, and stricter resolver checks before merge.",
+      "nextStep": "Focused re-review of resolver-backed evidence provenance, DB evidence gates, snapshot coherence, and stricter resolver checks before merge.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",
