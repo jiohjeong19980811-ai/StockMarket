@@ -84,6 +84,8 @@ Start with a low-cost or free development provider only after the provider contr
 
 No local `.env` file is required for the current mock-provider workflow. Provider-specific keys remain optional placeholders until a provider is selected and that adapter is explicitly enabled. See `docs/provider-configuration.md`.
 
+Provider selection scoring is tracked in `packages/data/src/provider-selection.ts`. The scoring catalog is deterministic, local, and policy-oriented; it does not make network calls or finalize a paid vendor.
+
 ## Research-Informed Provider Shortlist
 
 | Provider | Primary use | Timing | Notes |

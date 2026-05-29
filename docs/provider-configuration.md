@@ -19,6 +19,16 @@ The current Milestone 3 implementation runs with mock providers, fixtures, provi
 
 No paid provider has been finalized as the required MVP data vendor.
 
+## Provider Selection Scoring
+
+Milestone 3 now includes a deterministic provider-selection catalog in `packages/data/src/provider-selection.ts`. It is not a live provider router and it does not read environment variables. It records current CEO/CTO policy:
+
+- `mock` is the only `use_now` provider family.
+- `polygon`, `financial-modeling-prep`, and `finnhub` are `evaluate_first` candidates only.
+- `sec-edgar`, `fred`, and `cboe-datashop` are `evaluate_later` candidates.
+- `tradier` and `alpaca` are `defer` candidates because broker/order-placement surfaces must stay isolated from MVP ingestion.
+- Generic keys such as `NEWS_API_KEY` remain prohibited; provider-specific names are required when a future adapter is enabled.
+
 ## Required Environment Variables Now
 
 None.
@@ -57,4 +67,3 @@ Broker, live-account, order, margin, and trading credentials remain prohibited. 
 - Scoring/risk contracts using mocked or fixture data.
 - Backtesting harness design with fixture data.
 - Documentation, validation, and review.
-

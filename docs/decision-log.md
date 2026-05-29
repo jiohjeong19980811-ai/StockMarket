@@ -143,3 +143,9 @@ Reason: Subagents and the main Codex operator should not stall on normal project
 Decision: A local `.env` file is not required while provider decisions remain open and the implementation uses mock providers, fixtures, provider interfaces, and `.env.example` placeholders. Provider keys must be provider-specific when introduced, such as `POLYGON_API_KEY`, `FMP_API_KEY`, or `FINNHUB_API_KEY`, rather than generic names like `NEWS_API_KEY`.
 
 Reason: The MVP must avoid accidental secret handling and premature vendor lock-in. Mock ingestion, data-quality checks, DB persistence, API/UI work, scoring contracts, and backtesting design can continue without real provider credentials.
+
+## 2026-05-28: Provider Selection Scoring Policy
+
+Decision: Encode provider selection as deterministic local metadata before enabling any real provider HTTP adapter. Mock providers are the only `use_now` option; Polygon.io/Massive, Financial Modeling Prep, and Finnhub are `evaluate_first`; SEC EDGAR, FRED, and Cboe DataShop are `evaluate_later`; Tradier and Alpaca remain deferred because broker/order-placement surfaces must stay isolated from MVP ingestion.
+
+Reason: Provider evaluation should be auditable and provider-specific without requiring local secrets, generic key names, or premature paid-provider lock-in.

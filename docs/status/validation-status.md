@@ -1,25 +1,27 @@
 # Validation Status
 
-Last updated: 2026-05-28T21:03:52-04:00
+Last updated: 2026-05-28T21:07:28-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 3 provider ingestion validation |
-| Current task | Dataset-specific provider freshness windows added and validated |
+| Current task | Deterministic provider selection scoring added and validated |
 | Owner/agent | Codex founding CTO / lead architect / security reviewer / data quality reviewer |
 | Status | Completed |
 | Priority | High |
 | Category | Provider ingestion and data quality |
 | Blockers | None |
-| Next step | Commit the dataset-specific freshness windows, then continue with provider selection scoring or a UI/API ingestion status surface |
-| Related docs/files | `packages/data/src/quality.ts`, `packages/data/src/ingestion.ts`, `packages/data/test/ingestion.test.ts`, `docs/data-sources.md`, `apps/api/src/server.ts`, `docs/status/` |
+| Next step | Commit provider selection scoring, then continue with a UI/API ingestion status surface or fixture expansion |
+| Related docs/files | `packages/data/src/provider-selection.ts`, `packages/data/test/provider-selection.test.ts`, `docs/provider-configuration.md`, `docs/data-sources.md`, `docs/decision-log.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 3 provider selection tests | Completed | Red-green tests verified only mock providers are `use_now`, paid candidates remain provider-specific `evaluate_first`, broker-adjacent candidates defer, and official-source adapters remain later candidates | `npm.cmd run test --workspace @stockmarket/data -- provider-selection` |
+| Milestone 3 provider selection aggregate CI | Completed | Typecheck, lint, format, 67 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
 | Milestone 3 dataset-specific freshness tests | Completed | Red-green tests verified options quotes stale after the delayed-quote window and earnings calendar records use a slower freshness window | `npm.cmd run test --workspace @stockmarket/data -- ingestion` |
 | Milestone 3 freshness aggregate CI | Completed | Typecheck, lint, format, 63 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after making the mock dry-run clock deterministic | `npm.cmd run ci` |
 | Milestone 3 mock ingestion API dry run | Completed | Focused API test passed; route persists 4 mock ingestion runs and 5 normalized provider records to an in-memory DB while reporting `requiresEnv: false` and no provider keys | `npm.cmd run test --workspace @stockmarket/api -- mock-ingestion` |
