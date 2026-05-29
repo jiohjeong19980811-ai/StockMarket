@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Recommendation } from "@stockmarket/core";
 
-import { createPaperTrade, type PaperTradeRequest } from "../src/index.js";
+import { closePaperTrade, createPaperTrade, type PaperTradeRequest } from "../src/index.js";
 
 const baseRecommendation: Recommendation = {
   id: "rec_msft_pead_1",
@@ -114,6 +114,92 @@ describe("createPaperTrade", () => {
       },
       lessons: [],
     });
+  });
+
+  it("closes a simulated stock paper trade with timestamped exit, P/L, and lessons learned", () => {
+    const opened = createPaperTrade(requestWith());
+    expect(opened.status).toBe("accepted");
+
+    const result = closePaperTrade(opened.trade, {
+      exitedAt: "2026-05-06T20:00:00Z",
+      exitPrice: 106,
+      priceTimestamp: "2026-05-06T20:00:00Z",
+      exitReason: "Profit target review hit during paper-trade validation.",
+      lessonsLearned: "Momentum follow-through appeared before the time stop.",
+      auditLogId: "audit_paper_close_1",
+    });
+
+    expect(result.status).toBe("accepted");
+    expect(result.reasonCodes).toEqual([]);
+    expect(result.trade).toMatchObject({
+      mode: "paper",
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      status: "closed",
+      closedAt: "2026-05-06T20:00:00Z",
+      exitPrice: 106,
+      exitReason: "Profit target review hit during paper-trade validation.",
+      realizedPnl: 60,
+      realizedReturnPct: 6,
+      lessons: ["Momentum follow-through appeared before the time stop."],
+      exitAudit: {
+        auditLogId: "audit_paper_close_1",
+        priceTimestamp: "2026-05-06T20:00:00Z",
+      },
+    });
+  });
+
+  it("rejects paper-trade closes without valid exit evidence and lessons", () => {
+    const opened = createPaperTrade(requestWith());
+    expect(opened.status).toBe("accepted");
+
+    const missingLessons = closePaperTrade(opened.trade, {
+      exitedAt: "2026-05-06T20:00:00Z",
+      exitPrice: 106,
+      priceTimestamp: "2026-05-06T20:00:00Z",
+      exitReason: "Profit target review hit during paper-trade validation.",
+      lessonsLearned: "",
+      auditLogId: "audit_paper_close_1",
+    });
+    const invalidExit = closePaperTrade(opened.trade, {
+      exitedAt: "2026-05-06T20:00:00Z",
+      exitPrice: 0,
+      priceTimestamp: "2026-05-06T20:00:00Z",
+      exitReason: "Profit target review hit during paper-trade validation.",
+      lessonsLearned: "Momentum follow-through appeared before the time stop.",
+      auditLogId: "audit_paper_close_1",
+    });
+
+    expect(missingLessons.status).toBe("rejected");
+    expect(missingLessons.reasonCodes).toContain("exit_details_missing");
+    expect(invalidExit.status).toBe("rejected");
+    expect(invalidExit.reasonCodes).toContain("invalid_exit_price");
+  });
+
+  it("rejects duplicate closes for an already closed paper trade", () => {
+    const opened = createPaperTrade(requestWith());
+    expect(opened.status).toBe("accepted");
+    const closed = closePaperTrade(opened.trade, {
+      exitedAt: "2026-05-06T20:00:00Z",
+      exitPrice: 106,
+      priceTimestamp: "2026-05-06T20:00:00Z",
+      exitReason: "Profit target review hit during paper-trade validation.",
+      lessonsLearned: "Momentum follow-through appeared before the time stop.",
+      auditLogId: "audit_paper_close_1",
+    });
+    expect(closed.status).toBe("accepted");
+
+    const duplicate = closePaperTrade(closed.trade, {
+      exitedAt: "2026-05-07T20:00:00Z",
+      exitPrice: 107,
+      priceTimestamp: "2026-05-07T20:00:00Z",
+      exitReason: "Duplicate exit attempt.",
+      lessonsLearned: "Should not be recorded twice.",
+      auditLogId: "audit_paper_close_2",
+    });
+
+    expect(duplicate.status).toBe("rejected");
+    expect(duplicate.reasonCodes).toContain("trade_not_open");
   });
 
   it("rejects recommendations that are not core paper-trade eligible", () => {

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T23:27:05-04:00",
+  "lastUpdated": "2026-05-28T23:31:45-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,7 +11,7 @@
   ],
   "currentFocus": {
     "phase": "Milestone 6: Paper trading",
-    "task": "Mock paper-trade ledger API dry run",
+    "task": "Simulated paper-trade close contract",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
     "status": "Completed",
     "priority": "High",
@@ -811,6 +811,35 @@
         "API paper-trading route tests",
         "Root CI",
         "API smoke",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M6-006",
+      "title": "Add simulated paper-trade close contract",
+      "phase": "Milestone 6",
+      "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Paper trading and auditability",
+      "blockers": [],
+      "nextStep": "Commit the paper-trade close contract slice, then continue with DB close persistence or UI performance visibility.",
+      "relatedDocs": [
+        "packages/paper-trading/src/index.ts",
+        "packages/paper-trading/test/paper-trading.test.ts",
+        "docs/architecture.md",
+        "docs/risk-and-compliance.md",
+        "docs/backtesting-and-validation.md",
+        "docs/product-roadmap.md",
+        "docs/decision-log.md"
+      ],
+      "validationRequired": [
+        "Paper-trading package tests",
+        "Paper-trading package typecheck",
+        "Root CI",
         "Status JSON parse",
         "Whitespace check",
         "Secret-pattern scan",

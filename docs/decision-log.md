@@ -203,3 +203,9 @@ Reason: Text rules are useful for operator review, but database constraints and 
 Decision: Add `/paper-trading/mock-ledger-dry-run` as an in-memory API integration check that evaluates the mock paper-trade contract, seeds the minimum recommendation/audit records, persists one accepted paper row through the DB ledger helper, and discards the database after the response.
 
 Reason: The API needs a repeatable bridge between paper-trading decisions and the durable ledger before adding real persistent application state. Keeping this endpoint mock-only and in-memory preserves the no-provider-key and no-broker-execution boundary.
+
+## 2026-05-28: Paper-Trade Close Contract
+
+Decision: Add a simulated paper-trade close contract in `@stockmarket/paper-trading`. Closing a trade requires timestamped exit price evidence, exit reason, lessons learned, and an audit ID; the package computes realized P/L and return percent and rejects duplicate closes or broker-shaped fields.
+
+Reason: Paper trades only become useful validation evidence after exits are tied back to the original thesis and risk plan. Closing logic must stay simulated and audit-first before any DB lifecycle API or UI performance view depends on it.

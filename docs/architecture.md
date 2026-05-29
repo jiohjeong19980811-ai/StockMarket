@@ -188,6 +188,8 @@ Milestone 6 begins with stock-only paper positions. Options paper trading remain
 
 Paper-trade persistence is now represented by a dedicated `paper_trades` migration and DB ledger helper. The durable record is stock-only for MVP, stores operator approval and entry audit references, requires numeric stop-loss, profit-target, and time-stop fields, enforces conservative paper exposure caps, and hard-codes `mode = paper`, `live_trading_enabled = 0`, and `broker_execution = 0`.
 
+The paper-trading package also defines a simulated close contract. Closing a paper trade requires timestamped exit price evidence, an exit reason, lessons learned, and an audit ID; it computes realized P/L and return percent while rejecting duplicate closes and broker-shaped fields.
+
 The API exposes `/paper-trading/mock-decision` as a non-durable contract demonstration. It does not persist records, require provider keys, or execute broker actions.
 
 The API also exposes `/paper-trading/mock-ledger-dry-run` as an in-memory persistence check. It seeds the minimum strategy, recommendation, and audit records, persists one accepted mock stock paper trade through the DB ledger helper, returns safe counts, and discards the database after the response.

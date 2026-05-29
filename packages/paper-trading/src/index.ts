@@ -99,6 +99,40 @@ export interface PaperTrade {
   lessons: string[];
 }
 
+export interface PaperTradeExitRequest {
+  exitedAt: string;
+  exitPrice: number;
+  priceTimestamp: string;
+  exitReason: string;
+  lessonsLearned: string;
+  auditLogId: string;
+}
+
+export type PaperTradeCloseRejectReason =
+  | "trade_not_open"
+  | "broker_execution_fields_prohibited"
+  | "exit_details_missing"
+  | "invalid_exit_price";
+
+export interface PaperTradeExitAuditSnapshot {
+  auditLogId: string;
+  exitedAt: string;
+  priceTimestamp: string;
+}
+
+export interface PaperTradeClosed extends Omit<PaperTrade, "status" | "lessons"> {
+  status: "closed";
+  closedAt: string;
+  exitPrice: number;
+  exitReason: string;
+  realizedPnl: number;
+  realizedReturnPct: number;
+  lessons: string[];
+  exitAudit: PaperTradeExitAuditSnapshot;
+}
+
+export type PaperTradeLifecycle = PaperTrade | PaperTradeClosed;
+
 export interface PaperTradeAcceptedDecision {
   status: "accepted";
   reasonCodes: [];
@@ -112,6 +146,22 @@ export interface PaperTradeRejectedDecision {
 }
 
 export type PaperTradeDecision = PaperTradeAcceptedDecision | PaperTradeRejectedDecision;
+
+export interface PaperTradeCloseAcceptedDecision {
+  status: "accepted";
+  reasonCodes: [];
+  trade: PaperTradeClosed;
+}
+
+export interface PaperTradeCloseRejectedDecision {
+  status: "rejected";
+  reasonCodes: PaperTradeCloseRejectReason[];
+  trade?: undefined;
+}
+
+export type PaperTradeCloseDecision =
+  | PaperTradeCloseAcceptedDecision
+  | PaperTradeCloseRejectedDecision;
 
 const maximumPositionRiskPct = 0.5;
 const maximumSingleNameExposurePct = 5;
@@ -149,8 +199,8 @@ function isOptionsInstrument(instrumentType: InstrumentType): boolean {
   );
 }
 
-function hasProhibitedBrokerFields(request: PaperTradeRequest): boolean {
-  const candidate = request as unknown as Record<string, unknown>;
+function hasProhibitedBrokerFields(request: unknown): boolean {
+  const candidate = request as Record<string, unknown>;
   return prohibitedBrokerFields.some((field) => field in candidate);
 }
 
@@ -180,6 +230,20 @@ function hasValidExitPrices(entry: PaperTradeEntryRequest): boolean {
     entry.stopLossPrice < entry.entryPrice &&
     entry.profitTargetPrice > entry.entryPrice
   );
+}
+
+function hasExitEvidence(exit: PaperTradeExitRequest): boolean {
+  return (
+    hasText(exit.exitedAt) &&
+    hasText(exit.priceTimestamp) &&
+    hasText(exit.exitReason) &&
+    hasText(exit.lessonsLearned) &&
+    hasText(exit.auditLogId)
+  );
+}
+
+function roundedCurrency(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function buildPaperTradeId(recommendationId: string, requestedAt: string): string {
@@ -288,6 +352,58 @@ export function createPaperTrade(request: PaperTradeRequest): PaperTradeDecision
         notes: operatorApproval.notes,
       },
       lessons: [],
+    },
+  };
+}
+
+export function closePaperTrade(
+  trade: PaperTradeLifecycle,
+  exit: PaperTradeExitRequest,
+): PaperTradeCloseDecision {
+  const reasons: PaperTradeCloseRejectReason[] = [];
+
+  if (trade.status !== "open") {
+    reasons.push("trade_not_open");
+  }
+  if (hasProhibitedBrokerFields(exit)) {
+    reasons.push("broker_execution_fields_prohibited");
+  }
+  if (!hasExitEvidence(exit)) {
+    reasons.push("exit_details_missing");
+  }
+  if (!isPositiveNumber(exit.exitPrice)) {
+    reasons.push("invalid_exit_price");
+  }
+
+  if (reasons.length > 0) {
+    return {
+      status: "rejected",
+      reasonCodes: [...new Set(reasons)],
+    };
+  }
+
+  const realizedPnl = roundedCurrency((exit.exitPrice - trade.entryPrice) * trade.quantity);
+  const realizedReturnPct = roundedPercent(
+    ((exit.exitPrice - trade.entryPrice) / trade.entryPrice) * 100,
+  );
+
+  return {
+    status: "accepted",
+    reasonCodes: [],
+    trade: {
+      ...trade,
+      status: "closed",
+      closedAt: exit.exitedAt,
+      exitPrice: exit.exitPrice,
+      exitReason: exit.exitReason,
+      realizedPnl,
+      realizedReturnPct,
+      lessons: [...trade.lessons, exit.lessonsLearned],
+      exitAudit: {
+        auditLogId: exit.auditLogId,
+        exitedAt: exit.exitedAt,
+        priceTimestamp: exit.priceTimestamp,
+      },
     },
   };
 }

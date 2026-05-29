@@ -1,25 +1,32 @@
 # Validation Status
 
-Last updated: 2026-05-28T23:27:05-04:00
+Last updated: 2026-05-28T23:31:45-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6 paper trading validation |
-| Current task | Mock paper-trade ledger API dry run |
+| Current task | Simulated paper-trade close contract |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
 | Category | Paper trading and auditability |
 | Blockers | None |
-| Next step | Commit the API paper-trade ledger dry-run slice, then continue with durable paper-trade lifecycle/read APIs |
-| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/paper-trading.test.ts`, `scripts/smoke-api.mjs`, `docs/architecture.md`, `docs/product-roadmap.md`, `docs/decision-log.md`, `docs/status/` |
+| Next step | Commit the paper-trade close contract slice, then continue with DB close persistence or UI performance visibility |
+| Related docs/files | `packages/paper-trading/src/index.ts`, `packages/paper-trading/test/paper-trading.test.ts`, `docs/architecture.md`, `docs/risk-and-compliance.md`, `docs/backtesting-and-validation.md`, `docs/product-roadmap.md`, `docs/decision-log.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 paper-trade close contract aggregate CI | Completed | Typecheck, lint, format, 108 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding the simulated paper-trade close contract | `npm.cmd run ci` |
+| Milestone 6 paper-trade close contract focused tests | Completed | 9 paper-trading tests passed, including close with timestamped exit evidence, P/L, lessons learned, missing-exit rejection, invalid-price rejection, and duplicate-close rejection | `npm.cmd run test --workspace @stockmarket/paper-trading` |
+| Milestone 6 paper-trade close contract typecheck | Completed | Paper-trading package typecheck passed after adding close lifecycle types | `npm.cmd run typecheck --workspace @stockmarket/paper-trading` |
+| Milestone 6 paper-trade close contract status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-006 | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 paper-trade close contract whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 6 paper-trade close contract secret-pattern scan | Completed | No secret-shaped tokens found in changed paper-trading and status/doc files | `rg` secret-pattern scan |
+| Milestone 6 paper-trade close contract live-trading surface scan | Completed | Matches are documented prohibitions, broker-field rejection tests, or explicit no-broker-execution wording; no live order implementation was introduced | `rg` live-trading/order-surface scan |
 | Milestone 6 paper-trade ledger API aggregate CI | Completed | Typecheck, lint, format, 105 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding `/paper-trading/mock-ledger-dry-run` | `npm.cmd run ci` |
 | Milestone 6 paper-trade ledger API focused test | Completed | 2 API paper-trading route tests passed, including the in-memory ledger dry run with one persisted paper trade and no provider keys or broker execution | `npm.cmd run test --workspace @stockmarket/api -- paper-trading` |
 | Milestone 6 paper-trade ledger API status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-005 | `python -m json.tool docs/status/work-items.json` |

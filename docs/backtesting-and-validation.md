@@ -145,4 +145,6 @@ Paper-trading outcomes should feed validation:
 
 Paper-trade entries must be durable before they are treated as validation evidence. The MVP ledger stores the thesis snapshot, numeric stop-loss, profit-target, time stop, audit references, and paper risk snapshots so later exits and lessons can be tied back to the original approved plan.
 
+Paper-trade closes require timestamped exit price evidence, an exit reason, lessons learned, and an audit ID. P/L should be compared against the original thesis, stop, target, time stop, and downside scenario before feeding future strategy promotion decisions.
+
 Lessons learned should be stored and visible on future recommendations from the same strategy.

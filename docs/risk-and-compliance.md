@@ -161,6 +161,8 @@ The first paper-trading package slice is simulated-only. Opening a paper positio
 
 Durable paper-trade rows must also preserve recommendation, approval, and entry audit references. The database constrains paper trades to stock-only MVP entries, rejects non-paper or broker-execution flags, rejects ineligible recommendations, and enforces max idea risk, single-name exposure, sector exposure, correlated exposure, and daily paper-loss caps.
 
+Closing a paper trade requires timestamped exit price evidence, an exit reason, lessons learned, and an audit ID. Simulated P/L must be treated as validation evidence only, not as proof of future returns.
+
 Options paper trades remain rejected until the options strategy policy is explicitly promoted after historical options chain and fill-model validation.
 
 ## Audit Requirements
