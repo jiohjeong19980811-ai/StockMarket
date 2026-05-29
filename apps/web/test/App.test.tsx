@@ -240,6 +240,108 @@ const mockPaperReadModelBody = {
   ],
 };
 
+const mockEvidenceDetailBody = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Dry-run evidence detail data is discarded after the response.",
+  },
+  persistedInMemory: {
+    recommendations: 2,
+    auditLogs: 5,
+    paperTrades: 1,
+  },
+  evidenceDetail: {
+    notRecommendation: true,
+    evidenceGate: "verified",
+    reasonCodes: [],
+    recommendation: {
+      id: "rec-MSFT-paper-candidate-1",
+      ticker: "MSFT",
+      instrumentType: "stock",
+      strategyVersionId: "momentum-v0",
+      decision: "paper_trade",
+      evidenceStatus: "paper_trade_eligible",
+      thesis: "Mock stock-only paper trade candidate for contract evaluation.",
+      bullCase: "Mock trend evidence and liquidity support a paper-only entry test.",
+      bearCase: "Trend may reverse before a paper entry can validate the thesis.",
+      downsideScenario: "Shares close below the mock breakout level.",
+      invalidationConditions: ["Close below mock breakout level"],
+      whySystemMightBeWrong: "Mock data may not represent real market behavior.",
+      scores: {
+        risk: 86,
+        confidence: 78,
+        liquidity: 86,
+      },
+      evidenceIds: {
+        backtestRunId: null,
+        paperTradeEvidenceId: "paper_rec-MSFT-paper-mock-1_20260528T150000000Z",
+      },
+    },
+    citations: [
+      {
+        title: "Mock daily price history",
+        url: "https://example.test/mock/msft/prices",
+        source: "mock-provider",
+        publishedAt: "2026-05-28T14:00:00.000Z",
+        retrievedAt: "2026-05-28T14:30:00.000Z",
+      },
+    ],
+    dataFreshness: {
+      status: "fresh",
+      asOf: "2026-05-28T14:30:00.000Z",
+      notes: [],
+    },
+    evidence: [
+      {
+        kind: "paper_trade",
+        id: "paper_rec-MSFT-paper-mock-1_20260528T150000000Z",
+        status: "verified",
+        reasonCodes: [],
+        ticker: "MSFT",
+        instrumentType: "stock",
+        strategyVersionId: "momentum-v0",
+        closedAt: "2026-05-29T12:00:00.000Z",
+        liveTradingEnabled: false,
+        brokerExecution: false,
+        realizedPnl: 60,
+        realizedReturnPct: 6,
+      },
+    ],
+    auditTrail: [
+      {
+        id: "audit_mock_candidate_rec_1",
+        eventType: "operator_decision",
+        actorType: "operator",
+        actorId: "operator:mock",
+        occurredAt: "2026-05-29T12:10:00.000Z",
+        subjectType: "recommendation",
+        subjectId: "rec-MSFT-paper-candidate-1",
+        riskDecision: "pass",
+        operatorDecision: "paper_trade",
+        operatorNotes: "Mock candidate recommendation references durable paper-trade evidence.",
+      },
+      {
+        id: "audit_mock_paper_close_1",
+        eventType: "paper_trade_closed",
+        actorType: "system",
+        actorId: "paper-trading",
+        occurredAt: "2026-05-29T12:00:00.000Z",
+        subjectType: "paper_trade",
+        subjectId: "paper_rec-MSFT-paper-mock-1_20260528T150000000Z",
+        riskDecision: "pass",
+        operatorDecision: "paper_trade",
+        operatorNotes: "Mock profit-target review hit during paper-trade validation.",
+      },
+    ],
+  },
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -253,13 +355,15 @@ describe("operator console shell", () => {
         const url = input.toString();
         const body = url.includes("mock-read-model-dry-run")
           ? mockPaperReadModelBody
-          : url.includes("mock-evidence-summary")
-            ? mockPaperEvidenceSummaryBody
-            : url.includes("mock-close-dry-run")
-              ? mockPaperCloseBody
-              : url.includes("paper-trading")
-                ? mockPaperTradingBody
-                : mockScoringBody;
+          : url.includes("mock-evidence-detail-dry-run")
+            ? mockEvidenceDetailBody
+            : url.includes("mock-evidence-summary")
+              ? mockPaperEvidenceSummaryBody
+              : url.includes("mock-close-dry-run")
+                ? mockPaperCloseBody
+                : url.includes("paper-trading")
+                  ? mockPaperTradingBody
+                  : mockScoringBody;
         return new Response(JSON.stringify(body));
       }),
     );
@@ -273,7 +377,7 @@ describe("operator console shell", () => {
       screen.getByText("Research first. Paper trading first. Live trading prohibited."),
     ).toBeInTheDocument();
     expect(screen.getByText("No good trades today is a valid outcome.")).toBeInTheDocument();
-    expect(await screen.findByText("Watchlist")).toBeInTheDocument();
+    expect((await screen.findAllByText("Watchlist")).length).toBeGreaterThan(0);
     expect(screen.getByText("No provider keys required")).toBeInTheDocument();
     expect(screen.getByText("Mock scoring evaluation")).toBeInTheDocument();
     expect(screen.getByText("Strategy Policy")).toBeInTheDocument();
@@ -295,7 +399,7 @@ describe("operator console shell", () => {
       screen.getAllByText("Mock paper trade followed through before the time stop.").length,
     ).toBeGreaterThan(0);
     expect(screen.getByText("Paper Trade Evidence")).toBeInTheDocument();
-    expect(screen.getByText("Needs More Data")).toBeInTheDocument();
+    expect(screen.getAllByText("Needs More Data").length).toBeGreaterThan(0);
     expect(screen.getByText("Closed")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("Open")).toBeInTheDocument();
@@ -321,6 +425,19 @@ describe("operator console shell", () => {
         "Read model preserves paper-only ledger state; no broker execution occurred.",
       ),
     ).toBeInTheDocument();
+    expect(screen.getByText("Evidence Detail")).toBeInTheDocument();
+    expect(screen.getByText("Verified Evidence")).toBeInTheDocument();
+    expect(screen.getByText("mock-provider")).toBeInTheDocument();
+    expect(screen.getByText("2026-05-28T14:00:00.000Z")).toBeInTheDocument();
+    expect(screen.getAllByText("2026-05-28T14:30:00.000Z").length).toBeGreaterThan(0);
+    expect(screen.getByText("Shares close below the mock breakout level.")).toBeInTheDocument();
+    expect(screen.getAllByText("Close below mock breakout level").length).toBeGreaterThan(0);
+    expect(screen.getByText("operator_decision")).toBeInTheDocument();
+    expect(screen.getByText("paper_trade_closed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Watchlist" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Paper Trade" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Avoid" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Needs More Data" })).toBeDisabled();
     expect(screen.getByText("Risk Controls")).toBeInTheDocument();
     expect(screen.getByText("83")).toBeInTheDocument();
   });

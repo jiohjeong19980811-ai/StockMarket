@@ -231,6 +231,86 @@ interface PaperTradeReadModelResponse {
   }>;
 }
 
+interface EvidenceDetailResponse {
+  mode: "mock";
+  requiresEnv: boolean;
+  liveTradingEnabled: boolean;
+  providerKeysRequired: string[];
+  notRecommendation: boolean;
+  persistence: {
+    scope: string;
+    durable: boolean;
+    note: string;
+  };
+  persistedInMemory: {
+    recommendations: number;
+    auditLogs: number;
+    paperTrades: number;
+  };
+  evidenceDetail: {
+    notRecommendation: true;
+    evidenceGate: "verified" | "needs_more_data" | "blocked";
+    reasonCodes: string[];
+    recommendation: {
+      id: string;
+      ticker: string;
+      instrumentType: string;
+      strategyVersionId: string;
+      decision: Decision;
+      evidenceStatus: string;
+      thesis: string;
+      bullCase: string;
+      bearCase: string;
+      downsideScenario: string;
+      invalidationConditions: string[];
+      whySystemMightBeWrong: string;
+      scores: ScoreSet;
+      evidenceIds: {
+        backtestRunId: string | null;
+        paperTradeEvidenceId: string | null;
+      };
+    };
+    citations: Array<{
+      title: string;
+      url: string;
+      source: string;
+      publishedAt: string;
+      retrievedAt: string;
+    }>;
+    dataFreshness: {
+      status: string;
+      asOf: string;
+      notes: string[];
+    };
+    evidence: Array<{
+      kind: "backtest_run" | "paper_trade";
+      id: string;
+      status: "verified" | "unresolved" | "blocked";
+      reasonCodes: string[];
+      ticker?: string;
+      instrumentType?: string;
+      strategyVersionId?: string;
+      closedAt?: string;
+      liveTradingEnabled?: false;
+      brokerExecution?: false;
+      realizedPnl?: number;
+      realizedReturnPct?: number;
+    }>;
+    auditTrail: Array<{
+      id: string;
+      eventType: string;
+      actorType: "operator" | "system";
+      actorId: string;
+      occurredAt: string;
+      subjectType: string;
+      subjectId: string;
+      riskDecision: string | null;
+      operatorDecision: string | null;
+      operatorNotes: string | null;
+    }>;
+  };
+}
+
 type ApiState = "loading" | "online" | "offline";
 
 const scoringEndpoint = "http://127.0.0.1:4000/scoring/mock-evaluation";
@@ -238,6 +318,7 @@ const paperTradingEndpoint = "http://127.0.0.1:4000/paper-trading/mock-decision"
 const paperTradeCloseEndpoint = "http://127.0.0.1:4000/paper-trading/mock-close-dry-run";
 const paperTradeEvidenceEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidence-summary";
 const paperTradeReadModelEndpoint = "http://127.0.0.1:4000/paper-trading/mock-read-model-dry-run";
+const evidenceDetailEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidence-detail-dry-run";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",
@@ -475,6 +556,108 @@ const fallbackPaperReadModel: PaperTradeReadModelResponse = {
   ],
 };
 
+const fallbackEvidenceDetail: EvidenceDetailResponse = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Dry-run evidence detail data is discarded after the response.",
+  },
+  persistedInMemory: {
+    recommendations: 2,
+    auditLogs: 5,
+    paperTrades: 1,
+  },
+  evidenceDetail: {
+    notRecommendation: true,
+    evidenceGate: "verified",
+    reasonCodes: [],
+    recommendation: {
+      id: "rec-MSFT-paper-candidate-1",
+      ticker: "MSFT",
+      instrumentType: "stock",
+      strategyVersionId: "momentum-v0",
+      decision: "paper_trade",
+      evidenceStatus: "paper_trade_eligible",
+      thesis: "Mock stock-only paper trade candidate for contract evaluation.",
+      bullCase: "Mock trend evidence and liquidity support a paper-only entry test.",
+      bearCase: "Trend may reverse before a paper entry can validate the thesis.",
+      downsideScenario: "Shares close below the mock breakout level.",
+      invalidationConditions: ["Close below mock breakout level"],
+      whySystemMightBeWrong: "Mock data may not represent real market behavior.",
+      scores: {
+        risk: 86,
+        confidence: 78,
+        liquidity: 86,
+      },
+      evidenceIds: {
+        backtestRunId: null,
+        paperTradeEvidenceId: "paper_rec-MSFT-paper-mock-1_20260528T150000000Z",
+      },
+    },
+    citations: [
+      {
+        title: "Mock daily price history",
+        url: "https://example.test/mock/msft/prices",
+        source: "mock-provider",
+        publishedAt: "2026-05-28T14:00:00.000Z",
+        retrievedAt: "2026-05-28T14:30:00.000Z",
+      },
+    ],
+    dataFreshness: {
+      status: "fresh",
+      asOf: "2026-05-28T14:30:00.000Z",
+      notes: [],
+    },
+    evidence: [
+      {
+        kind: "paper_trade",
+        id: "paper_rec-MSFT-paper-mock-1_20260528T150000000Z",
+        status: "verified",
+        reasonCodes: [],
+        ticker: "MSFT",
+        instrumentType: "stock",
+        strategyVersionId: "momentum-v0",
+        closedAt: "2026-05-29T12:00:00.000Z",
+        liveTradingEnabled: false,
+        brokerExecution: false,
+        realizedPnl: 60,
+        realizedReturnPct: 6,
+      },
+    ],
+    auditTrail: [
+      {
+        id: "audit_mock_candidate_rec_1",
+        eventType: "operator_decision",
+        actorType: "operator",
+        actorId: "operator:mock",
+        occurredAt: "2026-05-29T12:10:00.000Z",
+        subjectType: "recommendation",
+        subjectId: "rec-MSFT-paper-candidate-1",
+        riskDecision: "pass",
+        operatorDecision: "paper_trade",
+        operatorNotes: "Mock candidate recommendation references durable paper-trade evidence.",
+      },
+      {
+        id: "audit_mock_paper_close_1",
+        eventType: "paper_trade_closed",
+        actorType: "system",
+        actorId: "paper-trading",
+        occurredAt: "2026-05-29T12:00:00.000Z",
+        subjectType: "paper_trade",
+        subjectId: "paper_rec-MSFT-paper-mock-1_20260528T150000000Z",
+        riskDecision: "pass",
+        operatorDecision: "paper_trade",
+        operatorNotes: "Mock profit-target review hit during paper-trade validation.",
+      },
+    ],
+  },
+};
+
 const decisionLabels: Record<Decision, string> = {
   watchlist: "Watchlist",
   paper_trade: "Paper Trade",
@@ -520,6 +703,13 @@ const paperReadStatusLabels: Record<
   cancelled: "Persisted Cancelled",
 };
 
+const evidenceGateLabels: Record<EvidenceDetailResponse["evidenceDetail"]["evidenceGate"], string> =
+  {
+    verified: "Verified Evidence",
+    needs_more_data: "Needs More Data",
+    blocked: "Evidence Blocked",
+  };
+
 function formatCurrency(value: number): string {
   return `$${Math.round(value).toLocaleString("en-US")}`;
 }
@@ -551,6 +741,8 @@ export function App() {
     useState<PaperTradeEvidenceSummaryResponse>(fallbackPaperEvidence);
   const [paperReadModel, setPaperReadModel] =
     useState<PaperTradeReadModelResponse>(fallbackPaperReadModel);
+  const [evidenceDetail, setEvidenceDetail] =
+    useState<EvidenceDetailResponse>(fallbackEvidenceDetail);
 
   useEffect(() => {
     let active = true;
@@ -563,12 +755,14 @@ export function App() {
           paperCloseResponse,
           paperEvidenceResponse,
           paperReadModelResponse,
+          evidenceDetailResponse,
         ] = await Promise.all([
           fetch(scoringEndpoint),
           fetch(paperTradingEndpoint),
           fetch(paperTradeCloseEndpoint, { method: "POST" }),
           fetch(paperTradeEvidenceEndpoint),
           fetch(paperTradeReadModelEndpoint, { method: "POST" }),
+          fetch(evidenceDetailEndpoint),
         ]);
         if (!scoringResponse.ok) {
           throw new Error(`Scoring API returned ${scoringResponse.status}`);
@@ -585,6 +779,9 @@ export function App() {
         if (!paperReadModelResponse.ok) {
           throw new Error(`Paper-trade read model API returned ${paperReadModelResponse.status}`);
         }
+        if (!evidenceDetailResponse.ok) {
+          throw new Error(`Evidence detail API returned ${evidenceDetailResponse.status}`);
+        }
         const scoringBody = (await scoringResponse.json()) as MockScoringResponse;
         const paperTradingBody = (await paperTradingResponse.json()) as PaperTradeResponse;
         const paperCloseBody = (await paperCloseResponse.json()) as PaperTradeCloseResponse;
@@ -592,12 +789,14 @@ export function App() {
           (await paperEvidenceResponse.json()) as PaperTradeEvidenceSummaryResponse;
         const paperReadModelBody =
           (await paperReadModelResponse.json()) as PaperTradeReadModelResponse;
+        const evidenceDetailBody = (await evidenceDetailResponse.json()) as EvidenceDetailResponse;
         if (active) {
           setScoring(scoringBody);
           setPaperTrading(paperTradingBody);
           setPaperClose(paperCloseBody);
           setPaperEvidence(paperEvidenceBody);
           setPaperReadModel(paperReadModelBody);
+          setEvidenceDetail(evidenceDetailBody);
           setApiState("online");
         }
       } catch {
@@ -607,6 +806,7 @@ export function App() {
           setPaperClose(fallbackPaperClose);
           setPaperEvidence(fallbackPaperEvidence);
           setPaperReadModel(fallbackPaperReadModel);
+          setEvidenceDetail(fallbackEvidenceDetail);
           setApiState("offline");
         }
       }
@@ -637,6 +837,11 @@ export function App() {
   const ledgerAuditId = ledgerTrade?.audit.exitAuditLogId ?? ledgerTrade?.audit.entryAuditLogId;
   const ledgerLesson =
     ledgerOutcome?.lessonsLearned ?? "Persisted paper-trade readback is still open.";
+  const evidence = evidenceDetail.evidenceDetail;
+  const firstCitation = evidence.citations[0];
+  const firstEvidenceItem = evidence.evidence[0];
+  const firstAuditEvent = evidence.auditTrail[0];
+  const lastAuditEvent = evidence.auditTrail[evidence.auditTrail.length - 1];
   const isOffline = apiState === "offline";
   const paperTradeGateLabel =
     failedGates.length > 0
@@ -905,6 +1110,79 @@ export function App() {
               {ledgerTrade.brokerExecution === false
                 ? "Read model preserves paper-only ledger state; no broker execution occurred."
                 : "Paper-trade read model review is blocked."}
+            </p>
+          </article>
+
+          <article className="panel panel-large">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Evidence Detail</p>
+                <h2>{evidenceGateLabels[evidence.evidenceGate]}</h2>
+              </div>
+              <span className="status-pill subtle">Resolver API snapshot</span>
+            </div>
+            <div className="evidence-strip" aria-label="Evidence resolver status">
+              <div>
+                <span>Evidence</span>
+                <strong>{firstEvidenceItem?.status ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Source</span>
+                <strong>{firstCitation?.source ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Fresh As Of</span>
+                <strong>{evidence.dataFreshness.asOf}</strong>
+              </div>
+            </div>
+            <div className="evidence-strip evidence-strip-secondary" aria-label="Citation timing">
+              <div>
+                <span>Published</span>
+                <strong>{firstCitation?.publishedAt ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Retrieved</span>
+                <strong>{firstCitation?.retrievedAt ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Paper P/L</span>
+                <strong>{formatCurrency(firstEvidenceItem?.realizedPnl ?? 0)}</strong>
+              </div>
+            </div>
+            <p className="panel-copy">{evidence.recommendation.downsideScenario}</p>
+            <p className="panel-copy">
+              {evidence.recommendation.invalidationConditions.join("; ")}
+            </p>
+            <div className="evidence-strip evidence-strip-secondary" aria-label="Audit trail">
+              <div>
+                <span>Decision Audit</span>
+                <strong>{firstAuditEvent?.eventType ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Latest Audit</span>
+                <strong>{lastAuditEvent?.eventType ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Evidence ID</span>
+                <strong>{firstEvidenceItem?.id ?? "missing"}</strong>
+              </div>
+            </div>
+            <div className="decision-actions" aria-label="Operator decision actions">
+              <button type="button" disabled>
+                Watchlist
+              </button>
+              <button type="button" disabled>
+                Paper Trade
+              </button>
+              <button type="button" disabled>
+                Avoid
+              </button>
+              <button type="button" disabled>
+                Needs More Data
+              </button>
+            </div>
+            <p className="panel-copy">
+              Operator actions stay disabled until audit-backed decision writes are implemented.
             </p>
           </article>
         </section>

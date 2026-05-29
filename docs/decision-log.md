@@ -269,3 +269,9 @@ Reason: Operators need to distinguish simulated close calculations from persiste
 Decision: Close the Milestone 6 review blockers by making paper-trade max loss derive from the stop-based loss floor, rejecting invalid entry/close timestamp ordering, recursively blocking nested broker/order-shaped fields, requiring single-cohort evidence summaries, restoring the default closed-trade evidence threshold, and hiding offline sample metrics behind a `Data unavailable` operator state.
 
 Reason: Paper-trading evidence is only useful if it cannot understate risk, mix strategy cohorts, rely on future or unordered timestamps, or appear actionable when the API is offline. The UI, package contracts, API mocks, and DB triggers should all preserve the paper-only, audit-first boundary before Milestone 6 is reviewed for merge readiness.
+
+## 2026-05-29: Recommendation Evidence Detail Resolver
+
+Decision: Add a DB recommendation evidence resolver and `/paper-trading/mock-evidence-detail-dry-run` so stored recommendations can expose citations, freshness, resolved paper-trade evidence, reason codes, and audit events. Paper-trade evidence is verified only when the referenced trade is closed, paper-only, broker-disabled, and matches the recommendation ticker, instrument, and strategy version. Backtest evidence IDs remain unresolved until a backtest-run resolver is implemented.
+
+Reason: Recommendation and strategy promotion workflows must not trust caller-provided evidence IDs or isolated paper-trade metrics. The operator and future backtesting consumers need an auditable evidence-detail read model before any paper-trade outcome can influence promotion decisions.

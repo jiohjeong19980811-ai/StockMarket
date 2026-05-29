@@ -1,0 +1,321 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  closePersistedPaperTrade,
+  createLocalClient,
+  getRecommendationEvidenceDetail,
+  persistPaperTrade,
+  runMigrations,
+} from "../src/index.js";
+import type { Client } from "@libsql/client";
+
+const now = "2026-05-29T12:00:00Z";
+const closedAt = "2026-05-29T20:00:00Z";
+
+let client: Client;
+
+async function execute(sql: string, args: unknown[] = []) {
+  return client.execute({ sql, args });
+}
+
+async function seedStrategy() {
+  await execute(
+    `INSERT INTO strategy_definitions
+      (id, family, name, description, allowed_instrument_types_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      "strategy_momentum",
+      "momentum",
+      "Momentum",
+      "Liquid stock momentum research.",
+      '["stock"]',
+      now,
+    ],
+  );
+  await execute(
+    `INSERT INTO strategy_versions
+      (id, strategy_definition_id, version, validation_status, promotion_state,
+       required_data_json, risk_policy_version, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      "momentum-v0",
+      "strategy_momentum",
+      "v0",
+      "paper_trade_eligible",
+      "paper_trade_eligible",
+      '["prices","paper_trades","audit"]',
+      "risk-v0",
+      now,
+    ],
+  );
+}
+
+async function seedAuditLog(
+  id: string,
+  eventType: string,
+  actorType: "operator" | "system",
+  actorId: string,
+  subjectType: string,
+  subjectId: string,
+  occurredAt = now,
+  operatorNotes = "Audit note.",
+) {
+  await execute(
+    `INSERT INTO audit_logs
+      (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id,
+       strategy_version_id, risk_decision, operator_decision, operator_notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      eventType,
+      actorType,
+      actorId,
+      occurredAt,
+      subjectType,
+      subjectId,
+      "momentum-v0",
+      "pass",
+      "paper_trade",
+      operatorNotes,
+    ],
+  );
+}
+
+async function seedRecommendation(id: string, ticker: string, paperTradeEvidenceId?: string) {
+  await seedAuditLog(
+    `audit_${id}`,
+    "operator_decision",
+    "operator",
+    "operator:test",
+    "recommendation",
+    id,
+    now,
+    `Operator reviewed ${id}.`,
+  );
+
+  await execute(
+    `INSERT INTO recommendations
+      (id, ticker, instrument_type, strategy_version_id, decision, evidence_status,
+       thesis, bull_case, bear_case, downside_scenario, invalidation_conditions_json,
+       why_system_might_be_wrong, primary_citation_title, primary_citation_url,
+       primary_citation_source, primary_citation_published_at,
+       primary_citation_retrieved_at, freshness_status, freshness_as_of,
+       freshness_notes_json, risk_score, confidence_score, liquidity_score,
+       liquidity_decision, risk_decision, paper_trade_evidence_id,
+       operator_audit_log_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      ticker,
+      "stock",
+      "momentum-v0",
+      "paper_trade",
+      "paper_trade_eligible",
+      "Momentum continuation research candidate.",
+      "Paper evidence supports continued research.",
+      "Momentum can reverse quickly.",
+      "Shares close below the evidence trend line.",
+      '["Close below evidence trend line"]',
+      "The paper evidence sample may not generalize.",
+      "Mock price evidence",
+      "https://example.test/mock/msft/prices",
+      "mock-provider",
+      "2026-05-29T11:00:00Z",
+      "2026-05-29T11:05:00Z",
+      "fresh",
+      "2026-05-29T11:05:00Z",
+      '["Provider timestamps reviewed"]',
+      86,
+      78,
+      90,
+      "pass",
+      "pass",
+      paperTradeEvidenceId ?? "paper_trade_evidence_1",
+      `audit_${id}`,
+      now,
+      now,
+    ],
+  );
+
+  await execute(
+    `INSERT INTO recommendation_citations
+      (id, recommendation_id, title, url, source, published_at, retrieved_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      `citation_${id}_secondary`,
+      id,
+      "Mock audit evidence",
+      "https://example.test/mock/msft/audit",
+      "mock-audit-source",
+      "2026-05-29T10:00:00Z",
+      "2026-05-29T11:06:00Z",
+    ],
+  );
+}
+
+async function seedClosedEvidencePaperTrade() {
+  await seedRecommendation("rec_source_1", "MSFT", "paper_trade_evidence_seed");
+  await seedAuditLog(
+    "audit_evidence_approval_1",
+    "operator_decision",
+    "operator",
+    "operator:test",
+    "paper_trade",
+    "paper_trade_evidence_1",
+    now,
+    "Approved source paper trade.",
+  );
+  await seedAuditLog(
+    "audit_evidence_entry_1",
+    "paper_trade_opened",
+    "system",
+    "paper-trading",
+    "paper_trade",
+    "paper_trade_evidence_1",
+    now,
+    "Opened source paper trade.",
+  );
+  await seedAuditLog(
+    "audit_evidence_close_1",
+    "paper_trade_closed",
+    "system",
+    "paper-trading",
+    "paper_trade",
+    "paper_trade_evidence_1",
+    closedAt,
+    "Closed source paper trade.",
+  );
+
+  await persistPaperTrade(client, {
+    id: "paper_trade_evidence_1",
+    recommendationId: "rec_source_1",
+    accountId: "paper_account_default",
+    ticker: "MSFT",
+    instrumentType: "stock",
+    strategyVersionId: "momentum-v0",
+    operatorApprovalAuditLogId: "audit_evidence_approval_1",
+    entryAuditLogId: "audit_evidence_entry_1",
+    thesisSnapshot: "Momentum continuation research candidate.",
+    entryReason: "Source evidence paper trade.",
+    downsideScenario: "Shares close below the evidence trend line.",
+    invalidationConditions: ["Close below evidence trend line"],
+    entryType: "market",
+    requestedEntryPrice: 100,
+    simulatedEntryPrice: 100,
+    quantity: 10,
+    enteredAt: now,
+    stopLoss: 95,
+    profitTarget: 108,
+    timeStopAt: "2026-06-12T20:00:00Z",
+    maxLossAmount: 300,
+    accountEquityAtEntry: 100000,
+    singleNameExposurePct: 2,
+    sectorExposurePct: 8,
+    correlatedExposurePct: 4,
+    dailyLossPctAtEntry: 0.1,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await closePersistedPaperTrade(client, {
+    id: "paper_trade_evidence_1",
+    closeAuditLogId: "audit_evidence_close_1",
+    closedAt,
+    exitPrice: 106,
+    exitReason: "Evidence profit-target review hit.",
+    lessonsLearned: "Evidence trade followed through before the time stop.",
+    updatedAt: closedAt,
+  });
+}
+
+describe("recommendation evidence resolver", () => {
+  beforeEach(async () => {
+    client = await createLocalClient();
+    await runMigrations(client);
+    await seedStrategy();
+  });
+
+  afterEach(() => {
+    client.close();
+  });
+
+  it("verifies paper-trade evidence and returns citation, freshness, risk, and audit detail", async () => {
+    await seedClosedEvidencePaperTrade();
+    await seedRecommendation("rec_candidate_1", "MSFT", "paper_trade_evidence_1");
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail).toMatchObject({
+      notRecommendation: true,
+      evidenceGate: "verified",
+      reasonCodes: [],
+      recommendation: {
+        id: "rec_candidate_1",
+        ticker: "MSFT",
+        instrumentType: "stock",
+        strategyVersionId: "momentum-v0",
+        decision: "paper_trade",
+        evidenceStatus: "paper_trade_eligible",
+        downsideScenario: "Shares close below the evidence trend line.",
+        invalidationConditions: ["Close below evidence trend line"],
+      },
+      dataFreshness: {
+        status: "fresh",
+        asOf: "2026-05-29T11:05:00Z",
+        notes: ["Provider timestamps reviewed"],
+      },
+      evidence: [
+        {
+          kind: "paper_trade",
+          id: "paper_trade_evidence_1",
+          status: "verified",
+          reasonCodes: [],
+          ticker: "MSFT",
+          instrumentType: "stock",
+          strategyVersionId: "momentum-v0",
+          closedAt,
+          liveTradingEnabled: false,
+          brokerExecution: false,
+          realizedPnl: 60,
+          realizedReturnPct: 6,
+        },
+      ],
+    });
+    expect(detail.citations).toEqual([
+      {
+        title: "Mock price evidence",
+        url: "https://example.test/mock/msft/prices",
+        source: "mock-provider",
+        publishedAt: "2026-05-29T11:00:00Z",
+        retrievedAt: "2026-05-29T11:05:00Z",
+      },
+      {
+        title: "Mock audit evidence",
+        url: "https://example.test/mock/msft/audit",
+        source: "mock-audit-source",
+        publishedAt: "2026-05-29T10:00:00Z",
+        retrievedAt: "2026-05-29T11:06:00Z",
+      },
+    ]);
+    expect(detail.auditTrail.map((audit) => audit.eventType)).toEqual([
+      "operator_decision",
+      "operator_decision",
+      "paper_trade_opened",
+      "paper_trade_closed",
+    ]);
+  });
+
+  it("blocks paper-trade evidence from a different ticker cohort", async () => {
+    await seedClosedEvidencePaperTrade();
+    await seedRecommendation("rec_candidate_1", "AAPL", "paper_trade_evidence_1");
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("paper_trade_evidence_cohort_mismatch");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "paper_trade",
+      id: "paper_trade_evidence_1",
+      status: "blocked",
+      reasonCodes: ["paper_trade_evidence_cohort_mismatch"],
+    });
+  });
+});

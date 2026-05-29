@@ -229,6 +229,39 @@ try {
     );
   }
 
+  const evidenceDetailResponse = await server.inject({
+    method: "GET",
+    url: "/paper-trading/mock-evidence-detail-dry-run",
+  });
+
+  if (evidenceDetailResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /paper-trading/mock-evidence-detail-dry-run to return 200, got ${evidenceDetailResponse.statusCode}`,
+    );
+  }
+
+  const evidenceDetailBody = evidenceDetailResponse.json();
+  if (
+    evidenceDetailBody.requiresEnv !== false ||
+    evidenceDetailBody.liveTradingEnabled !== false ||
+    evidenceDetailBody.persistence?.durable !== false ||
+    evidenceDetailBody.notRecommendation !== true ||
+    evidenceDetailBody.evidenceDetail?.notRecommendation !== true ||
+    evidenceDetailBody.evidenceDetail?.evidenceGate !== "verified" ||
+    evidenceDetailBody.evidenceDetail?.recommendation?.id !== "rec-MSFT-paper-candidate-1" ||
+    evidenceDetailBody.evidenceDetail?.evidence?.[0]?.kind !== "paper_trade" ||
+    evidenceDetailBody.evidenceDetail?.evidence?.[0]?.status !== "verified" ||
+    evidenceDetailBody.evidenceDetail?.evidence?.[0]?.brokerExecution !== false ||
+    evidenceDetailBody.evidenceDetail?.citations?.[0]?.source !== "mock-provider" ||
+    !evidenceDetailBody.evidenceDetail?.auditTrail?.some(
+      (audit) => audit.eventType === "paper_trade_closed",
+    )
+  ) {
+    throw new Error(
+      `Unexpected mock paper-trade evidence detail response: ${evidenceDetailResponse.body}`,
+    );
+  }
+
   console.log("API smoke ok");
 } finally {
   await server.close();

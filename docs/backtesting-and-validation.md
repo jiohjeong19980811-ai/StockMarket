@@ -155,6 +155,8 @@ Backtesting and validation consumers should use the durable paper-trade read mod
 
 Paper-trade evidence summaries should aggregate only closed paper trades for performance metrics while counting open trades separately. Summaries must remain `notRecommendation`, block broker/live-shaped records, reject mixed ticker/instrument/strategy/version cohorts, and require backtest plus operator review before any strategy promotion decision.
 
-Durable evidence verification remains a follow-up before strategy promotion: future backtesting consumers should resolve evidence IDs against persisted paper-trade or backtest tables instead of trusting caller-provided IDs.
+Durable paper-trade evidence verification now starts in the DB package through the recommendation evidence resolver. Backtesting consumers should resolve recommendation evidence IDs through this helper before trusting a paper-trade evidence reference. A paper-trade evidence item is verified only when it resolves to a closed persisted paper trade, remains paper-only, has broker execution disabled, and matches the recommendation ticker, instrument type, and strategy version.
+
+Backtest-run evidence verification remains a follow-up before strategy promotion. Until a durable backtest-run resolver exists, backtest evidence IDs must be returned as unresolved and cannot by themselves make a recommendation `paper_trade` eligible.
 
 Lessons learned should be stored and visible on future recommendations from the same strategy.

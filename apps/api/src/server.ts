@@ -15,6 +15,7 @@ import {
 import {
   closePersistedPaperTrade,
   createLocalClient,
+  getRecommendationEvidenceDetail,
   listPersistedPaperTrades,
   persistIngestionBatch,
   persistPaperTrade,
@@ -408,6 +409,98 @@ async function seedMockPaperTradeCloseAuditLog(client: LocalClient, paperTradeId
   });
 }
 
+async function seedMockEvidenceCandidateRecommendation(
+  client: LocalClient,
+  paperTradeEvidenceId: string,
+) {
+  const citation = mockPaperTradePrimaryCitation();
+  const candidateRecommendationId = "rec-MSFT-paper-candidate-1";
+  const candidateAuditLogId = "audit_mock_candidate_rec_1";
+
+  await client.batch(
+    [
+      {
+        sql: `INSERT INTO audit_logs
+          (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id,
+           risk_decision, operator_decision, operator_notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          candidateAuditLogId,
+          "operator_decision",
+          "operator",
+          "operator:mock",
+          "2026-05-29T12:10:00.000Z",
+          "recommendation",
+          candidateRecommendationId,
+          "pass",
+          "paper_trade",
+          "Mock candidate recommendation references durable paper-trade evidence.",
+        ],
+      },
+      {
+        sql: `INSERT INTO recommendations
+          (id, ticker, instrument_type, strategy_version_id, decision, evidence_status,
+           thesis, bull_case, bear_case, downside_scenario, invalidation_conditions_json,
+           why_system_might_be_wrong, primary_citation_title, primary_citation_url,
+           primary_citation_source, primary_citation_published_at,
+           primary_citation_retrieved_at, freshness_status, freshness_as_of,
+           freshness_notes_json, risk_score, confidence_score, liquidity_score,
+           liquidity_decision, risk_decision, paper_trade_evidence_id,
+           operator_audit_log_id, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          candidateRecommendationId,
+          mockPaperTradeRecommendation.ticker,
+          mockPaperTradeRecommendation.instrumentType,
+          mockPaperTradeRecommendation.strategyVersion,
+          "paper_trade",
+          "paper_trade_eligible",
+          mockPaperTradeRecommendation.thesis,
+          mockPaperTradeRecommendation.bullCase,
+          mockPaperTradeRecommendation.bearCase,
+          mockPaperTradeRecommendation.downsideScenario,
+          JSON.stringify(mockPaperTradeRecommendation.invalidationConditions),
+          mockPaperTradeRecommendation.whySystemMightBeWrong,
+          citation.title,
+          citation.url,
+          citation.source,
+          citation.publishedAt,
+          citation.retrievedAt,
+          mockPaperTradeRecommendation.dataFreshness.status,
+          mockPaperTradeRecommendation.dataFreshness.asOf,
+          JSON.stringify(mockPaperTradeRecommendation.dataFreshness.notes),
+          mockPaperTradeRecommendation.scores.risk,
+          mockPaperTradeRecommendation.scores.confidence,
+          mockPaperTradeRecommendation.scores.liquidity,
+          "pass",
+          "pass",
+          paperTradeEvidenceId,
+          candidateAuditLogId,
+          "2026-05-29T12:10:00.000Z",
+          "2026-05-29T12:10:00.000Z",
+        ],
+      },
+      {
+        sql: `INSERT INTO recommendation_citations
+          (id, recommendation_id, title, url, source, published_at, retrieved_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          "citation_mock_candidate_audit_1",
+          candidateRecommendationId,
+          "Mock paper-trade audit trail",
+          "https://example.test/mock/msft/paper-trade-audit",
+          "mock-audit-source",
+          "2026-05-29T12:00:00.000Z",
+          "2026-05-29T12:10:00.000Z",
+        ],
+      },
+    ],
+    "write",
+  );
+
+  return candidateRecommendationId;
+}
+
 export function buildServer(env: ApiEnv) {
   const server = fastify({
     logger: env.APP_ENV !== "test",
@@ -758,6 +851,108 @@ export function buildServer(env: ApiEnv) {
           accountId: "paper_account_mock",
           limit: 10,
         }),
+      };
+    } finally {
+      client.close();
+    }
+  });
+
+  server.get("/paper-trading/mock-evidence-detail-dry-run", async () => {
+    const client = await createLocalClient();
+    const openResult = createPaperTrade(mockPaperTradeRequest);
+
+    try {
+      await runMigrations(client);
+
+      if (openResult.status === "accepted" && openResult.trade.instrumentType === "stock") {
+        await seedMockPaperTradeLedgerDependencies(client, openResult.trade.id);
+        await persistPaperTrade(client, {
+          id: openResult.trade.id,
+          recommendationId: openResult.trade.recommendationId,
+          accountId: "paper_account_mock",
+          ticker: openResult.trade.ticker,
+          instrumentType: openResult.trade.instrumentType,
+          strategyVersionId: openResult.trade.strategyVersion,
+          operatorApprovalAuditLogId: openResult.trade.audit.auditLogId,
+          entryAuditLogId: "audit_mock_paper_entry_1",
+          thesisSnapshot: openResult.trade.thesisSnapshot,
+          entryReason: "Mock API evidence-detail dry run accepted a simulated stock paper entry.",
+          downsideScenario: mockPaperTradeRecommendation.downsideScenario,
+          invalidationConditions: mockPaperTradeRecommendation.invalidationConditions,
+          entryType: "market",
+          requestedEntryPrice: mockPaperTradeRequest.entry.entryPrice,
+          simulatedEntryPrice: openResult.trade.entryPrice,
+          quantity: openResult.trade.quantity,
+          enteredAt: openResult.trade.openedAt,
+          stopLoss: openResult.trade.stopLossPrice,
+          profitTarget: openResult.trade.profitTargetPrice,
+          timeStopAt: "2026-06-11T20:00:00.000Z",
+          maxLossAmount: openResult.trade.risk.maxLoss,
+          accountEquityAtEntry: openResult.trade.risk.accountEquityAtOpen,
+          singleNameExposurePct: openResult.trade.risk.singleNameExposurePct,
+          sectorExposurePct: openResult.trade.risk.sectorExposurePct,
+          correlatedExposurePct: openResult.trade.risk.correlatedExposurePct,
+          dailyLossPctAtEntry: openResult.trade.risk.currentDailyLossPct,
+          createdAt: openResult.trade.openedAt,
+          updatedAt: openResult.trade.openedAt,
+        });
+
+        const closeResult = closePaperTrade(openResult.trade, mockPaperTradeExitRequest);
+        if (closeResult.status === "accepted") {
+          await seedMockPaperTradeCloseAuditLog(client, closeResult.trade.id);
+          await closePersistedPaperTrade(client, {
+            id: closeResult.trade.id,
+            closeAuditLogId: closeResult.trade.exitAudit.auditLogId,
+            closedAt: closeResult.trade.closedAt,
+            exitPrice: closeResult.trade.exitPrice,
+            exitReason: closeResult.trade.exitReason,
+            lessonsLearned: closeResult.trade.lessons[closeResult.trade.lessons.length - 1] ?? "",
+            updatedAt: closeResult.trade.closedAt,
+          });
+        }
+
+        const candidateRecommendationId = await seedMockEvidenceCandidateRecommendation(
+          client,
+          openResult.trade.id,
+        );
+
+        return {
+          mode: "mock",
+          requiresEnv: false,
+          liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+          providerKeysRequired: [],
+          notRecommendation: true,
+          persistence: {
+            scope: "in_memory",
+            durable: false,
+            note: "Dry-run evidence detail data is discarded after the response.",
+          },
+          persistedInMemory: {
+            recommendations: await countRows(client, "recommendations"),
+            auditLogs: await countRows(client, "audit_logs"),
+            paperTrades: await countRows(client, "paper_trades"),
+          },
+          evidenceDetail: await getRecommendationEvidenceDetail(client, candidateRecommendationId),
+        };
+      }
+
+      return {
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+          note: "Dry-run evidence detail data is discarded after the response.",
+        },
+        persistedInMemory: {
+          recommendations: await countRows(client, "recommendations"),
+          auditLogs: await countRows(client, "audit_logs"),
+          paperTrades: await countRows(client, "paper_trades"),
+        },
+        evidenceDetail: null,
       };
     } finally {
       client.close();

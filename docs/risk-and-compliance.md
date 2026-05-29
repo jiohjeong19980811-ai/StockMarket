@@ -119,6 +119,8 @@ Initial paper-only default limits should be conservative and revisited after pap
 
 Paper-trade evidence summaries may inform later risk-limit reviews, but they are not performance claims and cannot automatically promote a strategy. Summaries must separate open trades from closed-trade metrics, require close audit IDs, block broker/live-shaped records, reject mixed ticker/instrument/strategy/version cohorts, and keep operator plus backtest review as a promotion prerequisite.
 
+Recommendation evidence detail must be resolved from stored data, not caller-provided claims. The DB evidence resolver verifies paper-trade evidence only when the referenced row is closed, paper-only, broker-disabled, and in the same ticker/instrument/strategy cohort as the recommendation. Missing, open, unsafe, or mismatched evidence blocks or downgrades the evidence gate. Backtest evidence IDs remain unresolved until the backtest-run table and resolver are implemented.
+
 When the operator UI cannot reach the API, paper-trading metrics should be hidden behind a `Data unavailable` state. Offline fixture data may support smoke tests, but it must not look like an operational recommendation, strategy promotion, or current paper-trade decision.
 
 Initial liquidity defaults:
@@ -172,6 +174,8 @@ Closing a paper trade requires timestamped exit price evidence, an exit reason, 
 Persisted closes must update an open paper trade exactly once and must include close audit linkage. Duplicate closes, missing close audit IDs, missing exit details, or missing lessons learned are blocked.
 
 Persisted paper-trade read models must preserve the paper-only boundary when records are returned to APIs, UI, reports, or backtesting. Read helpers should include audit references, entry risk snapshots, invalidation conditions, and computed simulated outcomes, and they must reject or surface unsafe records if live-trading or broker-execution flags ever appear.
+
+Evidence-detail read models must expose citations, source timestamps, freshness, downside scenarios, invalidation conditions, reason codes, and audit events alongside resolved evidence status. UI decision buttons should remain disabled until audit-backed decision writes and promotion review controls exist.
 
 Options paper trades remain rejected until the options strategy policy is explicitly promoted after historical options chain and fill-model validation.
 

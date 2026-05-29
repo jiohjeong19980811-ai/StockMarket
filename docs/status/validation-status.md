@@ -1,25 +1,34 @@
 # Validation Status
 
-Last updated: 2026-05-29T09:49:40-04:00
+Last updated: 2026-05-29T12:50:22-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 6 paper trading review validation |
-| Current task | Close Milestone 6 paper-trading review blockers |
+| Current phase | Milestone 6 paper trading evidence validation |
+| Current task | Add durable evidence resolver and operator evidence inspection |
 | Owner/agent | Codex founding CTO / lead architect / principal engineer / security reviewer / risk reviewer / QA reviewer |
 | Status | Completed |
 | Priority | High |
-| Category | Paper trading safety and release readiness |
+| Category | Paper trading evidence and operator workflow |
 | Blockers | None |
-| Next step | Commit the review fixes, then continue Milestone 6 with durable evidence resolver and richer operator audit inspection work. |
-| Related docs/files | `packages/paper-trading`, `packages/db/migrations`, `apps/api`, `apps/web`, `docs/status/` |
+| Next step | Commit M6-017, then prepare Milestone 6 review/merge readiness. |
+| Related docs/files | `packages/db/src/evidence-resolver.ts`, `apps/api/src/server.ts`, `apps/web/src/App.tsx`, `scripts/smoke-api.mjs`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 evidence detail resolver aggregate CI | Completed | Typecheck, lint, format check, 134 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after evidence resolver/API/UI/smoke updates | `npm.cmd run ci` |
+| Milestone 6 evidence detail resolver DB regression | Completed | 2 DB evidence resolver tests passed for verified paper-trade evidence and unresolved/missing evidence gates | `npm.cmd run test --workspace @stockmarket/db -- evidence-resolver` |
+| Milestone 6 evidence detail resolver API regression | Completed | 6 API paper-trading route tests passed after adding the mock evidence-detail dry run | `npm.cmd run build --workspace @stockmarket/db`; `npm.cmd run test --workspace @stockmarket/api -- paper-trading` |
+| Milestone 6 evidence detail resolver web regression | Completed | 2 web dashboard tests passed after adding the evidence-detail panel and disabled operator decision actions | `npm.cmd run test --workspace @stockmarket/web -- App` |
+| Milestone 6 evidence detail resolver status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after M6-017 completion updates | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 evidence detail resolver whitespace check | Completed | No whitespace errors after evidence resolver changes and documentation/status updates | `git diff --check` |
+| Milestone 6 evidence detail resolver secret-pattern scan | Completed | No secret-shaped tokens found in the repository scan excluding generated dependency/build output | `rg` secret-pattern scan |
+| Milestone 6 evidence detail resolver live-trading surface scan | Completed | Matches are safety fields/tests/documented prohibitions only; no live order implementation was introduced | `rg` live-trading/order-surface scan over changed app/package/script files |
+| Milestone 6 evidence detail resolver local web smoke | Completed | Existing Vite dev server on `http://127.0.0.1:3001` returned HTTP 200 after evidence-detail UI updates | `Invoke-WebRequest http://127.0.0.1:3001` |
 | Milestone 6 paper-trading review aggregate CI | Completed | Typecheck, lint, format check, 131 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after review fixes and smoke-script evidence-gate update | `npm.cmd run ci` |
 | Milestone 6 paper-trading review paper-trading package regression | Completed | 17 tests passed after adding max-loss floor, entry/close timestamp ordering, recursive broker/order/execution-field rejection, invalidation snapshots, and cohort-safe evidence summaries | `npm.cmd run test --workspace @stockmarket/paper-trading -- paper-trading` |
 | Milestone 6 paper-trading review DB migration regression | Completed | 33 migration tests passed after adding timestamp checks, stop-based max-loss checks, and semantic audit-link triggers for approval, entry, and close events | `npm.cmd run test --workspace @stockmarket/db -- migration` |

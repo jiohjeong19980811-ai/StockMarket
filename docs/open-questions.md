@@ -18,7 +18,7 @@
 - How should AI-generated research summaries be versioned and evaluated?
 - What minimum trade count, out-of-sample period, and paper-trading sample should be required before a strategy becomes `paper trade` eligible?
 - What exact stale-data thresholds should apply by strategy family?
-- What durable evidence resolver should connect recommendation evidence IDs to persisted backtest runs and paper-trade outcome cohorts before any strategy promotion?
+- What durable backtest-run resolver should connect recommendation backtest evidence IDs to stored runs, assumptions, costs, and validation metrics before any strategy promotion?
 - Should ingestion run IDs add an additional request nonce or database-generated sequence to avoid same-request/same-clock collisions across future concurrent provider runs?
 
 ## Operations

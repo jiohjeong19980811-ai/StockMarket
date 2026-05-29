@@ -298,13 +298,38 @@ h2 {
   color: #8a5300;
 }
 
+.decision-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+.decision-actions button {
+  background: #edf2f4;
+  border: 1px solid #c3ccd2;
+  border-radius: 8px;
+  color: #53616b;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  min-height: 42px;
+  padding: 9px 10px;
+}
+
+.decision-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
 @media (max-width: 860px) {
   .dashboard-grid,
   .kpi-row,
   .policy-strip,
   .trade-strip,
   .outcome-strip,
-  .evidence-strip {
+  .evidence-strip,
+  .decision-actions {
     grid-template-columns: 1fr;
   }
 

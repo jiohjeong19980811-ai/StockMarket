@@ -253,4 +253,78 @@ describe("mock paper-trading route", () => {
       await server.close();
     }
   });
+
+  it("returns durable recommendation evidence detail with citations, freshness, and audit trail", async () => {
+    const server = buildServer({
+      APP_ENV: "test",
+      API_PORT: 4000,
+      LIVE_TRADING_ENABLED: false,
+    });
+
+    try {
+      const response = await server.inject({
+        method: "GET",
+        url: "/paper-trading/mock-evidence-detail-dry-run",
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body).toMatchObject({
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: false,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+        },
+        evidenceDetail: {
+          notRecommendation: true,
+          evidenceGate: "verified",
+          reasonCodes: [],
+          recommendation: {
+            id: "rec-MSFT-paper-candidate-1",
+            ticker: "MSFT",
+            instrumentType: "stock",
+            strategyVersionId: "momentum-v0",
+            downsideScenario: "Shares close below the mock breakout level.",
+            invalidationConditions: ["Close below mock breakout level"],
+          },
+          dataFreshness: {
+            status: "fresh",
+            asOf: "2026-05-28T14:30:00.000Z",
+          },
+          evidence: [
+            {
+              kind: "paper_trade",
+              id: "paper_rec-MSFT-paper-mock-1_20260528T150000000Z",
+              status: "verified",
+              ticker: "MSFT",
+              liveTradingEnabled: false,
+              brokerExecution: false,
+              realizedPnl: 60,
+              realizedReturnPct: 6,
+            },
+          ],
+        },
+      });
+      expect(body.evidenceDetail.citations[0]).toMatchObject({
+        title: "Mock daily price history",
+        source: "mock-provider",
+        publishedAt: "2026-05-28T14:00:00.000Z",
+        retrievedAt: "2026-05-28T14:30:00.000Z",
+      });
+      expect(
+        body.evidenceDetail.auditTrail.map((audit: { eventType: string }) => audit.eventType),
+      ).toEqual([
+        "operator_decision",
+        "operator_decision",
+        "paper_trade_opened",
+        "paper_trade_closed",
+      ]);
+    } finally {
+      await server.close();
+    }
+  });
 });

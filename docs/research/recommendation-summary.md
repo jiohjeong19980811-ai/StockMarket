@@ -1,6 +1,6 @@
 # External Research Recommendation Summary
 
-Last updated: 2026-05-28T14:27:40-04:00
+Last updated: 2026-05-29T12:48:32-04:00
 
 ## Executive Decision
 
@@ -82,6 +82,7 @@ Avoid in MVP:
 - Custom scoring, risk, recommendation, paper-trading, audit, and initial backtesting contracts.
 - Strategy registry fields and evidence gates for earnings, momentum, mean reversion, volatility, options, news/sentiment, value/quality, sector/macro, and portfolio risk.
 - MVP strategy tests limited to liquid stock/ETF strategies until options-chain evidence is available.
+- Durable evidence resolution for paper-trade evidence IDs before any recommendation or strategy promotion trusts paper-trade outcomes.
 - Official sources where available: SEC EDGAR for filings and FRED for macro data.
 - Lightweight status files under `docs/status/`.
 
@@ -170,6 +171,7 @@ Avoid in MVP:
 - Missing or stale data should reduce confidence or produce `needs more data`.
 - Options are high risk and can expire worthless; the UI must show this risk near options ideas.
 - No strategy can be promoted without backtest or paper-trading evidence.
+- Paper-trading evidence must resolve to persisted, closed, paper-only, broker-disabled records in the same ticker/instrument/strategy cohort before it can count as verified evidence.
 
 ## Final Implementation Priorities
 
