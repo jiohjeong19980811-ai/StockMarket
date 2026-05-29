@@ -21,7 +21,11 @@ describe("mock ingestion dry-run route", () => {
         requiresEnv: false,
         liveTradingEnabled: false,
         providerKeysRequired: [],
-        persisted: {
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+        },
+        persistedInMemory: {
           ingestionRuns: 4,
           providerRecords: 5,
           priceBars: 2,

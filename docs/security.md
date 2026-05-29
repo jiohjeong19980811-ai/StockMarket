@@ -24,6 +24,8 @@ Routine in-repository work may be auto-approved by the `PermissionRequest` hook 
 
 Local `.env` files are optional during mock-provider development and must never be committed. Provider keys must use provider-specific names documented in `docs/provider-configuration.md`; generic provider key names should not be introduced without a documented provider-router decision.
 
+Current real-provider adapter stubs fail closed until provider terms are reviewed. A local API key alone must not activate external provider calls during the mock-provider MVP workflow.
+
 ## Research Basis
 
 Security decisions are informed by OWASP LLM guidance, NIST AI RMF guidance, MCP security best practices, GitHub secret scanning guidance, SEC automated investment advice materials, and official options/crypto risk disclosures. See `docs/research/security-and-compliance.md`.

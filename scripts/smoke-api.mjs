@@ -57,7 +57,8 @@ try {
   if (
     dryRunBody.requiresEnv !== false ||
     dryRunBody.liveTradingEnabled !== false ||
-    dryRunBody.persisted?.ingestionRuns !== 4
+    dryRunBody.persistence?.durable !== false ||
+    dryRunBody.persistedInMemory?.ingestionRuns !== 4
   ) {
     throw new Error(`Unexpected mock dry-run response: ${dryRunResponse.body}`);
   }

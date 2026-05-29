@@ -11,6 +11,7 @@ import {
   earningsDateFindings,
   freshnessPolicyForDataset,
   optionQuoteFindings,
+  priceBarFindings,
   providerMetadataFindings,
   qualityEventsFromFindings,
   type FreshnessPolicy,
@@ -65,10 +66,16 @@ function createRun(
   adapterVersion: string,
   providerDataset: ProviderDataset,
   clock: IngestionClock,
+  requestContext: unknown,
 ): IngestionRunRecord {
   const now = clock.now();
   return {
-    id: `ingest_${safeIdPart(providerName)}_${providerDataset}_${sha256({ now, providerName, providerDataset }).slice(0, 12)}`,
+    id: `ingest_${safeIdPart(providerName)}_${providerDataset}_${sha256({
+      now,
+      providerName,
+      providerDataset,
+      requestContext,
+    }).slice(0, 12)}`,
     providerName,
     providerDataset,
     adapterVersion,
@@ -113,10 +120,29 @@ function buildBatch<TRecord extends { metadata: ProviderMetadata }>(
   records: TRecord[],
   clock: IngestionClock,
   freshnessPolicy: FreshnessPolicy,
+  emptyResponseLabel: string,
   findingsForRecord: (record: TRecord, index: number) => QualityFinding[],
 ): IngestionBatch<TRecord> {
   const providerRecords: ProviderRecordEnvelope[] = [];
   const qualityEvents: DataQualityEventRecord[] = [];
+
+  if (records.length === 0) {
+    return {
+      run: { ...run, status: "failed" },
+      providerRecords,
+      records,
+      qualityEvents: [
+        {
+          id: `${run.id}:quality:empty-response`,
+          ingestionRunId: run.id,
+          severity: "error",
+          qualityStatus: "missing",
+          message: `${emptyResponseLabel} provider returned no records.`,
+          createdAt: clock.now(),
+        },
+      ],
+    };
+  }
 
   records.forEach((record, index) => {
     const findings = [
@@ -128,8 +154,12 @@ function buildBatch<TRecord extends { metadata: ProviderMetadata }>(
     qualityEvents.push(...qualityEventsFromFindings(findings, run.id, providerRecord.id, clock));
   });
 
+  const hasUsableRecords = providerRecords.some(
+    (providerRecord) => providerRecord.qualityStatus !== "missing",
+  );
+
   return {
-    run,
+    run: hasUsableRecords ? run : { ...run, status: "failed" },
     providerRecords,
     records,
     qualityEvents,
@@ -142,13 +172,14 @@ export async function ingestPriceBars(
   clock: IngestionClock,
 ): Promise<IngestionBatch<ProviderPriceBar>> {
   const records = await provider.getPriceBars(request);
-  const run = createRun(provider.providerName, provider.adapterVersion, "prices", clock);
+  const run = createRun(provider.providerName, provider.adapterVersion, "prices", clock, request);
   return buildBatch(
     run,
     records,
     clock,
     freshnessPolicyForDataset("prices", { interval: request.interval }),
-    () => [],
+    "Prices",
+    priceBarFindings,
   );
 }
 
@@ -158,9 +189,9 @@ export async function ingestNewsArticles(
   clock: IngestionClock,
 ): Promise<IngestionBatch<ProviderNewsArticle>> {
   const records = await provider.getNewsArticles(request);
-  const run = createRun(provider.providerName, provider.adapterVersion, "news", clock);
+  const run = createRun(provider.providerName, provider.adapterVersion, "news", clock, request);
   const seenDuplicateKeys = new Set<string>();
-  return buildBatch(run, records, clock, freshnessPolicyForDataset("news"), (record) =>
+  return buildBatch(run, records, clock, freshnessPolicyForDataset("news"), "News", (record) =>
     duplicateNewsFindings(record, seenDuplicateKeys),
   );
 }
@@ -171,9 +202,14 @@ export async function ingestEarningsEvents(
   clock: IngestionClock,
 ): Promise<IngestionBatch<ProviderEarningsEvent>> {
   const records = await provider.getEarningsEvents(request);
-  const run = createRun(provider.providerName, provider.adapterVersion, "earnings", clock);
-  return buildBatch(run, records, clock, freshnessPolicyForDataset("earnings"), (record) =>
-    earningsDateFindings(record.announcementDate),
+  const run = createRun(provider.providerName, provider.adapterVersion, "earnings", clock, request);
+  return buildBatch(
+    run,
+    records,
+    clock,
+    freshnessPolicyForDataset("earnings"),
+    "Earnings",
+    (record) => earningsDateFindings(record.announcementDate),
   );
 }
 
@@ -183,6 +219,13 @@ export async function ingestOptionQuotes(
   clock: IngestionClock,
 ): Promise<IngestionBatch<ProviderOptionQuote>> {
   const records = await provider.getOptionQuotes(request);
-  const run = createRun(provider.providerName, provider.adapterVersion, "options", clock);
-  return buildBatch(run, records, clock, freshnessPolicyForDataset("options"), optionQuoteFindings);
+  const run = createRun(provider.providerName, provider.adapterVersion, "options", clock, request);
+  return buildBatch(
+    run,
+    records,
+    clock,
+    freshnessPolicyForDataset("options"),
+    "Options",
+    optionQuoteFindings,
+  );
 }

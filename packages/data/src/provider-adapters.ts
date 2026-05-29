@@ -8,6 +8,7 @@ import type {
 export interface ProviderAdapterConfig {
   apiKey?: string;
   baseUrl?: string;
+  termsReviewed?: boolean;
 }
 
 export class ProviderNotConfiguredError extends Error {
@@ -38,6 +39,12 @@ function deferred(providerName: string): never {
   throw new ProviderHttpAdapterDeferredError(providerName);
 }
 
+function requireTermsReviewed(providerName: string, config: ProviderAdapterConfig): void {
+  if (config.termsReviewed !== true) {
+    deferred(providerName);
+  }
+}
+
 export function createPolygonProvider(
   config: ProviderAdapterConfig,
 ): MarketDataProvider & OptionsProvider {
@@ -45,10 +52,12 @@ export function createPolygonProvider(
     providerName: "polygon",
     adapterVersion: "stub-v0",
     getPriceBars: async () => {
+      requireTermsReviewed("polygon", config);
       requireApiKey("polygon", "POLYGON_API_KEY", config);
       return deferred("polygon");
     },
     getOptionQuotes: async () => {
+      requireTermsReviewed("polygon", config);
       requireApiKey("polygon", "POLYGON_API_KEY", config);
       return deferred("polygon");
     },
@@ -62,10 +71,12 @@ export function createFinancialModelingPrepProvider(
     providerName: "financial-modeling-prep",
     adapterVersion: "stub-v0",
     getNewsArticles: async () => {
+      requireTermsReviewed("financial-modeling-prep", config);
       requireApiKey("financial-modeling-prep", "FMP_API_KEY", config);
       return deferred("financial-modeling-prep");
     },
     getEarningsEvents: async () => {
+      requireTermsReviewed("financial-modeling-prep", config);
       requireApiKey("financial-modeling-prep", "FMP_API_KEY", config);
       return deferred("financial-modeling-prep");
     },
@@ -79,10 +90,12 @@ export function createFinnhubProvider(
     providerName: "finnhub",
     adapterVersion: "stub-v0",
     getNewsArticles: async () => {
+      requireTermsReviewed("finnhub", config);
       requireApiKey("finnhub", "FINNHUB_API_KEY", config);
       return deferred("finnhub");
     },
     getEarningsEvents: async () => {
+      requireTermsReviewed("finnhub", config);
       requireApiKey("finnhub", "FINNHUB_API_KEY", config);
       return deferred("finnhub");
     },

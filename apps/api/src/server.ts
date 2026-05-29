@@ -104,7 +104,12 @@ export function buildServer(env: ApiEnv) {
         requiresEnv: false,
         liveTradingEnabled: env.LIVE_TRADING_ENABLED,
         providerKeysRequired: [],
-        persisted: {
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+          note: "Dry-run data is discarded after the response.",
+        },
+        persistedInMemory: {
           ingestionRuns: await countRows(client, "ingestion_runs"),
           providerRecords: await countRows(client, "provider_records"),
           priceBars: await countRows(client, "price_bars"),

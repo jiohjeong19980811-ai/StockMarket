@@ -6,6 +6,8 @@ Not having a local `.env` file is not a blocker right now.
 
 The current Milestone 3 implementation runs with mock providers, fixtures, provider interfaces, and committed tests. Real provider HTTP adapters are intentionally deferred until provider terms, pricing, historical coverage, storage rights, and data quality are reviewed.
 
+Provider-specific HTTP adapter stubs fail closed by default. A future workflow must explicitly mark provider terms as reviewed before a provider-specific key is even considered; adding a local API key today does not enable Polygon, Financial Modeling Prep, Finnhub, or any other paid-provider path.
+
 ## Finalized Provider Decisions
 
 | Provider | Status | Current use |
@@ -49,6 +51,8 @@ These are placeholders in `.env.example`; do not add real values unless a future
 | `SEC_EDGAR_USER_AGENT` | SEC EDGAR | Placeholder for future SEC request identity |
 
 Do not use generic names such as `NEWS_API_KEY`, `MARKET_DATA_API_KEY`, or `OPTIONS_DATA_API_KEY` unless the architecture later introduces a provider router that documents exactly which selected provider each key maps to.
+
+Current provider stubs require both future terms review and provider-specific configuration before they can move beyond deferred errors. They are present to lock in interface shape and credential naming, not to make live network calls in the current MVP workflow.
 
 ## Variables Prohibited In MVP
 

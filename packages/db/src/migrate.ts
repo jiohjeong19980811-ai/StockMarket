@@ -81,6 +81,11 @@ function splitSqlStatements(sql: string): string[] {
     if (char === ";") {
       const statement = current.trim();
       if (statement.length > 0) {
+        const isTrigger = /^CREATE\s+TRIGGER\b/i.test(statement);
+        if (isTrigger && !/\bEND$/i.test(statement)) {
+          current += char;
+          continue;
+        }
         statements.push(statement);
       }
       current = "";

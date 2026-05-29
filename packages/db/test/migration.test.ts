@@ -53,9 +53,9 @@ async function seedRecommendationDependencies() {
   );
 }
 
-async function seedProviderRecord(dataset = "prices") {
-  const ingestionRunId = `ingest_${dataset}`;
-  const providerRecordId = `provider_record_${dataset}`;
+async function seedProviderRecord(dataset = "prices", suffix = "1") {
+  const ingestionRunId = `ingest_${dataset}_${suffix}`;
+  const providerRecordId = `provider_record_${dataset}_${suffix}`;
   await execute(
     `INSERT INTO ingestion_runs
       (id, provider_name, provider_dataset, adapter_version, status, started_at, completed_at)
@@ -73,8 +73,8 @@ async function seedProviderRecord(dataset = "prices") {
       ingestionRunId,
       "mock-provider",
       dataset,
-      `${dataset}-record-1`,
-      `hash_${dataset}`,
+      `${dataset}-record-${suffix}`,
+      `hash_${dataset}_${suffix}`,
       now,
       now,
       now,
@@ -326,12 +326,13 @@ describe("database migrations", () => {
 
     await execute(
       `INSERT INTO price_bars
-        (id, provider_record_id, symbol, bar_interval, timestamp, open, high, low, close,
+        (id, provider_record_id, provider_name, symbol, bar_interval, timestamp, open, high, low, close,
          adjusted_close, volume, currency)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         "price_bar_1",
         priceProviderRecordId,
+        "mock-provider",
         "MSFT",
         "1d",
         now,
@@ -346,12 +347,13 @@ describe("database migrations", () => {
     );
     await execute(
       `INSERT INTO news_articles
-        (id, provider_record_id, symbol, title, url, source, published_at, retrieved_at,
+        (id, provider_record_id, provider_name, symbol, title, url, source, published_at, retrieved_at,
          duplicate_key)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         "news_1",
         newsProviderRecordId,
+        "mock-provider",
         "MSFT",
         "Microsoft announces example update",
         "https://example.com/msft-news",
@@ -363,12 +365,13 @@ describe("database migrations", () => {
     );
     await execute(
       `INSERT INTO earnings_events
-        (id, provider_record_id, symbol, fiscal_period, announcement_date, announcement_timing,
+        (id, provider_record_id, provider_name, symbol, fiscal_period, announcement_date, announcement_timing,
          eps_estimate, eps_actual, eps_surprise, source_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         "earnings_1",
         earningsProviderRecordId,
+        "mock-provider",
         "MSFT",
         "2026-Q3",
         "2026-05-01",
@@ -381,13 +384,14 @@ describe("database migrations", () => {
     );
     await execute(
       `INSERT INTO option_quotes
-        (id, provider_record_id, underlying_symbol, contract_symbol, expiration, strike,
+        (id, provider_record_id, provider_name, underlying_symbol, contract_symbol, expiration, strike,
          option_type, quote_timestamp, bid, ask, mid, volume, open_interest,
          implied_volatility, underlying_price, liquidity_flags_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         "option_quote_1",
         optionsProviderRecordId,
+        "mock-provider",
         "MSFT",
         "MSFT260619C00100000",
         "2026-06-19",
@@ -413,11 +417,12 @@ describe("database migrations", () => {
     await expect(
       execute(
         `INSERT INTO price_bars
-          (id, provider_record_id, symbol, bar_interval, timestamp, open, high, low, close, volume)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (id, provider_record_id, provider_name, symbol, bar_interval, timestamp, open, high, low, close, volume)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "price_bar_no_lineage",
           "missing_provider_record",
+          "mock-provider",
           "MSFT",
           "1d",
           now,
@@ -431,6 +436,76 @@ describe("database migrations", () => {
     ).rejects.toThrow();
   });
 
+  it("rejects normalized ingestion rows with the wrong provider dataset lineage", async () => {
+    const newsProviderRecordId = await seedProviderRecord("news", "wrong_dataset");
+
+    await expect(
+      execute(
+        `INSERT INTO price_bars
+          (id, provider_record_id, provider_name, symbol, bar_interval, timestamp, open, high, low, close, volume)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "price_bar_wrong_dataset",
+          newsProviderRecordId,
+          "mock-provider",
+          "MSFT",
+          "1d",
+          now,
+          100,
+          105,
+          99,
+          104,
+          100,
+        ],
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("deduplicates normalized price bars by provider and market-data natural key", async () => {
+    const firstProviderRecordId = await seedProviderRecord("prices", "natural_1");
+    const secondProviderRecordId = await seedProviderRecord("prices", "natural_2");
+
+    await execute(
+      `INSERT INTO price_bars
+        (id, provider_record_id, provider_name, symbol, bar_interval, timestamp, open, high, low, close, volume)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "price_bar_natural_1",
+        firstProviderRecordId,
+        "mock-provider",
+        "MSFT",
+        "1d",
+        now,
+        100,
+        105,
+        99,
+        104,
+        100,
+      ],
+    );
+
+    await expect(
+      execute(
+        `INSERT INTO price_bars
+          (id, provider_record_id, provider_name, symbol, bar_interval, timestamp, open, high, low, close, volume)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "price_bar_natural_2",
+          secondProviderRecordId,
+          "mock-provider",
+          "MSFT",
+          "1d",
+          now,
+          101,
+          106,
+          100,
+          105,
+          200,
+        ],
+      ),
+    ).rejects.toThrow();
+  });
+
   it("rejects normalized ingestion rows with unsafe market data", async () => {
     const priceProviderRecordId = await seedProviderRecord("prices");
     const newsProviderRecordId = await seedProviderRecord("news");
@@ -438,12 +513,13 @@ describe("database migrations", () => {
 
     await execute(
       `INSERT INTO news_articles
-        (id, provider_record_id, symbol, title, url, source, published_at, retrieved_at,
+        (id, provider_record_id, provider_name, symbol, title, url, source, published_at, retrieved_at,
          duplicate_key)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         "news_duplicate_1",
         newsProviderRecordId,
+        "mock-provider",
         "MSFT",
         "Microsoft announces example update",
         "https://example.com/msft-news",
@@ -457,20 +533,33 @@ describe("database migrations", () => {
     await expect(
       execute(
         `INSERT INTO price_bars
-          (id, provider_record_id, symbol, bar_interval, timestamp, open, high, low, close, volume)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ["price_bar_invalid", priceProviderRecordId, "MSFT", "1d", now, 100, 98, 99, 104, 100],
+          (id, provider_record_id, provider_name, symbol, bar_interval, timestamp, open, high, low, close, volume)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "price_bar_invalid",
+          priceProviderRecordId,
+          "mock-provider",
+          "MSFT",
+          "1d",
+          now,
+          100,
+          98,
+          99,
+          104,
+          100,
+        ],
       ),
     ).rejects.toThrow();
     await expect(
       execute(
         `INSERT INTO news_articles
-          (id, provider_record_id, symbol, title, url, source, published_at, retrieved_at,
+          (id, provider_record_id, provider_name, symbol, title, url, source, published_at, retrieved_at,
            duplicate_key)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "news_duplicate_2",
           newsProviderRecordId,
+          "mock-provider",
           "MSFT",
           "Duplicate Microsoft update",
           "https://example.com/msft-news-copy",
@@ -484,13 +573,14 @@ describe("database migrations", () => {
     await expect(
       execute(
         `INSERT INTO option_quotes
-          (id, provider_record_id, underlying_symbol, contract_symbol, expiration, strike,
+          (id, provider_record_id, provider_name, underlying_symbol, contract_symbol, expiration, strike,
            option_type, quote_timestamp, bid, ask, mid, volume, open_interest,
            implied_volatility, underlying_price, liquidity_flags_json)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "option_quote_invalid",
           optionsProviderRecordId,
+          "mock-provider",
           "MSFT",
           "MSFT260619C00100000",
           "2026-06-19",

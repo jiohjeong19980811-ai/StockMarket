@@ -66,6 +66,83 @@ describe("provider contracts and mock ingestion", () => {
     expect(batch.qualityEvents).toEqual([]);
   });
 
+  it("creates distinct ingestion run IDs for different requests at the same clock", async () => {
+    const provider = createMockMarketDataProvider({
+      priceBars: [
+        {
+          metadata: {
+            providerName: "mock-market-data",
+            providerRecordId: "MSFT-2026-05-01",
+            retrievedAt: "2026-05-28T14:00:00.000Z",
+            providerTimestamp: "2026-05-28T14:00:00.000Z",
+            qualityStatus: "fresh",
+          },
+          symbol: "MSFT",
+          timestamp: "2026-05-01T20:00:00.000Z",
+          open: 100,
+          high: 105,
+          low: 99,
+          close: 104,
+          adjustedClose: 104,
+          volume: 1200000,
+          currency: "USD",
+        },
+        {
+          metadata: {
+            providerName: "mock-market-data",
+            providerRecordId: "AAPL-2026-05-01",
+            retrievedAt: "2026-05-28T14:00:00.000Z",
+            providerTimestamp: "2026-05-28T14:00:00.000Z",
+            qualityStatus: "fresh",
+          },
+          symbol: "AAPL",
+          timestamp: "2026-05-01T20:00:00.000Z",
+          open: 200,
+          high: 205,
+          low: 198,
+          close: 204,
+          adjustedClose: 204,
+          volume: 1500000,
+          currency: "USD",
+        },
+      ],
+    });
+
+    const msftBatch = await ingestPriceBars(
+      provider,
+      { symbol: "MSFT", from: "2026-05-01", to: "2026-05-01", interval: "1d" },
+      fixedClock,
+    );
+    const aaplBatch = await ingestPriceBars(
+      provider,
+      { symbol: "AAPL", from: "2026-05-01", to: "2026-05-01", interval: "1d" },
+      fixedClock,
+    );
+
+    expect(msftBatch.run.id).not.toBe(aaplBatch.run.id);
+  });
+
+  it("flags empty provider responses as missing data", async () => {
+    const provider = createMockMarketDataProvider({ priceBars: [] });
+
+    const batch = await ingestPriceBars(
+      provider,
+      { symbol: "MSFT", from: "2026-05-01", to: "2026-05-01", interval: "1d" },
+      fixedClock,
+    );
+
+    expect(batch.run.status).toBe("failed");
+    expect(batch.providerRecords).toEqual([]);
+    expect(batch.qualityEvents).toEqual([
+      expect.objectContaining({
+        qualityStatus: "missing",
+        severity: "error",
+        message: "Prices provider returned no records.",
+      }),
+    ]);
+    expect(batch.qualityEvents[0]).not.toHaveProperty("providerRecordId");
+  });
+
   it("flags missing timestamps in provider records", async () => {
     const provider = createMockMarketDataProvider({
       priceBars: [
@@ -95,9 +172,86 @@ describe("provider contracts and mock ingestion", () => {
       fixedClock,
     );
 
-    expect(batch.providerRecords[0]?.qualityStatus).toBe("partial");
+    expect(batch.run.status).toBe("failed");
+    expect(batch.providerRecords[0]?.qualityStatus).toBe("missing");
     expect(batch.qualityEvents.map((event) => event.message)).toContain(
       "Missing provider or retrieval timestamp.",
+    );
+  });
+
+  it("flags future provider timestamps as missing to prevent lookahead bias", async () => {
+    const provider = createMockMarketDataProvider({
+      priceBars: [
+        {
+          metadata: {
+            providerName: "mock-market-data",
+            providerRecordId: "future-timestamp",
+            retrievedAt: "2026-05-28T14:00:00.000Z",
+            providerTimestamp: "2026-05-29T14:00:00.000Z",
+            qualityStatus: "fresh",
+          },
+          symbol: "MSFT",
+          timestamp: "2026-05-01T20:00:00.000Z",
+          open: 100,
+          high: 105,
+          low: 99,
+          close: 104,
+          adjustedClose: 104,
+          volume: 1200000,
+          currency: "USD",
+        },
+      ],
+    });
+
+    const batch = await ingestPriceBars(
+      provider,
+      { symbol: "MSFT", from: "2026-05-01", to: "2026-05-01", interval: "1d" },
+      fixedClock,
+    );
+
+    expect(batch.providerRecords[0]?.qualityStatus).toBe("missing");
+    expect(batch.qualityEvents.map((event) => event.message)).toContain(
+      "Provider timestamp is in the future.",
+    );
+  });
+
+  it("flags unsafe price bar values before persistence", async () => {
+    const provider = createMockMarketDataProvider({
+      priceBars: [
+        {
+          metadata: {
+            providerName: "mock-market-data",
+            providerRecordId: "bad-price-bar",
+            retrievedAt: "2026-05-28T14:00:00.000Z",
+            providerTimestamp: "2026-05-28T14:00:00.000Z",
+            qualityStatus: "fresh",
+          },
+          symbol: "MSFT",
+          timestamp: "2026-05-01T20:00:00.000Z",
+          open: 100,
+          high: 98,
+          low: 99,
+          close: 104,
+          adjustedClose: 104,
+          volume: -1,
+          currency: "USD",
+        },
+      ],
+    });
+
+    const batch = await ingestPriceBars(
+      provider,
+      { symbol: "MSFT", from: "2026-05-01", to: "2026-05-01", interval: "1d" },
+      fixedClock,
+    );
+
+    expect(batch.providerRecords[0]?.qualityStatus).toBe("missing");
+    expect(batch.qualityEvents.map((event) => event.message)).toEqual(
+      expect.arrayContaining([
+        "Price bar high/low relationship is invalid.",
+        "Price bar OHLC bounds are invalid.",
+        "Price bar volume is negative.",
+      ]),
     );
   });
 
@@ -145,7 +299,7 @@ describe("provider contracts and mock ingestion", () => {
 
     const batch = await ingestNewsArticles(provider, { symbols: ["MSFT"] }, fixedClock);
 
-    expect(batch.providerRecords[1]?.qualityStatus).toBe("partial");
+    expect(batch.providerRecords[1]?.qualityStatus).toBe("missing");
     expect(batch.qualityEvents.map((event) => event.message)).toContain(
       "Duplicate news article detected.",
     );
@@ -173,7 +327,7 @@ describe("provider contracts and mock ingestion", () => {
 
     const batch = await ingestEarningsEvents(provider, { symbols: ["MSFT"] }, fixedClock);
 
-    expect(batch.providerRecords[0]?.qualityStatus).toBe("partial");
+    expect(batch.providerRecords[0]?.qualityStatus).toBe("missing");
     expect(batch.qualityEvents.map((event) => event.message)).toContain(
       "Unparseable earnings announcement date.",
     );
@@ -213,7 +367,7 @@ describe("provider contracts and mock ingestion", () => {
       fixedClock,
     );
 
-    expect(batch.providerRecords[0]?.qualityStatus).toBe("partial");
+    expect(batch.providerRecords[0]?.qualityStatus).toBe("missing");
     expect(batch.qualityEvents.map((event) => event.message)).toEqual(
       expect.arrayContaining([
         "Option quote has an inverted bid/ask spread.",

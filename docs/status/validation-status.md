@@ -1,25 +1,35 @@
 # Validation Status
 
-Last updated: 2026-05-28T21:10:33-04:00
+Last updated: 2026-05-28T21:33:48-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 3 provider ingestion validation |
-| Current task | Read-only provider selection API status surface added and validated |
+| Current task | Provider ingestion review hardening completed and validated |
 | Owner/agent | Codex founding CTO / lead architect / security reviewer / data quality reviewer |
 | Status | Completed |
 | Priority | High |
 | Category | Provider ingestion and data quality |
 | Blockers | None |
-| Next step | Commit provider selection API status surface, then continue with fixture expansion or a lightweight web status panel |
-| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/provider-selection.test.ts`, `scripts/smoke-api.mjs`, `docs/status/` |
+| Next step | Commit review fixes, then continue with fixture expansion or a lightweight web status panel |
+| Related docs/files | `packages/data`, `packages/db`, `apps/api/src/server.ts`, `docs/provider-configuration.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 3 review-fix aggregate CI | Completed | Typecheck, lint, format, 77 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after ingestion quarantine, lineage, idempotency, and provider terms-gate fixes | `npm.cmd run ci` |
+| Milestone 3 review-fix DB migration tests | Completed | 22 migration tests passed, including dataset-specific provider lineage triggers and natural-key normalized price deduplication | `npm.cmd run test --workspace @stockmarket/db -- migration` |
+| Milestone 3 review-fix DB ingestion sink tests | Completed | 5 ingestion sink tests passed, including idempotent retries, preserved audit trails for rejected data, duplicate-news quarantine, and invalid option-quote quarantine | `npm.cmd run test --workspace @stockmarket/db -- ingestion-sink` |
+| Milestone 3 review-fix data ingestion tests | Completed | 13 data ingestion tests passed, including run ID uniqueness, empty provider responses, missing/future timestamps, invalid price bars, duplicate news, invalid earnings dates, and options quote traps | `npm.cmd run test --workspace @stockmarket/data -- ingestion` |
+| Milestone 3 review-fix provider adapter tests | Completed | 4 provider adapter tests passed; paid-provider stubs remain deferred until terms review and do not require local keys today | `npm.cmd run test --workspace @stockmarket/data -- provider-adapters` |
+| Milestone 3 review-fix API dry-run test | Completed | Mock dry-run API passed without provider keys or broker execution and now reports in-memory non-durable persistence explicitly | `npm.cmd run test --workspace @stockmarket/api -- mock-ingestion` |
+| Milestone 3 review-fix whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown files | `git diff --check` |
+| Milestone 3 review-fix status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after review-fix status updates | `python -m json.tool docs/status/work-items.json` |
+| Milestone 3 review-fix secret-pattern scan | Completed | No secret-shaped tokens found in app, package, docs, Codex config, env example, or package files | `rg` secret-pattern scan |
+| Milestone 3 review-fix live-trading surface scan | Completed | Matches are documented guardrails, env rejection tests, safety docs, or deferred future-phase references; no live order implementation was introduced | `rg` live-trading/order-surface scan |
 | Milestone 3 provider selection API test | Completed | Route returns provider decisions with `requiresEnv: false`, no provider keys required now, mock as the only use-now provider, paid candidates evaluate-first, and broker-adjacent providers deferred | `npm.cmd run test --workspace @stockmarket/api -- provider-selection` |
 | Milestone 3 provider status API aggregate CI | Completed | Typecheck, lint, format, 68 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed; smoke now checks `/providers/selection` | `npm.cmd run ci` |
 | Milestone 3 provider selection tests | Completed | Red-green tests verified only mock providers are `use_now`, paid candidates remain provider-specific `evaluate_first`, broker-adjacent candidates defer, and official-source adapters remain later candidates | `npm.cmd run test --workspace @stockmarket/data -- provider-selection` |

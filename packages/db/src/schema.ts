@@ -98,6 +98,7 @@ export const priceBars = sqliteTable(
     providerRecordId: text("provider_record_id")
       .notNull()
       .references(() => providerRecords.id),
+    providerName: text("provider_name").notNull(),
     instrumentId: text("instrument_id").references(() => instruments.id),
     symbol: text("symbol").notNull(),
     barInterval: text("bar_interval", { enum: ["1d", "1h", "15m", "5m", "1m"] }).notNull(),
@@ -111,14 +112,15 @@ export const priceBars = sqliteTable(
     currency: text("currency").notNull().default("USD"),
   },
   (table) => [
-    uniqueIndex("price_bars_symbol_interval_timestamp_provider_unique").on(
+    uniqueIndex("price_bars_provider_symbol_interval_timestamp_unique").on(
+      table.providerName,
       table.symbol,
       table.barInterval,
       table.timestamp,
-      table.providerRecordId,
     ),
     index("price_bars_symbol_timestamp_idx").on(table.symbol, table.timestamp),
     index("price_bars_provider_record_idx").on(table.providerRecordId),
+    check("price_bars_provider_name_nonempty", sql`length(${table.providerName}) > 0`),
     check("price_bars_symbol_nonempty", sql`length(${table.symbol}) > 0`),
     check("price_bars_timestamp_nonempty", sql`length(${table.timestamp}) > 0`),
     check("price_bars_open_positive", sql`${table.open} > 0`),
@@ -146,6 +148,7 @@ export const newsArticles = sqliteTable(
     providerRecordId: text("provider_record_id")
       .notNull()
       .references(() => providerRecords.id),
+    providerName: text("provider_name").notNull(),
     symbol: text("symbol").notNull(),
     title: text("title").notNull(),
     url: text("url").notNull(),
@@ -160,6 +163,7 @@ export const newsArticles = sqliteTable(
     uniqueIndex("news_articles_duplicate_key_unique").on(table.duplicateKey),
     index("news_articles_symbol_published_idx").on(table.symbol, table.publishedAt),
     index("news_articles_provider_record_idx").on(table.providerRecordId),
+    check("news_articles_provider_name_nonempty", sql`length(${table.providerName}) > 0`),
     check("news_articles_symbol_nonempty", sql`length(${table.symbol}) > 0`),
     check("news_articles_title_nonempty", sql`length(${table.title}) > 0`),
     check("news_articles_url_nonempty", sql`length(${table.url}) > 0`),
@@ -181,6 +185,7 @@ export const earningsEvents = sqliteTable(
     providerRecordId: text("provider_record_id")
       .notNull()
       .references(() => providerRecords.id),
+    providerName: text("provider_name").notNull(),
     symbol: text("symbol").notNull(),
     fiscalPeriod: text("fiscal_period").notNull(),
     announcementDate: text("announcement_date").notNull(),
@@ -196,13 +201,15 @@ export const earningsEvents = sqliteTable(
     sourceUrl: text("source_url").notNull(),
   },
   (table) => [
-    uniqueIndex("earnings_events_symbol_period_provider_unique").on(
+    uniqueIndex("earnings_events_provider_symbol_period_date_unique").on(
+      table.providerName,
       table.symbol,
       table.fiscalPeriod,
-      table.providerRecordId,
+      table.announcementDate,
     ),
     index("earnings_events_symbol_date_idx").on(table.symbol, table.announcementDate),
     index("earnings_events_provider_record_idx").on(table.providerRecordId),
+    check("earnings_events_provider_name_nonempty", sql`length(${table.providerName}) > 0`),
     check("earnings_events_symbol_nonempty", sql`length(${table.symbol}) > 0`),
     check("earnings_events_period_nonempty", sql`length(${table.fiscalPeriod}) > 0`),
     check("earnings_events_date_nonempty", sql`length(${table.announcementDate}) > 0`),
@@ -217,6 +224,7 @@ export const optionQuotes = sqliteTable(
     providerRecordId: text("provider_record_id")
       .notNull()
       .references(() => providerRecords.id),
+    providerName: text("provider_name").notNull(),
     underlyingSymbol: text("underlying_symbol").notNull(),
     contractSymbol: text("contract_symbol").notNull(),
     expiration: text("expiration").notNull(),
@@ -238,13 +246,14 @@ export const optionQuotes = sqliteTable(
     liquidityFlagsJson: text("liquidity_flags_json").notNull().default("[]"),
   },
   (table) => [
-    uniqueIndex("option_quotes_contract_timestamp_provider_unique").on(
+    uniqueIndex("option_quotes_provider_contract_timestamp_unique").on(
+      table.providerName,
       table.contractSymbol,
       table.quoteTimestamp,
-      table.providerRecordId,
     ),
     index("option_quotes_underlying_expiration_idx").on(table.underlyingSymbol, table.expiration),
     index("option_quotes_provider_record_idx").on(table.providerRecordId),
+    check("option_quotes_provider_name_nonempty", sql`length(${table.providerName}) > 0`),
     check("option_quotes_underlying_nonempty", sql`length(${table.underlyingSymbol}) > 0`),
     check("option_quotes_contract_nonempty", sql`length(${table.contractSymbol}) > 0`),
     check("option_quotes_expiration_nonempty", sql`length(${table.expiration}) > 0`),

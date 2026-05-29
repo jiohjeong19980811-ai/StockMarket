@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createMockMarketDataProvider,
   createMockNewsProvider,
+  createMockOptionsProvider,
   ingestNewsArticles,
+  ingestOptionQuotes,
   ingestPriceBars,
   type IngestionClock,
 } from "@stockmarket/data";
@@ -89,14 +91,34 @@ describe("database ingestion sink", () => {
     );
     expect(result.rows).toEqual([
       {
-        severity: "warning",
-        quality_status: "partial",
+        severity: "error",
+        quality_status: "missing",
         message: "Missing provider or retrieval timestamp.",
       },
     ]);
+    expect(await countRows("ingestion_runs")).toBe(1);
+    expect(await countRows("provider_records")).toBe(1);
+    expect(await countRows("price_bars")).toBe(0);
   });
 
-  it("rolls back the whole batch when normalized inserts fail", async () => {
+  it("is idempotent when the same batch is persisted twice", async () => {
+    const provider = createMockMarketDataProvider();
+    const batch = await ingestPriceBars(
+      provider,
+      { symbol: "MSFT", from: "2026-05-01", to: "2026-05-02", interval: "1d" },
+      fixedClock,
+    );
+
+    await persistIngestionBatch(client, batch);
+    await persistIngestionBatch(client, batch);
+
+    expect(await countRows("ingestion_runs")).toBe(1);
+    expect(await countRows("provider_records")).toBe(2);
+    expect(await countRows("price_bars")).toBe(2);
+    expect(await countRows("data_quality_events")).toBe(0);
+  });
+
+  it("keeps an audit trail while quarantining duplicate normalized news", async () => {
     const provider = createMockNewsProvider({
       articles: [
         {
@@ -139,11 +161,61 @@ describe("database ingestion sink", () => {
     });
     const batch = await ingestNewsArticles(provider, { symbols: ["MSFT"] }, fixedClock);
 
-    await expect(persistIngestionBatch(client, batch)).rejects.toThrow();
+    await persistIngestionBatch(client, batch);
 
-    expect(await countRows("ingestion_runs")).toBe(0);
-    expect(await countRows("provider_records")).toBe(0);
-    expect(await countRows("news_articles")).toBe(0);
-    expect(await countRows("data_quality_events")).toBe(0);
+    expect(await countRows("ingestion_runs")).toBe(1);
+    expect(await countRows("provider_records")).toBe(2);
+    expect(await countRows("news_articles")).toBe(1);
+    expect(await countRows("data_quality_events")).toBe(1);
+
+    const result = await client.execute(
+      "SELECT severity, quality_status, message FROM data_quality_events",
+    );
+    expect(result.rows[0]).toMatchObject({
+      severity: "error",
+      quality_status: "missing",
+      message: "Duplicate news article detected.",
+    });
+  });
+
+  it("keeps an audit trail while quarantining invalid option quotes", async () => {
+    const provider = createMockOptionsProvider({
+      quotes: [
+        {
+          metadata: {
+            providerName: "mock-options",
+            providerRecordId: "option-1",
+            retrievedAt: "2026-05-28T14:00:00.000Z",
+            providerTimestamp: "2026-05-28T13:59:00.000Z",
+            qualityStatus: "fresh",
+          },
+          underlyingSymbol: "MSFT",
+          contractSymbol: "MSFT260619C00100000",
+          expiration: "2026-06-19",
+          strike: 100,
+          optionType: "call",
+          quoteTimestamp: "2026-05-28T13:59:00.000Z",
+          bid: 2.8,
+          ask: 2.4,
+          mid: 2.6,
+          volume: 150,
+          openInterest: 1200,
+          impliedVolatility: 0.42,
+          underlyingPrice: 101.1,
+        },
+      ],
+    });
+    const batch = await ingestOptionQuotes(
+      provider,
+      { underlyingSymbol: "MSFT", expiration: "2026-06-19" },
+      fixedClock,
+    );
+
+    await persistIngestionBatch(client, batch);
+
+    expect(await countRows("ingestion_runs")).toBe(1);
+    expect(await countRows("provider_records")).toBe(1);
+    expect(await countRows("option_quotes")).toBe(0);
+    expect(await countRows("data_quality_events")).toBe(1);
   });
 });

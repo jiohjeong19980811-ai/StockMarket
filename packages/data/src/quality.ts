@@ -6,6 +6,7 @@ import type {
   ProviderDataset,
   ProviderNewsArticle,
   ProviderOptionQuote,
+  ProviderPriceBar,
   QualityStatus,
 } from "./types.js";
 
@@ -76,11 +77,44 @@ export function providerMetadataFindings(
   const findings: QualityFinding[] = [];
   if (!isValidDate(metadata.retrievedAt) || !isValidDate(metadata.providerTimestamp)) {
     findings.push({
-      severity: "warning",
-      qualityStatus: "partial",
+      severity: "error",
+      qualityStatus: "missing",
       message: "Missing provider or retrieval timestamp.",
     });
     return findings;
+  }
+
+  const nowMs = Date.parse(clock.now());
+  const retrievedAtMs = Date.parse(metadata.retrievedAt);
+  const providerTimestampMs = Date.parse(metadata.providerTimestamp);
+  if (retrievedAtMs > nowMs) {
+    findings.push({
+      severity: "error",
+      qualityStatus: "missing",
+      message: "Retrieval timestamp is in the future.",
+    });
+  }
+  if (providerTimestampMs > nowMs) {
+    findings.push({
+      severity: "error",
+      qualityStatus: "missing",
+      message: "Provider timestamp is in the future.",
+    });
+  }
+  if (metadata.sourcePublishedAt !== undefined) {
+    if (!isValidDate(metadata.sourcePublishedAt)) {
+      findings.push({
+        severity: "error",
+        qualityStatus: "missing",
+        message: "Source published timestamp is invalid.",
+      });
+    } else if (Date.parse(metadata.sourcePublishedAt) > nowMs) {
+      findings.push({
+        severity: "error",
+        qualityStatus: "missing",
+        message: "Source published timestamp is in the future.",
+      });
+    }
   }
 
   const providerAgeMs = Date.parse(clock.now()) - Date.parse(metadata.providerTimestamp);
@@ -95,6 +129,55 @@ export function providerMetadataFindings(
   return findings;
 }
 
+export function priceBarFindings(bar: ProviderPriceBar): QualityFinding[] {
+  const findings: QualityFinding[] = [];
+
+  if (!isValidDate(bar.timestamp)) {
+    findings.push({
+      severity: "error",
+      qualityStatus: "missing",
+      message: "Price bar timestamp is invalid.",
+    });
+  }
+  if (bar.open <= 0 || bar.high <= 0 || bar.low <= 0 || bar.close <= 0) {
+    findings.push({
+      severity: "error",
+      qualityStatus: "missing",
+      message: "Price bar has nonpositive OHLC values.",
+    });
+  }
+  if (bar.adjustedClose !== undefined && bar.adjustedClose <= 0) {
+    findings.push({
+      severity: "error",
+      qualityStatus: "missing",
+      message: "Price bar adjusted close is nonpositive.",
+    });
+  }
+  if (bar.high < bar.low) {
+    findings.push({
+      severity: "error",
+      qualityStatus: "missing",
+      message: "Price bar high/low relationship is invalid.",
+    });
+  }
+  if (bar.high < bar.open || bar.high < bar.close || bar.low > bar.open || bar.low > bar.close) {
+    findings.push({
+      severity: "error",
+      qualityStatus: "missing",
+      message: "Price bar OHLC bounds are invalid.",
+    });
+  }
+  if (bar.volume < 0) {
+    findings.push({
+      severity: "error",
+      qualityStatus: "missing",
+      message: "Price bar volume is negative.",
+    });
+  }
+
+  return findings;
+}
+
 export function duplicateNewsFindings(
   article: ProviderNewsArticle,
   seenDuplicateKeys: Set<string>,
@@ -102,8 +185,8 @@ export function duplicateNewsFindings(
   if (seenDuplicateKeys.has(article.duplicateKey)) {
     return [
       {
-        severity: "warning",
-        qualityStatus: "partial",
+        severity: "error",
+        qualityStatus: "missing",
         message: "Duplicate news article detected.",
       },
     ];
@@ -116,8 +199,8 @@ export function earningsDateFindings(announcementDate: string): QualityFinding[]
   if (!isValidDate(announcementDate)) {
     return [
       {
-        severity: "warning",
-        qualityStatus: "partial",
+        severity: "error",
+        qualityStatus: "missing",
         message: "Unparseable earnings announcement date.",
       },
     ];
@@ -131,7 +214,7 @@ export function optionQuoteFindings(quote: ProviderOptionQuote): QualityFinding[
   if (quote.ask < quote.bid) {
     findings.push({
       severity: "error",
-      qualityStatus: "partial",
+      qualityStatus: "missing",
       message: "Option quote has an inverted bid/ask spread.",
     });
   }
@@ -144,8 +227,8 @@ export function optionQuoteFindings(quote: ProviderOptionQuote): QualityFinding[
   }
   if (quote.impliedVolatility <= 0) {
     findings.push({
-      severity: "warning",
-      qualityStatus: "partial",
+      severity: "error",
+      qualityStatus: "missing",
       message: "Option quote is missing usable implied volatility.",
     });
   }

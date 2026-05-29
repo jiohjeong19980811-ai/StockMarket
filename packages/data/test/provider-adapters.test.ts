@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ProviderHttpAdapterDeferredError,
   ProviderNotConfiguredError,
   createFinancialModelingPrepProvider,
   createFinnhubProvider,
@@ -27,7 +28,7 @@ describe("provider adapter stubs", () => {
     }
   });
 
-  it("rejects provider calls when required API keys are not configured", async () => {
+  it("keeps provider calls deferred before requiring API keys", async () => {
     const polygon = createPolygonProvider({});
     const fmp = createFinancialModelingPrepProvider({});
     const finnhub = createFinnhubProvider({});
@@ -39,13 +40,26 @@ describe("provider adapter stubs", () => {
         to: "2026-05-02",
         interval: "1d",
       }),
-    ).rejects.toThrow(ProviderNotConfiguredError);
+    ).rejects.toThrow(ProviderHttpAdapterDeferredError);
     await expect(fmp.getNewsArticles({ symbols: ["MSFT"] })).rejects.toThrow(
-      ProviderNotConfiguredError,
+      ProviderHttpAdapterDeferredError,
     );
     await expect(finnhub.getEarningsEvents({ symbols: ["MSFT"] })).rejects.toThrow(
-      ProviderNotConfiguredError,
+      ProviderHttpAdapterDeferredError,
     );
+  });
+
+  it("requires provider-specific keys only after explicit terms review enablement", async () => {
+    const polygon = createPolygonProvider({ termsReviewed: true });
+
+    await expect(
+      polygon.getPriceBars({
+        symbol: "MSFT",
+        from: "2026-05-01",
+        to: "2026-05-02",
+        interval: "1d",
+      }),
+    ).rejects.toThrow(ProviderNotConfiguredError);
   });
 
   it("keeps configured HTTP adapters deferred until provider terms are reviewed", async () => {

@@ -149,3 +149,15 @@ Reason: The MVP must avoid accidental secret handling and premature vendor lock-
 Decision: Encode provider selection as deterministic local metadata before enabling any real provider HTTP adapter. Mock providers are the only `use_now` option; Polygon.io/Massive, Financial Modeling Prep, and Finnhub are `evaluate_first`; SEC EDGAR, FRED, and Cboe DataShop are `evaluate_later`; Tradier and Alpaca remain deferred because broker/order-placement surfaces must stay isolated from MVP ingestion.
 
 Reason: Provider evaluation should be auditable and provider-specific without requiring local secrets, generic key names, or premature paid-provider lock-in.
+
+## 2026-05-28: Provider Adapter Terms Gate
+
+Decision: Keep real provider HTTP adapter stubs fail-closed until provider terms are reviewed, even if a local provider-specific API key exists.
+
+Reason: The project should not accidentally activate paid-provider network calls, storage obligations, or redistribution/licensing risk before provider decisions are finalized. Mock providers remain the only active data source for current development.
+
+## 2026-05-28: Ingestion Quarantine And Audit Policy
+
+Decision: Treat missing timestamps, future timestamps, invalid price bars, duplicate news records, invalid earnings dates, inverted option quotes, and unusable implied volatility as merge-blocking data quality failures. Persist ingestion runs, provider records, and data-quality events for rejected records, but quarantine missing-quality records from normalized strategy datasets.
+
+Reason: Bad data should not disappear during rollback or silently enter backtests and scoring. The platform needs auditability for rejected provider data while protecting downstream research from lookahead bias, stale/empty responses, invalid market data, and options quote traps.

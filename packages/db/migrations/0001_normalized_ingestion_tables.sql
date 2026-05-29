@@ -1,6 +1,7 @@
 CREATE TABLE price_bars (
   id TEXT PRIMARY KEY,
   provider_record_id TEXT NOT NULL REFERENCES provider_records(id),
+  provider_name TEXT NOT NULL CHECK (length(provider_name) > 0),
   instrument_id TEXT REFERENCES instruments(id),
   symbol TEXT NOT NULL CHECK (length(symbol) > 0),
   bar_interval TEXT NOT NULL CHECK (bar_interval IN ('1d', '1h', '15m', '5m', '1m')),
@@ -15,7 +16,7 @@ CREATE TABLE price_bars (
   CHECK (high >= low),
   CHECK (high >= open AND high >= close),
   CHECK (low <= open AND low <= close),
-  UNIQUE (symbol, bar_interval, timestamp, provider_record_id)
+  UNIQUE (provider_name, symbol, bar_interval, timestamp)
 );
 
 CREATE INDEX price_bars_symbol_timestamp_idx ON price_bars(symbol, timestamp);
@@ -24,6 +25,7 @@ CREATE INDEX price_bars_provider_record_idx ON price_bars(provider_record_id);
 CREATE TABLE news_articles (
   id TEXT PRIMARY KEY,
   provider_record_id TEXT NOT NULL REFERENCES provider_records(id),
+  provider_name TEXT NOT NULL CHECK (length(provider_name) > 0),
   symbol TEXT NOT NULL CHECK (length(symbol) > 0),
   title TEXT NOT NULL CHECK (length(title) > 0),
   url TEXT NOT NULL CHECK (length(url) > 0),
@@ -42,6 +44,7 @@ CREATE INDEX news_articles_provider_record_idx ON news_articles(provider_record_
 CREATE TABLE earnings_events (
   id TEXT PRIMARY KEY,
   provider_record_id TEXT NOT NULL REFERENCES provider_records(id),
+  provider_name TEXT NOT NULL CHECK (length(provider_name) > 0),
   symbol TEXT NOT NULL CHECK (length(symbol) > 0),
   fiscal_period TEXT NOT NULL CHECK (length(fiscal_period) > 0),
   announcement_date TEXT NOT NULL CHECK (length(announcement_date) > 0),
@@ -53,7 +56,7 @@ CREATE TABLE earnings_events (
   revenue_actual REAL,
   guidance_text TEXT NOT NULL DEFAULT '',
   source_url TEXT NOT NULL CHECK (length(source_url) > 0),
-  UNIQUE (symbol, fiscal_period, provider_record_id)
+  UNIQUE (provider_name, symbol, fiscal_period, announcement_date)
 );
 
 CREATE INDEX earnings_events_symbol_date_idx ON earnings_events(symbol, announcement_date);
@@ -62,6 +65,7 @@ CREATE INDEX earnings_events_provider_record_idx ON earnings_events(provider_rec
 CREATE TABLE option_quotes (
   id TEXT PRIMARY KEY,
   provider_record_id TEXT NOT NULL REFERENCES provider_records(id),
+  provider_name TEXT NOT NULL CHECK (length(provider_name) > 0),
   underlying_symbol TEXT NOT NULL CHECK (length(underlying_symbol) > 0),
   contract_symbol TEXT NOT NULL CHECK (length(contract_symbol) > 0),
   expiration TEXT NOT NULL CHECK (length(expiration) > 0),
@@ -86,8 +90,60 @@ CREATE TABLE option_quotes (
   ),
   CHECK (ask >= bid),
   CHECK (mid >= bid AND mid <= ask),
-  UNIQUE (contract_symbol, quote_timestamp, provider_record_id)
+  UNIQUE (provider_name, contract_symbol, quote_timestamp)
 );
 
 CREATE INDEX option_quotes_underlying_expiration_idx ON option_quotes(underlying_symbol, expiration);
 CREATE INDEX option_quotes_provider_record_idx ON option_quotes(provider_record_id);
+
+CREATE TRIGGER price_bars_provider_record_dataset_guard
+BEFORE INSERT ON price_bars
+FOR EACH ROW
+BEGIN
+  SELECT RAISE(ABORT, 'price_bars provider_record_id must reference a prices provider record')
+  WHERE NOT EXISTS (
+    SELECT 1 FROM provider_records
+    WHERE id = NEW.provider_record_id
+      AND provider_name = NEW.provider_name
+      AND provider_dataset = 'prices'
+  );
+END;
+
+CREATE TRIGGER news_articles_provider_record_dataset_guard
+BEFORE INSERT ON news_articles
+FOR EACH ROW
+BEGIN
+  SELECT RAISE(ABORT, 'news_articles provider_record_id must reference a news provider record')
+  WHERE NOT EXISTS (
+    SELECT 1 FROM provider_records
+    WHERE id = NEW.provider_record_id
+      AND provider_name = NEW.provider_name
+      AND provider_dataset = 'news'
+  );
+END;
+
+CREATE TRIGGER earnings_events_provider_record_dataset_guard
+BEFORE INSERT ON earnings_events
+FOR EACH ROW
+BEGIN
+  SELECT RAISE(ABORT, 'earnings_events provider_record_id must reference an earnings provider record')
+  WHERE NOT EXISTS (
+    SELECT 1 FROM provider_records
+    WHERE id = NEW.provider_record_id
+      AND provider_name = NEW.provider_name
+      AND provider_dataset = 'earnings'
+  );
+END;
+
+CREATE TRIGGER option_quotes_provider_record_dataset_guard
+BEFORE INSERT ON option_quotes
+FOR EACH ROW
+BEGIN
+  SELECT RAISE(ABORT, 'option_quotes provider_record_id must reference an options provider record')
+  WHERE NOT EXISTS (
+    SELECT 1 FROM provider_records
+    WHERE id = NEW.provider_record_id
+      AND provider_name = NEW.provider_name
+      AND provider_dataset = 'options'
+  );
+END;

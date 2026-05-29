@@ -51,9 +51,10 @@ Each adapter must define:
 The ingestion layer must flag:
 
 - Missing timestamps.
+- Future-dated retrieval, provider, or source timestamps that could introduce lookahead bias.
 - Stale data.
 - Empty or partial responses.
-- Suspicious price jumps not explained by splits.
+- Suspicious or structurally invalid price bars, including invalid timestamps, nonpositive OHLC values, broken high/low bounds, negative volume, or price jumps not explained by splits.
 - Options contracts with missing bid, ask, IV, open interest, or volume.
 - Provider disagreement beyond configured tolerances.
 - Duplicate news articles.
@@ -106,3 +107,4 @@ Provider selection scoring is tracked in `packages/data/src/provider-selection.t
 - Mock providers must exist so tests and demos do not require paid keys.
 - Any provider that cannot supply timestamps or data lineage should lower confidence or be excluded from recommendations.
 - Broker APIs must be modeled separately from market data APIs so order-placement capability cannot accidentally appear in MVP.
+- Missing or unusable provider records must preserve ingestion-run, provider-record, and data-quality audit trails while being quarantined from normalized strategy datasets.
