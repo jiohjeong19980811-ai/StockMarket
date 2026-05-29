@@ -1,25 +1,32 @@
 # Validation Status
 
-Last updated: 2026-05-29T09:09:05-04:00
+Last updated: 2026-05-29T09:17:05-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6 paper trading validation |
-| Current task | Show paper-trade evidence summary in the operator console |
+| Current task | Add durable paper-trade read model and mock API dry run |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Paper trading UI and validation evidence |
+| Category | Paper trading read model and validation evidence |
 | Blockers | None |
-| Next step | Commit the evidence summary UI slice, then continue Milestone 6 with durable paper-trade read APIs or backtesting integration. |
-| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `docs/architecture.md`, `docs/product-roadmap.md`, `docs/status/` |
+| Next step | Commit the read-model slice, then continue Milestone 6 with UI/read API integration or backtesting ingestion of paper-trade evidence. |
+| Related docs/files | `packages/db/src/paper-trade-ledger.ts`, `packages/db/test/paper-trade-ledger.test.ts`, `apps/api/src/server.ts`, `apps/api/test/paper-trading.test.ts`, `scripts/smoke-api.mjs`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 paper-trade read model aggregate CI | Completed | Typecheck, lint, format, 122 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding the DB read helper and `/paper-trading/mock-read-model-dry-run` | `npm.cmd run ci` |
+| Milestone 6 paper-trade read model DB focused test | Completed | Red-green DB paper-trade ledger tests passed for listing persisted trades, reading by ID, audit links, parsed invalidation conditions, safe flags, and computed closed outcomes | `npm.cmd run test --workspace @stockmarket/db -- paper-trade-ledger` |
+| Milestone 6 paper-trade read model API focused test | Completed | Red-green API paper-trading tests passed for the mock read-model dry run after refreshing the DB package build output | `npm.cmd run test --workspace @stockmarket/api -- paper-trading` |
+| Milestone 6 paper-trade read model status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-014 | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 paper-trade read model whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 6 paper-trade read model secret-pattern scan | Completed | No secret-shaped tokens found in changed API/DB/smoke/status/doc files | `rg` secret-pattern scan |
+| Milestone 6 paper-trade read model live-trading surface scan | Completed | Matches are documented prohibitions, explicit no-broker wording, or safety assertions; no live order implementation was introduced | `rg` live-trading/order-surface scan |
 | Milestone 6 paper-trade evidence summary UI aggregate CI | Completed | Typecheck, lint, format, 119 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding the operator evidence summary panel | `npm.cmd run ci` |
 | Milestone 6 paper-trade evidence summary UI focused test | Completed | Red-green web test passed for API-online evidence summary metrics and API-offline evidence fallback snapshot | `npm.cmd run test --workspace @stockmarket/web -- App` |
 | Milestone 6 paper-trade evidence summary UI status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-013 | `python -m json.tool docs/status/work-items.json` |

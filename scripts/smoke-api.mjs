@@ -177,6 +177,31 @@ try {
     throw new Error(`Unexpected mock paper-trade close response: ${paperCloseResponse.body}`);
   }
 
+  const paperReadModelResponse = await server.inject({
+    method: "POST",
+    url: "/paper-trading/mock-read-model-dry-run",
+  });
+
+  if (paperReadModelResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /paper-trading/mock-read-model-dry-run to return 200, got ${paperReadModelResponse.statusCode}`,
+    );
+  }
+
+  const paperReadModelBody = paperReadModelResponse.json();
+  if (
+    paperReadModelBody.requiresEnv !== false ||
+    paperReadModelBody.liveTradingEnabled !== false ||
+    paperReadModelBody.persistence?.durable !== false ||
+    paperReadModelBody.persistedInMemory?.paperTrades !== 1 ||
+    paperReadModelBody.trades?.[0]?.brokerExecution !== false ||
+    paperReadModelBody.trades?.[0]?.outcome?.realizedPnl !== 60
+  ) {
+    throw new Error(
+      `Unexpected mock paper-trade read-model response: ${paperReadModelResponse.body}`,
+    );
+  }
+
   const paperEvidenceSummaryResponse = await server.inject({
     method: "GET",
     url: "/paper-trading/mock-evidence-summary",

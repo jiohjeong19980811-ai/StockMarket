@@ -44,6 +44,7 @@ Acceptance criteria:
 - Durable paper-trade records remain paper-only, stock-only for MVP, and cannot store live-trading or broker-execution flags.
 - API smoke can verify a mock paper-trade decision is persisted through an in-memory ledger dry run without provider keys or broker execution.
 - API smoke can verify a mock paper trade opens and closes through the in-memory ledger with close audit linkage.
+- API smoke can verify persisted paper trades can be read back through a safe paper-only read model with audit links and computed simulated outcomes.
 - API smoke can verify a mock paper-trade evidence summary with closed-trade metrics and review-gated status.
 - Operator console can show simulated paper-trade close outcome, P/L, return percent, exit price, and lessons from the mock close dry run.
 - Operator console can show paper-trade evidence summary metrics, including closed/open counts, win rate, realized P/L, review status, and validation-only messaging.

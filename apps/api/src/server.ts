@@ -15,6 +15,7 @@ import {
 import {
   closePersistedPaperTrade,
   createLocalClient,
+  listPersistedPaperTrades,
   persistIngestionBatch,
   persistPaperTrade,
   runMigrations,
@@ -676,6 +677,87 @@ export function buildServer(env: ApiEnv) {
                 exitReason: ledgerRow.exit_reason,
                 lessonsLearned: ledgerRow.lessons_learned,
               },
+      };
+    } finally {
+      client.close();
+    }
+  });
+
+  server.post("/paper-trading/mock-read-model-dry-run", async () => {
+    const client = await createLocalClient();
+    const openResult = createPaperTrade(mockPaperTradeRequest);
+
+    try {
+      await runMigrations(client);
+
+      if (openResult.status === "accepted" && openResult.trade.instrumentType === "stock") {
+        await seedMockPaperTradeLedgerDependencies(client, openResult.trade.id);
+        await persistPaperTrade(client, {
+          id: openResult.trade.id,
+          recommendationId: openResult.trade.recommendationId,
+          accountId: "paper_account_mock",
+          ticker: openResult.trade.ticker,
+          instrumentType: openResult.trade.instrumentType,
+          strategyVersionId: openResult.trade.strategyVersion,
+          operatorApprovalAuditLogId: openResult.trade.audit.auditLogId,
+          entryAuditLogId: "audit_mock_paper_entry_1",
+          thesisSnapshot: openResult.trade.thesisSnapshot,
+          entryReason: "Mock API read-model dry-run accepted a simulated stock paper entry.",
+          downsideScenario: mockPaperTradeRecommendation.downsideScenario,
+          invalidationConditions: mockPaperTradeRecommendation.invalidationConditions,
+          entryType: "market",
+          requestedEntryPrice: mockPaperTradeRequest.entry.entryPrice,
+          simulatedEntryPrice: openResult.trade.entryPrice,
+          quantity: openResult.trade.quantity,
+          enteredAt: openResult.trade.openedAt,
+          stopLoss: openResult.trade.stopLossPrice,
+          profitTarget: openResult.trade.profitTargetPrice,
+          timeStopAt: "2026-06-11T20:00:00.000Z",
+          maxLossAmount: openResult.trade.risk.maxLoss,
+          accountEquityAtEntry: openResult.trade.risk.accountEquityAtOpen,
+          singleNameExposurePct: openResult.trade.risk.singleNameExposurePct,
+          sectorExposurePct: openResult.trade.risk.sectorExposurePct,
+          correlatedExposurePct: openResult.trade.risk.correlatedExposurePct,
+          dailyLossPctAtEntry: openResult.trade.risk.currentDailyLossPct,
+          createdAt: openResult.trade.openedAt,
+          updatedAt: openResult.trade.openedAt,
+        });
+
+        const closeResult = closePaperTrade(openResult.trade, mockPaperTradeExitRequest);
+        if (closeResult.status === "accepted") {
+          await seedMockPaperTradeCloseAuditLog(client, closeResult.trade.id);
+          await closePersistedPaperTrade(client, {
+            id: closeResult.trade.id,
+            closeAuditLogId: closeResult.trade.exitAudit.auditLogId,
+            closedAt: closeResult.trade.closedAt,
+            exitPrice: closeResult.trade.exitPrice,
+            exitReason: closeResult.trade.exitReason,
+            lessonsLearned: closeResult.trade.lessons[closeResult.trade.lessons.length - 1] ?? "",
+            updatedAt: closeResult.trade.closedAt,
+          });
+        }
+      }
+
+      return {
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+          note: "Dry-run paper-trade read model data is discarded after the response.",
+        },
+        persistedInMemory: {
+          recommendations: await countRows(client, "recommendations"),
+          auditLogs: await countRows(client, "audit_logs"),
+          paperTrades: await countRows(client, "paper_trades"),
+        },
+        trades: await listPersistedPaperTrades(client, {
+          accountId: "paper_account_mock",
+          limit: 10,
+        }),
       };
     } finally {
       client.close();

@@ -251,3 +251,9 @@ Reason: The API, UI, and future backtesting views need a stable paper-trade evid
 Decision: Show `/paper-trading/mock-evidence-summary` in the operator console as a validation-only evidence panel with review status, closed/open counts, win rate, realized P/L, average return, average risk, and non-recommendation wording.
 
 Reason: Operators need to see whether paper-trade outcomes are accumulating enough evidence for review without treating the sample as a profitable strategy claim. The UI should reinforce that backtesting and operator review remain required before any strategy promotion.
+
+## 2026-05-29: Paper-Trade Read Model
+
+Decision: Add a DB paper-trade read helper and `/paper-trading/mock-read-model-dry-run` so persisted simulated trades can be read back as a safe, paper-only contract with audit links, risk snapshots, invalidation conditions, and computed closed-trade outcomes.
+
+Reason: Paper-trade records need a reusable read shape before UI, reports, or backtesting consume durable ledger data. The read path must preserve the no-live-trading and no-broker-execution boundary instead of exposing raw database rows.

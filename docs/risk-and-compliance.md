@@ -167,6 +167,8 @@ Closing a paper trade requires timestamped exit price evidence, an exit reason, 
 
 Persisted closes must update an open paper trade exactly once and must include close audit linkage. Duplicate closes, missing close audit IDs, missing exit details, or missing lessons learned are blocked.
 
+Persisted paper-trade read models must preserve the paper-only boundary when records are returned to APIs, UI, reports, or backtesting. Read helpers should include audit references, entry risk snapshots, invalidation conditions, and computed simulated outcomes, and they must reject or surface unsafe records if live-trading or broker-execution flags ever appear.
+
 Options paper trades remain rejected until the options strategy policy is explicitly promoted after historical options chain and fill-model validation.
 
 ## Audit Requirements

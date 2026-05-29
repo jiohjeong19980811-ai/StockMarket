@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   closePersistedPaperTrade,
   createLocalClient,
+  getPersistedPaperTradeById,
+  listPersistedPaperTrades,
   persistPaperTrade,
   runMigrations,
 } from "../src/index.js";
@@ -252,6 +254,87 @@ describe("paper trade ledger persistence", () => {
         updatedAt: "2026-05-07T20:00:00Z",
       }),
     ).rejects.toThrow(/open paper trade/i);
+  });
+
+  it("reads persisted paper trades as safe audit-linked read models", async () => {
+    await seedPaperTradeDependencies();
+    await seedCloseAuditLog();
+    await persistOpenPaperTrade();
+
+    await closePersistedPaperTrade(client, {
+      id: "paper_trade_1",
+      closeAuditLogId: "audit_paper_trade_close_1",
+      closedAt: "2026-05-06T20:00:00Z",
+      exitPrice: 430,
+      exitReason: "Profit target review hit.",
+      lessonsLearned: "Follow-through appeared before the time stop.",
+      updatedAt: "2026-05-06T20:00:00Z",
+    });
+
+    const trades = await listPersistedPaperTrades(client, {
+      accountId: "paper_account_default",
+      status: "closed",
+    });
+
+    expect(trades).toHaveLength(1);
+    expect(trades[0]).toMatchObject({
+      id: "paper_trade_1",
+      recommendationId: "rec_1",
+      accountId: "paper_account_default",
+      mode: "paper",
+      status: "closed",
+      ticker: "MSFT",
+      instrumentType: "stock",
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      invalidationConditions: ["Close below event low"],
+      audit: {
+        operatorApprovalAuditLogId: "audit_paper_trade_approval_1",
+        entryAuditLogId: "audit_paper_trade_entry_1",
+        exitAuditLogId: "audit_paper_trade_close_1",
+      },
+      entry: {
+        type: "market",
+        requestedPrice: 410,
+        simulatedPrice: 410,
+        quantity: 2,
+        enteredAt: now,
+        stopLoss: 395,
+        profitTarget: 435,
+        timeStopAt: "2026-05-15T20:00:00Z",
+      },
+      risk: {
+        maxLossAmount: 300,
+        riskPctOfEquity: 0.3,
+        accountEquityAtEntry: 100000,
+        singleNameExposurePct: 0.82,
+        sectorExposurePct: 8,
+        correlatedExposurePct: 10,
+        dailyLossPctAtEntry: 0.4,
+      },
+      outcome: {
+        closedAt: "2026-05-06T20:00:00Z",
+        exitPrice: 430,
+        exitReason: "Profit target review hit.",
+        lessonsLearned: "Follow-through appeared before the time stop.",
+        realizedPnl: 40,
+        realizedReturnPct: 4.878,
+      },
+    });
+  });
+
+  it("returns a single persisted paper trade by ID and null for missing IDs", async () => {
+    await seedPaperTradeDependencies();
+    await persistOpenPaperTrade();
+
+    await expect(getPersistedPaperTradeById(client, "missing_trade")).resolves.toBeNull();
+    await expect(getPersistedPaperTradeById(client, "paper_trade_1")).resolves.toMatchObject({
+      id: "paper_trade_1",
+      status: "open",
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      outcome: null,
+    });
   });
 
   it("inherits database safety gates when a recommendation is not paper-trade eligible", async () => {
