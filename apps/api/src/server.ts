@@ -22,6 +22,7 @@ import {
 import {
   closePaperTrade,
   createPaperTrade,
+  summarizePaperTradeEvidence,
   type PaperTradeExitRequest,
   type PaperTradeRequest,
 } from "@stockmarket/paper-trading";
@@ -192,6 +193,25 @@ const mockPaperTradeRequest: PaperTradeRequest = {
   },
 };
 
+function mockPaperTradeRequestVariant(
+  requestedAt: string,
+  approvalAuditLogId: string,
+  approvalNotes: string,
+): PaperTradeRequest {
+  return {
+    ...mockPaperTradeRequest,
+    entry: {
+      ...mockPaperTradeRequest.entry,
+      requestedAt,
+    },
+    operatorApproval: {
+      ...mockPaperTradeRequest.operatorApproval,
+      auditLogId: approvalAuditLogId,
+      notes: approvalNotes,
+    },
+  };
+}
+
 const mockPaperTradeExitRequest: PaperTradeExitRequest = {
   exitedAt: "2026-05-31T20:00:00.000Z",
   exitPrice: 106,
@@ -200,6 +220,22 @@ const mockPaperTradeExitRequest: PaperTradeExitRequest = {
   lessonsLearned: "Mock paper trade followed through before the time stop.",
   auditLogId: "audit_mock_paper_close_1",
 };
+
+function acceptedPaperTradeOrThrow(result: ReturnType<typeof createPaperTrade>) {
+  if (result.status !== "accepted") {
+    throw new Error(`Expected mock paper trade to be accepted: ${result.reasonCodes.join(",")}`);
+  }
+  return result.trade;
+}
+
+function closedPaperTradeOrThrow(result: ReturnType<typeof closePaperTrade>) {
+  if (result.status !== "accepted") {
+    throw new Error(
+      `Expected mock paper trade close to be accepted: ${result.reasonCodes.join(",")}`,
+    );
+  }
+  return result.trade;
+}
 
 async function countRows(client: LocalClient, tableName: DryRunTableName) {
   const result = await client.execute(`SELECT COUNT(*) AS count FROM ${tableName}`);
@@ -644,6 +680,60 @@ export function buildServer(env: ApiEnv) {
     } finally {
       client.close();
     }
+  });
+
+  server.get("/paper-trading/mock-evidence-summary", async () => {
+    const openTrade = acceptedPaperTradeOrThrow(
+      createPaperTrade(
+        mockPaperTradeRequestVariant(
+          "2026-06-01T15:00:00.000Z",
+          "audit_mock_paper_open_pending_1",
+          "Mock open paper trade for evidence summary counts.",
+        ),
+      ),
+    );
+    const winner = closedPaperTradeOrThrow(
+      closePaperTrade(acceptedPaperTradeOrThrow(createPaperTrade(mockPaperTradeRequest)), {
+        ...mockPaperTradeExitRequest,
+        auditLogId: "audit_mock_paper_close_1",
+      }),
+    );
+    const loser = closedPaperTradeOrThrow(
+      closePaperTrade(
+        acceptedPaperTradeOrThrow(
+          createPaperTrade(
+            mockPaperTradeRequestVariant(
+              "2026-05-29T15:00:00.000Z",
+              "audit_mock_paper_open_loss_1",
+              "Mock losing paper trade for evidence summary counts.",
+            ),
+          ),
+        ),
+        {
+          ...mockPaperTradeExitRequest,
+          exitPrice: 95,
+          exitReason: "Mock stop review hit during paper-trade validation.",
+          lessonsLearned: "Mock loser respected the stop before thesis damage grew.",
+          auditLogId: "audit_mock_paper_close_loss_1",
+        },
+      ),
+    );
+
+    return {
+      mode: "mock",
+      requiresEnv: false,
+      liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+      providerKeysRequired: [],
+      notRecommendation: true,
+      persistence: {
+        scope: "in_memory",
+        durable: false,
+        note: "Mock paper-trade evidence summary data is generated in memory.",
+      },
+      summary: summarizePaperTradeEvidence([openTrade, winner, loser], {
+        minimumClosedTradesForReview: 2,
+      }),
+    };
   });
 
   server.post("/ingestion/mock-dry-run", async () => {

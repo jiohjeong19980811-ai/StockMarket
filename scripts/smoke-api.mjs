@@ -177,6 +177,32 @@ try {
     throw new Error(`Unexpected mock paper-trade close response: ${paperCloseResponse.body}`);
   }
 
+  const paperEvidenceSummaryResponse = await server.inject({
+    method: "GET",
+    url: "/paper-trading/mock-evidence-summary",
+  });
+
+  if (paperEvidenceSummaryResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /paper-trading/mock-evidence-summary to return 200, got ${paperEvidenceSummaryResponse.statusCode}`,
+    );
+  }
+
+  const paperEvidenceSummaryBody = paperEvidenceSummaryResponse.json();
+  if (
+    paperEvidenceSummaryBody.requiresEnv !== false ||
+    paperEvidenceSummaryBody.liveTradingEnabled !== false ||
+    paperEvidenceSummaryBody.persistence?.durable !== false ||
+    paperEvidenceSummaryBody.summary?.notRecommendation !== true ||
+    paperEvidenceSummaryBody.summary?.brokerExecution !== false ||
+    paperEvidenceSummaryBody.summary?.reviewStatus !== "ready_for_review" ||
+    paperEvidenceSummaryBody.summary?.closedTrades !== 2
+  ) {
+    throw new Error(
+      `Unexpected mock paper-trade evidence summary response: ${paperEvidenceSummaryResponse.body}`,
+    );
+  }
+
   console.log("API smoke ok");
 } finally {
   await server.close();

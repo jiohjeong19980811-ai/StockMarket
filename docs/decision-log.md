@@ -239,3 +239,9 @@ Reason: The Vite web app and Fastify API run on separate local ports. Browser in
 Decision: Add `summarizePaperTradeEvidence` to `@stockmarket/paper-trading` so closed simulated trades can produce validation metrics without becoming recommendations or strategy promotions.
 
 Reason: Paper-trading outcomes need a deterministic bridge into validation. The summary must separate open trades from closed performance, require audit-linked closes, block broker/live-shaped records, and keep backtesting plus operator review as prerequisites before any strategy decision changes.
+
+## 2026-05-29: Paper-Trade Evidence Summary API
+
+Decision: Expose `/paper-trading/mock-evidence-summary` as a non-durable API contract that creates mock open/closed paper trades in memory and returns `summarizePaperTradeEvidence`.
+
+Reason: The API, UI, and future backtesting views need a stable paper-trade evidence summary shape before durable read APIs exist. Keeping the route mock-only preserves the no-provider-key, no-broker-execution, and no-recommendation boundaries.
