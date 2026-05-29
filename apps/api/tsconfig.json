@@ -9,5 +9,9 @@
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/data" }, { "path": "../../packages/db" }]
+  "references": [
+    { "path": "../../packages/data" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/scoring" }
+  ]
 }

@@ -63,6 +63,27 @@ try {
     throw new Error(`Unexpected mock dry-run response: ${dryRunResponse.body}`);
   }
 
+  const scoringResponse = await server.inject({
+    method: "GET",
+    url: "/scoring/mock-evaluation",
+  });
+
+  if (scoringResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /scoring/mock-evaluation to return 200, got ${scoringResponse.statusCode}`,
+    );
+  }
+
+  const scoringBody = scoringResponse.json();
+  if (
+    scoringBody.requiresEnv !== false ||
+    scoringBody.liveTradingEnabled !== false ||
+    scoringBody.notRecommendation !== true ||
+    scoringBody.result?.decision !== "watchlist"
+  ) {
+    throw new Error(`Unexpected mock scoring response: ${scoringResponse.body}`);
+  }
+
   console.log("API smoke ok");
 } finally {
   await server.close();

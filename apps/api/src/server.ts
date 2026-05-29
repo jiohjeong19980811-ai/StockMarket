@@ -13,6 +13,7 @@ import {
   type IngestionClock,
 } from "@stockmarket/data";
 import { createLocalClient, persistIngestionBatch, runMigrations } from "@stockmarket/db";
+import { scoreOpportunity, type ScoringInput } from "@stockmarket/scoring";
 import type { ApiEnv } from "./env.js";
 
 type DryRunTableName =
@@ -23,6 +24,63 @@ type DryRunTableName =
   | "earnings_events"
   | "option_quotes"
   | "data_quality_events";
+
+const mockScoringInput: ScoringInput = {
+  id: "mock-score-MSFT-momentum-watchlist",
+  ticker: "MSFT",
+  instrumentType: "stock",
+  strategyFamily: "momentum",
+  evidenceStatus: "research_only",
+  evidenceIds: [],
+  dataFreshness: {
+    status: "fresh",
+    asOf: "2026-05-28T14:30:00.000Z",
+    notes: [],
+  },
+  sourceCitations: [
+    {
+      title: "Mock daily price history",
+      url: "https://example.test/mock/msft/prices",
+      source: "mock-provider",
+      publishedAt: "2026-05-28T14:00:00.000Z",
+      retrievedAt: "2026-05-28T14:30:00.000Z",
+    },
+  ],
+  componentSignals: [
+    {
+      component: "momentum",
+      score: 78,
+      weight: 0.5,
+      explanation: "Mock trend strength is positive but still research-only.",
+    },
+    {
+      component: "liquidity",
+      score: 86,
+      weight: 0.3,
+      explanation: "Mock dollar volume clears the stock liquidity floor.",
+    },
+    {
+      component: "risk",
+      score: 80,
+      weight: 0.2,
+      explanation: "Paper exposure is inside default risk limits.",
+    },
+  ],
+  liquidity: {
+    score: 86,
+    averageDailyDollarVolume: 60_000_000,
+    spreadPercentOfMid: 0.02,
+    passes: true,
+  },
+  paperExposure: {
+    proposedPositionRiskPct: 0.25,
+    singleNameExposurePct: 3,
+    sectorExposurePct: 10,
+    correlatedExposurePct: 7,
+    dailyLossPct: 0.4,
+    aggregateOptionsPremiumPct: 0,
+  },
+};
 
 async function countRows(
   client: Awaited<ReturnType<typeof createLocalClient>>,
@@ -65,6 +123,15 @@ export function buildServer(env: ApiEnv) {
       candidates,
     };
   });
+
+  server.get("/scoring/mock-evaluation", async () => ({
+    mode: "mock",
+    requiresEnv: false,
+    liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+    providerKeysRequired: [],
+    notRecommendation: true,
+    result: scoreOpportunity(mockScoringInput),
+  }));
 
   server.post("/ingestion/mock-dry-run", async () => {
     const clock: IngestionClock = {

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T21:43:23-04:00",
+  "lastUpdated": "2026-05-28T21:46:45-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,7 +11,7 @@
   ],
   "currentFocus": {
     "phase": "Milestone 4: Scoring and risk",
-    "task": "Deterministic scoring and risk-gate skeleton added for mock/provider-normalized research inputs",
+    "task": "Mock scoring API evaluation endpoint added without provider keys or broker execution",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
     "status": "Completed",
     "priority": "High",
@@ -572,6 +572,32 @@
       "validationRequired": [
         "Scoring package tests",
         "Root CI",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M4-002",
+      "title": "Expose mock scoring evaluation through the API",
+      "phase": "Milestone 4",
+      "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Scoring and risk controls",
+      "blockers": [],
+      "nextStep": "Commit the scoring API slice, then continue with strategy-specific signal components or scoring UI visibility.",
+      "relatedDocs": [
+        "apps/api/src/server.ts",
+        "apps/api/test/scoring.test.ts",
+        "scripts/smoke-api.mjs",
+        "packages/scoring/src/index.ts"
+      ],
+      "validationRequired": [
+        "API scoring test",
+        "Root CI",
+        "API smoke",
         "Status JSON parse",
         "Whitespace check",
         "Secret-pattern scan",

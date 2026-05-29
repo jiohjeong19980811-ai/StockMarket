@@ -1,25 +1,31 @@
 # Validation Status
 
-Last updated: 2026-05-28T21:43:23-04:00
+Last updated: 2026-05-28T21:46:45-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 4 scoring and risk validation |
-| Current task | Deterministic scoring and risk-gate skeleton added and validated |
+| Current task | Mock scoring API evaluation endpoint added and validated |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
 | Category | Scoring and risk controls |
 | Blockers | None |
-| Next step | Commit Milestone 4 scoring slice, then continue with scoring API integration or strategy-specific signal components |
-| Related docs/files | `packages/scoring`, `docs/risk-and-compliance.md`, `docs/backtesting-and-validation.md`, `docs/status/` |
+| Next step | Commit Milestone 4 scoring API slice, then continue with strategy-specific signal components or scoring UI visibility |
+| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/scoring.test.ts`, `scripts/smoke-api.mjs`, `packages/scoring`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 4 scoring API test | Completed | Mock scoring route returned `requiresEnv: false`, no provider keys, live trading disabled, `notRecommendation: true`, and a watchlist scoring result with risk/confidence/liquidity scores | `npm.cmd run test --workspace @stockmarket/api -- scoring` |
+| Milestone 4 scoring API aggregate CI | Completed | Typecheck, lint, format, 85 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed; smoke now checks `/scoring/mock-evaluation` | `npm.cmd run ci` |
+| Milestone 4 scoring API status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after scoring API status updates | `python -m json.tool docs/status/work-items.json` |
+| Milestone 4 scoring API whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed status Markdown files | `git diff --check` |
+| Milestone 4 scoring API secret-pattern scan | Completed | No secret-shaped tokens found in app, package, docs, Codex config, env example, or package files | `rg` secret-pattern scan |
+| Milestone 4 scoring API live-trading surface scan | Completed | Matches are documented guardrails, env rejection tests, safety docs, or deferred future-phase references; no live order implementation was introduced | `rg` live-trading/order-surface scan |
 | Milestone 4 scoring package tests | Completed | 7 scoring tests passed for paper-trade eligible stock candidates, research-only watchlist cap, missing citation/freshness needs-more-data gates, paper exposure avoid gates, options risk-detail gates, complete options evidence, and score clamping | `npm.cmd run test --workspace @stockmarket/scoring -- scoring` |
 | Milestone 4 scoring aggregate CI | Completed | Typecheck, lint, format, 84 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
 | Milestone 4 status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after scoring status updates | `python -m json.tool docs/status/work-items.json` |
