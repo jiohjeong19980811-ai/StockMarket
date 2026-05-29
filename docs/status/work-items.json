@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T20:58:02-04:00",
+  "lastUpdated": "2026-05-28T21:03:52-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,7 +11,7 @@
   ],
   "currentFocus": {
     "phase": "Milestone 3: Provider interfaces and mock ingestion",
-    "task": "Mock ingestion dry-run API endpoint added; it uses in-memory persistence and requires no .env or provider keys",
+    "task": "Dataset-specific freshness windows added for provider ingestion and documented in data-source rules",
     "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
     "status": "Completed",
     "priority": "High",
@@ -426,6 +426,35 @@
         "Format check",
         "Root CI",
         "Source artifact cleanup check",
+        "Status JSON parse",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M3-006",
+      "title": "Add dataset-specific freshness windows",
+      "phase": "Milestone 3",
+      "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Provider ingestion and data quality",
+      "blockers": [],
+      "nextStep": "Continue Milestone 3 with provider selection scoring or a UI/API ingestion status surface.",
+      "relatedDocs": [
+        "packages/data/src/quality.ts",
+        "packages/data/src/ingestion.ts",
+        "packages/data/test/ingestion.test.ts",
+        "docs/data-sources.md",
+        "apps/api/src/server.ts"
+      ],
+      "validationRequired": [
+        "Red-green data freshness tests",
+        "API mock dry-run regression",
+        "Type check",
+        "Lint",
+        "Format check",
+        "Root CI",
         "Status JSON parse",
         "Secret-pattern scan",
         "Live-trading surface scan"

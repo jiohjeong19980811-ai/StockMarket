@@ -60,6 +60,16 @@ The ingestion layer must flag:
 - Unparseable earnings dates.
 - Survivorship-bias risks in backtesting datasets.
 
+Initial provider-neutral freshness windows:
+
+| Dataset | Freshness window | Rationale |
+| --- | --- | --- |
+| Intraday prices | 30 minutes | Intraday signals should not rely on stale market snapshots. |
+| Daily prices | 4 days | Daily bars need weekend and market-holiday tolerance while still catching stale feeds. |
+| Options quotes | 60 minutes | Options are spread-sensitive; stale chains should block confidence and paper-trade promotion. |
+| News | 48 hours | Catalyst and sentiment signals decay quickly and duplicate/stale headlines should be downgraded. |
+| Earnings calendar/events | 7 days | Calendar data updates more slowly, but stale event records must still be flagged before scoring. |
+
 ## Storage Rules
 
 - Store normalized data for queries and backtests.

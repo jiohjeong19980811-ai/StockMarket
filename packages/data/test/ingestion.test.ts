@@ -221,4 +221,70 @@ describe("provider contracts and mock ingestion", () => {
       ]),
     );
   });
+
+  it("flags option quotes stale after the delayed-quote window", async () => {
+    const provider = createMockOptionsProvider({
+      quotes: [
+        {
+          metadata: {
+            providerName: "mock-options",
+            providerRecordId: "option-stale",
+            retrievedAt: "2026-05-28T14:00:00.000Z",
+            providerTimestamp: "2026-05-28T13:15:00.000Z",
+            qualityStatus: "fresh",
+          },
+          underlyingSymbol: "MSFT",
+          contractSymbol: "MSFT260619C00100000",
+          expiration: "2026-06-19",
+          strike: 100,
+          optionType: "call",
+          quoteTimestamp: "2026-05-28T13:15:00.000Z",
+          bid: 2.4,
+          ask: 2.6,
+          mid: 2.5,
+          volume: 150,
+          openInterest: 1200,
+          impliedVolatility: 0.42,
+          underlyingPrice: 101.1,
+        },
+      ],
+    });
+
+    const batch = await ingestOptionQuotes(
+      provider,
+      { underlyingSymbol: "MSFT", expiration: "2026-06-19" },
+      fixedClock,
+    );
+
+    expect(batch.providerRecords[0]?.qualityStatus).toBe("stale");
+    expect(batch.qualityEvents.map((event) => event.message)).toContain(
+      "Options provider timestamp is stale.",
+    );
+  });
+
+  it("allows earnings calendar records to use a slower freshness window", async () => {
+    const provider = createMockEarningsProvider({
+      events: [
+        {
+          metadata: {
+            providerName: "mock-earnings",
+            providerRecordId: "earnings-slower-window",
+            retrievedAt: "2026-05-28T14:00:00.000Z",
+            providerTimestamp: "2026-05-26T14:30:00.000Z",
+            qualityStatus: "fresh",
+          },
+          symbol: "MSFT",
+          fiscalPeriod: "2026-Q3",
+          announcementDate: "2026-06-15",
+          announcementTiming: "after_market",
+          sourceUrl: "https://example.com/msft-earnings",
+        },
+      ],
+    });
+
+    const batch = await ingestEarningsEvents(provider, { symbols: ["MSFT"] }, fixedClock);
+
+    expect(batch.providerRecords[0]?.qualityStatus).toBe("fresh");
+    expect(batch.qualityEvents).toEqual([]);
+  });
 });

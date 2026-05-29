@@ -9,9 +9,11 @@ import {
   degradeQualityStatus,
   duplicateNewsFindings,
   earningsDateFindings,
+  freshnessPolicyForDataset,
   optionQuoteFindings,
   providerMetadataFindings,
   qualityEventsFromFindings,
+  type FreshnessPolicy,
   type QualityFinding,
 } from "./quality.js";
 import type {
@@ -110,6 +112,7 @@ function buildBatch<TRecord extends { metadata: ProviderMetadata }>(
   run: IngestionRunRecord,
   records: TRecord[],
   clock: IngestionClock,
+  freshnessPolicy: FreshnessPolicy,
   findingsForRecord: (record: TRecord, index: number) => QualityFinding[],
 ): IngestionBatch<TRecord> {
   const providerRecords: ProviderRecordEnvelope[] = [];
@@ -117,7 +120,7 @@ function buildBatch<TRecord extends { metadata: ProviderMetadata }>(
 
   records.forEach((record, index) => {
     const findings = [
-      ...providerMetadataFindings(record.metadata, clock),
+      ...providerMetadataFindings(record.metadata, clock, freshnessPolicy),
       ...findingsForRecord(record, index),
     ];
     const providerRecord = createProviderRecord(run, record, index, clock, findings);
@@ -140,7 +143,13 @@ export async function ingestPriceBars(
 ): Promise<IngestionBatch<ProviderPriceBar>> {
   const records = await provider.getPriceBars(request);
   const run = createRun(provider.providerName, provider.adapterVersion, "prices", clock);
-  return buildBatch(run, records, clock, () => []);
+  return buildBatch(
+    run,
+    records,
+    clock,
+    freshnessPolicyForDataset("prices", { interval: request.interval }),
+    () => [],
+  );
 }
 
 export async function ingestNewsArticles(
@@ -151,7 +160,7 @@ export async function ingestNewsArticles(
   const records = await provider.getNewsArticles(request);
   const run = createRun(provider.providerName, provider.adapterVersion, "news", clock);
   const seenDuplicateKeys = new Set<string>();
-  return buildBatch(run, records, clock, (record) =>
+  return buildBatch(run, records, clock, freshnessPolicyForDataset("news"), (record) =>
     duplicateNewsFindings(record, seenDuplicateKeys),
   );
 }
@@ -163,7 +172,9 @@ export async function ingestEarningsEvents(
 ): Promise<IngestionBatch<ProviderEarningsEvent>> {
   const records = await provider.getEarningsEvents(request);
   const run = createRun(provider.providerName, provider.adapterVersion, "earnings", clock);
-  return buildBatch(run, records, clock, (record) => earningsDateFindings(record.announcementDate));
+  return buildBatch(run, records, clock, freshnessPolicyForDataset("earnings"), (record) =>
+    earningsDateFindings(record.announcementDate),
+  );
 }
 
 export async function ingestOptionQuotes(
@@ -173,5 +184,5 @@ export async function ingestOptionQuotes(
 ): Promise<IngestionBatch<ProviderOptionQuote>> {
   const records = await provider.getOptionQuotes(request);
   const run = createRun(provider.providerName, provider.adapterVersion, "options", clock);
-  return buildBatch(run, records, clock, optionQuoteFindings);
+  return buildBatch(run, records, clock, freshnessPolicyForDataset("options"), optionQuoteFindings);
 }

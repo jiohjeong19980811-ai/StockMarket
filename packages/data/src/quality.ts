@@ -1,7 +1,9 @@
 import type {
   DataQualityEventRecord,
+  BarInterval,
   IngestionClock,
   ProviderMetadata,
+  ProviderDataset,
   ProviderNewsArticle,
   ProviderOptionQuote,
   QualityStatus,
@@ -13,6 +15,52 @@ export interface QualityFinding {
   message: string;
 }
 
+export interface FreshnessPolicy {
+  label: string;
+  maxProviderAgeMs: number;
+}
+
+const minuteMs = 60 * 1000;
+const hourMs = 60 * minuteMs;
+const dayMs = 24 * hourMs;
+
+export const freshnessPolicies = {
+  intradayPrices: {
+    label: "Intraday price",
+    maxProviderAgeMs: 30 * minuteMs,
+  },
+  dailyPrices: {
+    label: "Daily price",
+    maxProviderAgeMs: 4 * dayMs,
+  },
+  news: {
+    label: "News",
+    maxProviderAgeMs: 48 * hourMs,
+  },
+  earnings: {
+    label: "Earnings",
+    maxProviderAgeMs: 7 * dayMs,
+  },
+  options: {
+    label: "Options",
+    maxProviderAgeMs: 60 * minuteMs,
+  },
+} satisfies Record<string, FreshnessPolicy>;
+
+export function priceFreshnessPolicyForInterval(interval?: BarInterval): FreshnessPolicy {
+  return interval === "1d" ? freshnessPolicies.dailyPrices : freshnessPolicies.intradayPrices;
+}
+
+export function freshnessPolicyForDataset(
+  dataset: ProviderDataset,
+  options: { interval?: BarInterval } = {},
+): FreshnessPolicy {
+  if (dataset === "prices") {
+    return priceFreshnessPolicyForInterval(options.interval);
+  }
+  return freshnessPolicies[dataset];
+}
+
 export function isValidDate(value: string | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0 && !Number.isNaN(Date.parse(value));
 }
@@ -20,7 +68,10 @@ export function isValidDate(value: string | undefined): value is string {
 export function providerMetadataFindings(
   metadata: ProviderMetadata,
   clock: IngestionClock,
-  maxProviderAgeMs = 24 * 60 * 60 * 1000,
+  freshnessPolicy: FreshnessPolicy = {
+    label: "Provider",
+    maxProviderAgeMs: 24 * hourMs,
+  },
 ): QualityFinding[] {
   const findings: QualityFinding[] = [];
   if (!isValidDate(metadata.retrievedAt) || !isValidDate(metadata.providerTimestamp)) {
@@ -33,11 +84,11 @@ export function providerMetadataFindings(
   }
 
   const providerAgeMs = Date.parse(clock.now()) - Date.parse(metadata.providerTimestamp);
-  if (providerAgeMs > maxProviderAgeMs) {
+  if (providerAgeMs > freshnessPolicy.maxProviderAgeMs) {
     findings.push({
       severity: "warning",
       qualityStatus: "stale",
-      message: "Provider timestamp is stale.",
+      message: `${freshnessPolicy.label} provider timestamp is stale.`,
     });
   }
 

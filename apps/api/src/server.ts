@@ -45,7 +45,7 @@ export function buildServer(env: ApiEnv) {
 
   server.post("/ingestion/mock-dry-run", async () => {
     const clock: IngestionClock = {
-      now: () => new Date().toISOString(),
+      now: () => "2026-05-28T14:30:00.000Z",
     };
     const client = await createLocalClient();
 
