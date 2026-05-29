@@ -170,6 +170,76 @@ const mockPaperEvidenceSummaryBody = {
   },
 };
 
+const mockPaperReadModelBody = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Dry-run paper-trade read model data is discarded after the response.",
+  },
+  persistedInMemory: {
+    recommendations: 1,
+    auditLogs: 4,
+    paperTrades: 1,
+  },
+  trades: [
+    {
+      id: "paper_rec-MSFT-paper-mock-1_20260528T150000000Z",
+      recommendationId: "rec-MSFT-paper-mock-1",
+      accountId: "paper_account_mock",
+      mode: "paper",
+      status: "closed",
+      ticker: "MSFT",
+      instrumentType: "stock",
+      strategyVersionId: "momentum-v0",
+      thesisSnapshot: "Mock stock-only paper trade candidate for contract evaluation.",
+      entryReason: "Mock API read-model dry-run accepted a simulated stock paper entry.",
+      downsideScenario: "Shares close below the mock breakout level.",
+      invalidationConditions: ["Close below mock breakout level"],
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      audit: {
+        operatorApprovalAuditLogId: "audit_mock_paper_open_1",
+        entryAuditLogId: "audit_mock_paper_entry_1",
+        exitAuditLogId: "audit_mock_paper_close_1",
+      },
+      entry: {
+        type: "market",
+        requestedPrice: 100,
+        simulatedPrice: 100,
+        quantity: 10,
+        enteredAt: "2026-05-28T15:00:00.000Z",
+        stopLoss: 95,
+        profitTarget: 108,
+        timeStopAt: "2026-06-11T20:00:00.000Z",
+      },
+      risk: {
+        maxLossAmount: 300,
+        riskPctOfEquity: 0.3,
+        accountEquityAtEntry: 100000,
+        singleNameExposurePct: 2,
+        sectorExposurePct: 8,
+        correlatedExposurePct: 4,
+        dailyLossPctAtEntry: 0.1,
+      },
+      outcome: {
+        closedAt: "2026-05-31T20:00:00.000Z",
+        exitPrice: 106,
+        exitReason: "Mock profit-target review hit during paper-trade validation.",
+        lessonsLearned: "Mock paper trade followed through before the time stop.",
+        realizedPnl: 60,
+        realizedReturnPct: 6,
+      },
+      createdAt: "2026-05-28T15:00:00.000Z",
+      updatedAt: "2026-05-31T20:00:00.000Z",
+    },
+  ],
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -181,13 +251,15 @@ describe("operator console shell", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = input.toString();
-        const body = url.includes("mock-evidence-summary")
-          ? mockPaperEvidenceSummaryBody
-          : url.includes("mock-close-dry-run")
-            ? mockPaperCloseBody
-            : url.includes("paper-trading")
-              ? mockPaperTradingBody
-              : mockScoringBody;
+        const body = url.includes("mock-read-model-dry-run")
+          ? mockPaperReadModelBody
+          : url.includes("mock-evidence-summary")
+            ? mockPaperEvidenceSummaryBody
+            : url.includes("mock-close-dry-run")
+              ? mockPaperCloseBody
+              : url.includes("paper-trading")
+                ? mockPaperTradingBody
+                : mockScoringBody;
         return new Response(JSON.stringify(body));
       }),
     );
@@ -213,15 +285,15 @@ describe("operator console shell", () => {
     expect(screen.getByText("$300")).toBeInTheDocument();
     expect(screen.getByText("Paper Trade Outcome")).toBeInTheDocument();
     expect(screen.getByText("Simulated Closed")).toBeInTheDocument();
-    expect(screen.getByText("P/L")).toBeInTheDocument();
-    expect(screen.getByText("$60")).toBeInTheDocument();
-    expect(screen.getByText("Return")).toBeInTheDocument();
-    expect(screen.getByText("6%")).toBeInTheDocument();
-    expect(screen.getByText("Exit")).toBeInTheDocument();
-    expect(screen.getByText("$106")).toBeInTheDocument();
+    expect(screen.getAllByText("P/L").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$60").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Return").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("6%").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Exit").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$106").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Mock paper trade followed through before the time stop."),
-    ).toBeInTheDocument();
+      screen.getAllByText("Mock paper trade followed through before the time stop.").length,
+    ).toBeGreaterThan(0);
     expect(screen.getByText("Paper Trade Evidence")).toBeInTheDocument();
     expect(screen.getByText("Ready for Review")).toBeInTheDocument();
     expect(screen.getByText("Closed")).toBeInTheDocument();
@@ -235,6 +307,18 @@ describe("operator console shell", () => {
     expect(
       screen.getByText(
         "Paper-trade evidence is a validation input, not a recommendation or performance promise.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Paper Trade Ledger")).toBeInTheDocument();
+    expect(screen.getByText("Persisted Closed")).toBeInTheDocument();
+    expect(screen.getByText("Ledger API snapshot")).toBeInTheDocument();
+    expect(screen.getByText("Audit")).toBeInTheDocument();
+    expect(screen.getByText("audit_mock_paper_close_1")).toBeInTheDocument();
+    expect(screen.getByText("Entry")).toBeInTheDocument();
+    expect(screen.getAllByText("$100").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Read model preserves paper-only ledger state; no broker execution occurred.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("Risk Controls")).toBeInTheDocument();
@@ -256,6 +340,7 @@ describe("operator console shell", () => {
     expect(screen.getByText("Paper fallback snapshot")).toBeInTheDocument();
     expect(screen.getByText("Paper close fallback snapshot")).toBeInTheDocument();
     expect(screen.getByText("Evidence fallback snapshot")).toBeInTheDocument();
+    expect(screen.getByText("Ledger fallback snapshot")).toBeInTheDocument();
     expect(screen.getAllByText("Watchlist").length).toBeGreaterThan(0);
   });
 });

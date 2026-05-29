@@ -163,12 +163,81 @@ interface PaperTradeEvidenceSummaryResponse {
   };
 }
 
+interface PaperTradeReadModelResponse {
+  mode: "mock";
+  requiresEnv: boolean;
+  liveTradingEnabled: boolean;
+  providerKeysRequired: string[];
+  notRecommendation: boolean;
+  persistence: {
+    scope: string;
+    durable: boolean;
+    note: string;
+  };
+  persistedInMemory: {
+    recommendations: number;
+    auditLogs: number;
+    paperTrades: number;
+  };
+  trades: Array<{
+    id: string;
+    recommendationId: string;
+    accountId: string;
+    mode: "paper";
+    status: "open" | "closed" | "cancelled";
+    ticker: string;
+    instrumentType: "stock";
+    strategyVersionId: string;
+    thesisSnapshot: string;
+    entryReason: string;
+    downsideScenario: string;
+    invalidationConditions: string[];
+    liveTradingEnabled: false;
+    brokerExecution: false;
+    audit: {
+      operatorApprovalAuditLogId: string;
+      entryAuditLogId: string;
+      exitAuditLogId: string | null;
+    };
+    entry: {
+      type: "market" | "limit";
+      requestedPrice: number;
+      simulatedPrice: number;
+      quantity: number;
+      enteredAt: string;
+      stopLoss: number;
+      profitTarget: number;
+      timeStopAt: string;
+    };
+    risk: {
+      maxLossAmount: number;
+      riskPctOfEquity: number;
+      accountEquityAtEntry: number;
+      singleNameExposurePct: number;
+      sectorExposurePct: number;
+      correlatedExposurePct: number;
+      dailyLossPctAtEntry: number;
+    };
+    outcome: {
+      closedAt: string;
+      exitPrice: number;
+      exitReason: string;
+      lessonsLearned: string;
+      realizedPnl: number;
+      realizedReturnPct: number;
+    } | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}
+
 type ApiState = "loading" | "online" | "offline";
 
 const scoringEndpoint = "http://127.0.0.1:4000/scoring/mock-evaluation";
 const paperTradingEndpoint = "http://127.0.0.1:4000/paper-trading/mock-decision";
 const paperTradeCloseEndpoint = "http://127.0.0.1:4000/paper-trading/mock-close-dry-run";
 const paperTradeEvidenceEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidence-summary";
+const paperTradeReadModelEndpoint = "http://127.0.0.1:4000/paper-trading/mock-read-model-dry-run";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",
@@ -336,6 +405,76 @@ const fallbackPaperEvidence: PaperTradeEvidenceSummaryResponse = {
   },
 };
 
+const fallbackPaperReadModel: PaperTradeReadModelResponse = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Dry-run paper-trade read model data is discarded after the response.",
+  },
+  persistedInMemory: {
+    recommendations: 1,
+    auditLogs: 4,
+    paperTrades: 1,
+  },
+  trades: [
+    {
+      id: "paper_rec-MSFT-paper-mock-1_20260528T150000000Z",
+      recommendationId: "rec-MSFT-paper-mock-1",
+      accountId: "paper_account_mock",
+      mode: "paper",
+      status: "closed",
+      ticker: "MSFT",
+      instrumentType: "stock",
+      strategyVersionId: "momentum-v0",
+      thesisSnapshot: "Mock stock-only paper trade candidate for contract evaluation.",
+      entryReason: "Mock API read-model dry-run accepted a simulated stock paper entry.",
+      downsideScenario: "Shares close below the mock breakout level.",
+      invalidationConditions: ["Close below mock breakout level"],
+      liveTradingEnabled: false,
+      brokerExecution: false,
+      audit: {
+        operatorApprovalAuditLogId: "audit_mock_paper_open_1",
+        entryAuditLogId: "audit_mock_paper_entry_1",
+        exitAuditLogId: "audit_mock_paper_close_1",
+      },
+      entry: {
+        type: "market",
+        requestedPrice: 100,
+        simulatedPrice: 100,
+        quantity: 10,
+        enteredAt: "2026-05-28T15:00:00.000Z",
+        stopLoss: 95,
+        profitTarget: 108,
+        timeStopAt: "2026-06-11T20:00:00.000Z",
+      },
+      risk: {
+        maxLossAmount: 300,
+        riskPctOfEquity: 0.3,
+        accountEquityAtEntry: 100000,
+        singleNameExposurePct: 2,
+        sectorExposurePct: 8,
+        correlatedExposurePct: 4,
+        dailyLossPctAtEntry: 0.1,
+      },
+      outcome: {
+        closedAt: "2026-05-31T20:00:00.000Z",
+        exitPrice: 106,
+        exitReason: "Mock profit-target review hit during paper-trade validation.",
+        lessonsLearned: "Mock paper trade followed through before the time stop.",
+        realizedPnl: 60,
+        realizedReturnPct: 6,
+      },
+      createdAt: "2026-05-28T15:00:00.000Z",
+      updatedAt: "2026-05-31T20:00:00.000Z",
+    },
+  ],
+};
+
 const decisionLabels: Record<Decision, string> = {
   watchlist: "Watchlist",
   paper_trade: "Paper Trade",
@@ -372,6 +511,15 @@ const paperEvidenceReviewLabels: Record<
   blocked: "Blocked",
 };
 
+const paperReadStatusLabels: Record<
+  PaperTradeReadModelResponse["trades"][number]["status"],
+  string
+> = {
+  open: "Persisted Open",
+  closed: "Persisted Closed",
+  cancelled: "Persisted Cancelled",
+};
+
 function formatCurrency(value: number): string {
   return `$${Math.round(value).toLocaleString("en-US")}`;
 }
@@ -401,19 +549,27 @@ export function App() {
   const [paperClose, setPaperClose] = useState<PaperTradeCloseResponse>(fallbackPaperClose);
   const [paperEvidence, setPaperEvidence] =
     useState<PaperTradeEvidenceSummaryResponse>(fallbackPaperEvidence);
+  const [paperReadModel, setPaperReadModel] =
+    useState<PaperTradeReadModelResponse>(fallbackPaperReadModel);
 
   useEffect(() => {
     let active = true;
 
     async function loadDashboardData() {
       try {
-        const [scoringResponse, paperTradingResponse, paperCloseResponse, paperEvidenceResponse] =
-          await Promise.all([
-            fetch(scoringEndpoint),
-            fetch(paperTradingEndpoint),
-            fetch(paperTradeCloseEndpoint, { method: "POST" }),
-            fetch(paperTradeEvidenceEndpoint),
-          ]);
+        const [
+          scoringResponse,
+          paperTradingResponse,
+          paperCloseResponse,
+          paperEvidenceResponse,
+          paperReadModelResponse,
+        ] = await Promise.all([
+          fetch(scoringEndpoint),
+          fetch(paperTradingEndpoint),
+          fetch(paperTradeCloseEndpoint, { method: "POST" }),
+          fetch(paperTradeEvidenceEndpoint),
+          fetch(paperTradeReadModelEndpoint, { method: "POST" }),
+        ]);
         if (!scoringResponse.ok) {
           throw new Error(`Scoring API returned ${scoringResponse.status}`);
         }
@@ -426,16 +582,22 @@ export function App() {
         if (!paperEvidenceResponse.ok) {
           throw new Error(`Paper-trade evidence API returned ${paperEvidenceResponse.status}`);
         }
+        if (!paperReadModelResponse.ok) {
+          throw new Error(`Paper-trade read model API returned ${paperReadModelResponse.status}`);
+        }
         const scoringBody = (await scoringResponse.json()) as MockScoringResponse;
         const paperTradingBody = (await paperTradingResponse.json()) as PaperTradeResponse;
         const paperCloseBody = (await paperCloseResponse.json()) as PaperTradeCloseResponse;
         const paperEvidenceBody =
           (await paperEvidenceResponse.json()) as PaperTradeEvidenceSummaryResponse;
+        const paperReadModelBody =
+          (await paperReadModelResponse.json()) as PaperTradeReadModelResponse;
         if (active) {
           setScoring(scoringBody);
           setPaperTrading(paperTradingBody);
           setPaperClose(paperCloseBody);
           setPaperEvidence(paperEvidenceBody);
+          setPaperReadModel(paperReadModelBody);
           setApiState("online");
         }
       } catch {
@@ -444,6 +606,7 @@ export function App() {
           setPaperTrading(fallbackPaperTrading);
           setPaperClose(fallbackPaperClose);
           setPaperEvidence(fallbackPaperEvidence);
+          setPaperReadModel(fallbackPaperReadModel);
           setApiState("offline");
         }
       }
@@ -465,6 +628,15 @@ export function App() {
   const evidenceNote =
     paperEvidenceSummary.notes[0] ??
     "Paper-trade evidence remains a validation input, not a recommendation.";
+  const fallbackLedgerTrade = fallbackPaperReadModel.trades[0];
+  if (fallbackLedgerTrade === undefined) {
+    throw new Error("Fallback paper-trade read model requires one trade.");
+  }
+  const ledgerTrade = paperReadModel.trades[0] ?? fallbackLedgerTrade;
+  const ledgerOutcome = ledgerTrade?.outcome;
+  const ledgerAuditId = ledgerTrade?.audit.exitAuditLogId ?? ledgerTrade?.audit.entryAuditLogId;
+  const ledgerLesson =
+    ledgerOutcome?.lessonsLearned ?? "Persisted paper-trade readback is still open.";
 
   return (
     <main className="app-shell">
@@ -674,6 +846,55 @@ export function App() {
           <p className="panel-copy">{evidenceNote}</p>
           <p className="panel-copy">
             Backtest and operator review remain required before strategy promotion.
+          </p>
+        </article>
+
+        <article className="panel">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Paper Trade Ledger</p>
+              <h2>{paperReadStatusLabels[ledgerTrade.status]}</h2>
+            </div>
+            <span className="status-pill subtle">
+              {apiState === "offline" ? "Ledger fallback snapshot" : "Ledger API snapshot"}
+            </span>
+          </div>
+          <div className="evidence-strip" aria-label="Paper trade ledger readback">
+            <div>
+              <span>Audit</span>
+              <strong>{ledgerAuditId}</strong>
+            </div>
+            <div>
+              <span>P/L</span>
+              <strong>{formatCurrency(ledgerOutcome?.realizedPnl ?? 0)}</strong>
+            </div>
+            <div>
+              <span>Risk</span>
+              <strong>{formatPercent(ledgerTrade.risk.riskPctOfEquity)}</strong>
+            </div>
+          </div>
+          <div
+            className="evidence-strip evidence-strip-secondary"
+            aria-label="Paper trade ledger prices"
+          >
+            <div>
+              <span>Entry</span>
+              <strong>{formatCurrency(ledgerTrade.entry.simulatedPrice)}</strong>
+            </div>
+            <div>
+              <span>Exit</span>
+              <strong>{formatCurrency(ledgerOutcome?.exitPrice ?? 0)}</strong>
+            </div>
+            <div>
+              <span>Return</span>
+              <strong>{formatPercent(ledgerOutcome?.realizedReturnPct ?? 0)}</strong>
+            </div>
+          </div>
+          <p className="panel-copy">{ledgerLesson}</p>
+          <p className="panel-copy">
+            {ledgerTrade.brokerExecution === false
+              ? "Read model preserves paper-only ledger state; no broker execution occurred."
+              : "Paper-trade read model review is blocked."}
           </p>
         </article>
       </section>

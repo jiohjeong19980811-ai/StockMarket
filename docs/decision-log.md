@@ -257,3 +257,9 @@ Reason: Operators need to see whether paper-trade outcomes are accumulating enou
 Decision: Add a DB paper-trade read helper and `/paper-trading/mock-read-model-dry-run` so persisted simulated trades can be read back as a safe, paper-only contract with audit links, risk snapshots, invalidation conditions, and computed closed-trade outcomes.
 
 Reason: Paper-trade records need a reusable read shape before UI, reports, or backtesting consume durable ledger data. The read path must preserve the no-live-trading and no-broker-execution boundary instead of exposing raw database rows.
+
+## 2026-05-29: Paper-Trade Read Model UI
+
+Decision: Show `/paper-trading/mock-read-model-dry-run` in the operator console as a persisted ledger readback panel with paper-only status, close audit ID, entry/exit prices, simulated P/L, return, risk percent, and no-broker wording.
+
+Reason: Operators need to distinguish simulated close calculations from persisted readback data. Showing the read model in the UI makes audit linkage visible without turning paper-trade outcomes into strategy recommendations.

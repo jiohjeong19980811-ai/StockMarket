@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T09:17:05-04:00",
+  "lastUpdated": "2026-05-29T09:23:30-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,11 +11,11 @@
   ],
   "currentFocus": {
     "phase": "Milestone 6: Paper trading",
-    "task": "Add durable paper-trade read model and mock API dry run",
+    "task": "Show paper-trade read model in the operator console",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
     "status": "Completed",
     "priority": "High",
-    "category": "Paper trading read model and validation evidence"
+    "category": "Paper trading UI and read model visibility"
   },
   "items": [
     {
@@ -1078,6 +1078,35 @@
         "Whitespace check",
         "Secret-pattern scan",
         "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M6-015",
+      "title": "Show paper-trade read model in the operator console",
+      "phase": "Milestone 6",
+      "owner": "Codex founding CTO / lead architect / principal engineer / UI reviewer / risk reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Paper trading UI and read model visibility",
+      "blockers": [],
+      "nextStep": "Commit the read-model UI slice, then continue with backtesting ingestion of paper-trade evidence or milestone review.",
+      "relatedDocs": [
+        "apps/web/src/App.tsx",
+        "apps/web/src/styles.css",
+        "apps/web/test/App.test.tsx",
+        "apps/api/src/server.ts",
+        "docs/architecture.md",
+        "docs/product-roadmap.md",
+        "docs/decision-log.md"
+      ],
+      "validationRequired": [
+        "Web dashboard tests",
+        "Root CI",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan",
+        "Local web smoke"
       ]
     }
   ]
