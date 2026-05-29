@@ -13,7 +13,7 @@ import {
   type IngestionClock,
 } from "@stockmarket/data";
 import { createLocalClient, persistIngestionBatch, runMigrations } from "@stockmarket/db";
-import { scoreOpportunity, type ScoringInput } from "@stockmarket/scoring";
+import { listStrategyPolicies, scoreOpportunity, type ScoringInput } from "@stockmarket/scoring";
 import type { ApiEnv } from "./env.js";
 
 type DryRunTableName =
@@ -131,6 +131,15 @@ export function buildServer(env: ApiEnv) {
     providerKeysRequired: [],
     notRecommendation: true,
     result: scoreOpportunity(mockScoringInput),
+  }));
+
+  server.get("/strategies/policies", async () => ({
+    mode: "policy",
+    requiresEnv: false,
+    liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+    providerKeysRequired: [],
+    paperTradeFirst: true,
+    policies: listStrategyPolicies(),
   }));
 
   server.post("/ingestion/mock-dry-run", async () => {

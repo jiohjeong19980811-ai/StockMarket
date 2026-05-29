@@ -139,6 +139,8 @@ Initial families:
 
 MVP promotion state should be conservative: `research only`, `watchlist eligible`, `paper trade eligible`, `avoid`, or `needs more data`. A strategy cannot become `paper trade eligible` without reproducible backtest or paper-trade evidence. Options strategies cannot become `paper trade eligible` from underlying-only proxy analysis.
 
+Milestone 4 implements the first code-level strategy policy catalog in `packages/scoring`. The API exposes it at `/strategies/policies`, and the operator console shows the active policy for the mock scoring result. This is still deterministic policy metadata: it does not call providers, require `.env`, place trades, or claim that a strategy is profitable.
+
 ### Options Analysis
 
 Options analysis must evaluate expiration, strike logic, bid/ask spread, volume, open interest, implied volatility, realized volatility, expected move, breakeven, event risk, theta risk, max loss, and whether a spread is safer than a long call or put. Illiquid, wide-spread, event-exposed, or overpriced contracts should default to avoid.

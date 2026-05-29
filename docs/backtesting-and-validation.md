@@ -91,6 +91,13 @@ After MVP, selected strategies should be compared against at least one external 
 
 The scoring layer may surface a `watchlist`, `avoid`, or `needs_more_data` decision from research-only inputs, but it cannot promote an idea to `paper_trade` without eligible evidence IDs and passing risk gates. Scoring is an audit-friendly triage layer, not proof of edge.
 
+Milestone 4 adds a strategy policy catalog to the scoring package. Backtesting promotion checks must respect the catalog:
+
+- `test_now` families can be evaluated for MVP paper trading after reproducible evidence exists.
+- `context_only` families can contribute explanatory signal components but should remain watchlist/context unless later validation changes policy.
+- `test_later` families need stronger data, validation, and implementation review before they can become ordinary paper-trade candidates.
+- `control_layer` families are portfolio/risk guardrails, not alpha hypotheses.
+
 Promotion blockers:
 
 - Missing source timestamps or provider lineage.

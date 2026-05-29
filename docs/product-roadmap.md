@@ -17,6 +17,7 @@ Capabilities:
 - News, earnings, and options ingestion.
 - Explainable scoring skeleton.
 - Strategy registry and evidence gates for earnings, momentum, mean reversion, volatility, options, news/sentiment, value/quality, sector/macro, and portfolio risk.
+- Strategy policy catalog exposed through API/UI so MVP-testable, context-only, deferred, and control-layer strategy families are visible to the operator.
 - Initial MVP strategy tests focused on liquid stock/ETF hypotheses: PEAD, earnings surprise continuation, momentum, volatility-adjusted mean reversion, news-confirmed watchlist signals, and value/quality context.
 - Daily opportunity generation.
 - Dashboard shell with top opportunities.
@@ -39,6 +40,7 @@ Acceptance criteria:
 - Paper-trade performance is visible.
 - Backtesting framework exists.
 - Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.
+- Context-only and deferred strategy families cannot bypass the scoring strategy-policy gate.
 - Options strategies remain research/manual review only until historical options chains and realistic fill assumptions are available.
 - Secrets are protected.
 - Tests and validation commands pass.

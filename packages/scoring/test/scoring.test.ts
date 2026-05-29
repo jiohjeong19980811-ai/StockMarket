@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { scoreOpportunity, type ScoringInput } from "../src/index.js";
+import { getStrategyPolicy, scoreOpportunity, type ScoringInput } from "../src/index.js";
 
 const baseStockInput: ScoringInput = {
   id: "score-AAPL-momentum-1",
@@ -71,9 +71,29 @@ describe("scoreOpportunity", () => {
     const result = scoreOpportunity(baseStockInput);
 
     expect(result.decision).toBe("paper_trade");
+    expect(result.strategyPolicy).toMatchObject({
+      family: "momentum",
+      mvpDecision: "test_now",
+      paperTradeAllowed: true,
+    });
     expect(result.scores.confidence).toBeGreaterThanOrEqual(70);
     expect(result.scores.liquidity).toBeGreaterThanOrEqual(70);
     expect(result.gates.every((gate) => gate.passed)).toBe(true);
+  });
+
+  it("returns documented strategy policy metadata for operator UI categories", () => {
+    const policy = getStrategyPolicy("momentum");
+
+    expect(policy).toMatchObject({
+      family: "momentum",
+      label: "Momentum",
+      mvpDecision: "test_now",
+      paperTradeAllowed: true,
+      implementationComplexity: "medium",
+      overfittingRisk: "medium",
+    });
+    expect(policy.requiredData).toContain("Adjusted OHLCV");
+    expect(policy.riskControls).toContain("Liquidity floor");
   });
 
   it("keeps research-only evidence at watchlist even when other gates pass", () => {
@@ -86,6 +106,40 @@ describe("scoreOpportunity", () => {
 
     expect(result.decision).toBe("watchlist");
     expect(result.gates.find((gate) => gate.id === "paper_trade_evidence")).toMatchObject({
+      passed: false,
+      impact: "paper_trade_block",
+    });
+  });
+
+  it("keeps context-only strategy families at watchlist even when generic gates pass", () => {
+    const result = scoreOpportunity(
+      inputWith({
+        id: "score-MSFT-value-quality-1",
+        strategyFamily: "value_quality",
+        componentSignals: [
+          {
+            component: "value_quality",
+            score: 84,
+            weight: 0.7,
+            explanation: "Mock valuation and balance-sheet quality are favorable.",
+          },
+          {
+            component: "liquidity",
+            score: 88,
+            weight: 0.3,
+            explanation: "Mock dollar volume clears the stock liquidity floor.",
+          },
+        ],
+      }),
+    );
+
+    expect(result.decision).toBe("watchlist");
+    expect(result.strategyPolicy).toMatchObject({
+      family: "value_quality",
+      mvpDecision: "context_only",
+      paperTradeAllowed: false,
+    });
+    expect(result.gates.find((gate) => gate.id === "strategy_family_mvp_scope")).toMatchObject({
       passed: false,
       impact: "paper_trade_block",
     });
@@ -143,7 +197,7 @@ describe("scoreOpportunity", () => {
     });
   });
 
-  it("allows defined-risk options only when complete contract evidence is present", () => {
+  it("keeps defined-risk options at watchlist until options strategy policy is promoted", () => {
     const result = scoreOpportunity(
       inputWith({
         instrumentType: "long_call",
@@ -168,7 +222,16 @@ describe("scoreOpportunity", () => {
       }),
     );
 
-    expect(result.decision).toBe("paper_trade");
+    expect(result.decision).toBe("watchlist");
+    expect(result.strategyPolicy).toMatchObject({
+      family: "options",
+      mvpDecision: "test_later",
+      paperTradeAllowed: false,
+    });
+    expect(result.gates.find((gate) => gate.id === "strategy_family_mvp_scope")).toMatchObject({
+      passed: false,
+      impact: "paper_trade_block",
+    });
     expect(result.gates.find((gate) => gate.id === "options_risk_details")).toMatchObject({
       passed: true,
     });

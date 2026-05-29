@@ -1,25 +1,34 @@
 # Validation Status
 
-Last updated: 2026-05-28T21:53:56-04:00
+Last updated: 2026-05-28T22:51:13-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 4 scoring and risk validation |
-| Current task | Operator console scoring visibility added and validated |
+| Current task | Strategy policy catalog, API route, and operator console visibility |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Operator UI and scoring visibility |
+| Category | Strategy policy and scoring visibility |
 | Blockers | None |
-| Next step | Commit Milestone 4 scoring UI slice, then continue with strategy-specific signal components or paper-trading contracts |
-| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `docs/status/` |
+| Next step | Commit the strategy policy slice, then continue with paper-trading contracts or strategy-specific signal inputs |
+| Related docs/files | `packages/scoring/src/index.ts`, `apps/api/src/server.ts`, `apps/web/src/App.tsx`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 4 strategy policy aggregate CI | Completed | Typecheck, lint, format, 89 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed; smoke now checks strategy policies | `npm.cmd run ci` |
+| Milestone 4 strategy policy status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after strategy policy status updates | `python -m json.tool docs/status/work-items.json` |
+| Milestone 4 strategy policy whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 4 strategy policy secret-pattern scan | Completed | No secret-shaped tokens found; NIST URL references remain known false positives | `rg` secret-pattern scan |
+| Milestone 4 strategy policy live-trading surface scan | Completed | Matches are documented guardrails, tests, safety docs, or explicit prohibited-strategy notes; no live order implementation was introduced | `rg` live-trading/order-surface scan |
+| Milestone 4 strategy policy local web smoke | Completed | Existing Vite dev server on `http://127.0.0.1:3001` returned HTTP 200 after the policy dashboard update | `Invoke-WebRequest http://127.0.0.1:3001` |
+| Milestone 4 strategy policy scoring tests | Completed | Red-green scoring tests now verify strategy policy metadata and context-only strategy families remain watchlist-blocked by policy | `npm.cmd run test --workspace @stockmarket/scoring -- scoring` |
+| Milestone 4 strategy policy API test | Completed | Red-green API test verified `/strategies/policies` returns policy decisions without provider keys or live trading | `npm.cmd run build --workspace @stockmarket/scoring`; `npm.cmd run test --workspace @stockmarket/api -- strategy-policies` |
+| Milestone 4 strategy policy web test | Completed | Red-green web test verified the operator console displays the active strategy policy and MVP status | `npm.cmd run test --workspace @stockmarket/web -- App` |
 | Milestone 4 scoring UI tests | Completed | 2 web dashboard tests passed for API-online scoring display and API-offline fallback snapshot | `npm.cmd run test --workspace @stockmarket/web -- App` |
 | Milestone 4 scoring UI aggregate CI | Completed | Typecheck, lint, format, 86 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
 | Milestone 4 scoring UI status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after scoring UI status updates | `python -m json.tool docs/status/work-items.json` |

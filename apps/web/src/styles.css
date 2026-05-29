@@ -164,6 +164,42 @@ h2 {
   margin-top: 22px;
 }
 
+.policy-strip {
+  border: 1px solid #d8e0e4;
+  border-radius: 8px;
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 18px;
+  overflow: hidden;
+}
+
+.policy-strip div {
+  border-right: 1px solid #d8e0e4;
+  min-width: 0;
+  padding: 12px;
+}
+
+.policy-strip div:last-child {
+  border-right: 0;
+}
+
+.policy-strip span {
+  color: #53616b;
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.policy-strip strong {
+  color: #172026;
+  display: block;
+  font-size: 0.94rem;
+  line-height: 1.25;
+}
+
 .score-meter {
   min-height: 54px;
 }
@@ -244,8 +280,22 @@ h2 {
 
 @media (max-width: 860px) {
   .dashboard-grid,
-  .kpi-row {
+  .kpi-row,
+  .policy-strip {
     grid-template-columns: 1fr;
+  }
+
+  .policy-strip div,
+  .policy-strip div:last-child {
+    border-right: 0;
+  }
+
+  .policy-strip div {
+    border-bottom: 1px solid #d8e0e4;
+  }
+
+  .policy-strip div:last-child {
+    border-bottom: 0;
   }
 
   .panel-large {

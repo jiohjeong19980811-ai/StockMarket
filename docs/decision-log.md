@@ -167,3 +167,9 @@ Reason: Bad data should not disappear during rollback or silently enter backtest
 Decision: In the first scoring package slice, `scores.risk` means risk-control quality where higher is safer. Scoring can return `watchlist`, `avoid`, or `needs_more_data` for research-only inputs, but `paper_trade` requires eligible evidence IDs and passing hard gates.
 
 Reason: The platform needs explainable triage without implying guaranteed returns. A score should never bypass stale-data, citation, evidence, liquidity, options-risk, or paper-exposure controls.
+
+## 2026-05-28: Strategy Policy Catalog
+
+Decision: Encode MVP strategy-family policy in `@stockmarket/scoring`, expose it through `/strategies/policies`, and show the active policy in the operator console. `test_now` families may be evaluated for paper trading after evidence and risk gates pass; `context_only`, `test_later`, and `control_layer` families cannot bypass the strategy-policy gate.
+
+Reason: Strategy categories from the quant research phase need to become auditable product behavior, not just documentation. Operators should see why a family is testable, contextual, deferred, or risk-control-only before any candidate is promoted.

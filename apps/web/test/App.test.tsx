@@ -14,6 +14,19 @@ const mockScoringBody = {
     ticker: "MSFT",
     decision: "watchlist",
     evidenceStatus: "research_only",
+    strategyPolicy: {
+      family: "momentum",
+      label: "Momentum",
+      mvpDecision: "test_now",
+      paperTradeAllowed: true,
+      requiredData: ["Adjusted OHLCV"],
+      backtestingRequirements: ["Turnover and cost modeling"],
+      riskControls: ["Liquidity floor"],
+      optionsConsiderations: ["Defined-risk options only after options evidence exists."],
+      implementationComplexity: "medium",
+      overfittingRisk: "medium",
+      notes: "Liquid equity and ETF momentum is an MVP test-first family.",
+    },
     scores: {
       risk: 83,
       confidence: 81,
@@ -69,6 +82,9 @@ describe("operator console shell", () => {
     expect(await screen.findByText("Watchlist")).toBeInTheDocument();
     expect(screen.getByText("No provider keys required")).toBeInTheDocument();
     expect(screen.getByText("Mock scoring evaluation")).toBeInTheDocument();
+    expect(screen.getByText("Strategy Policy")).toBeInTheDocument();
+    expect(screen.getByText("Momentum")).toBeInTheDocument();
+    expect(screen.getByText("MVP Test Now")).toBeInTheDocument();
     expect(screen.getByText("Risk Controls")).toBeInTheDocument();
     expect(screen.getByText("83")).toBeInTheDocument();
   });

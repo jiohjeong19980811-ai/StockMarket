@@ -91,6 +91,7 @@ Scoring semantics:
 - `scores.confidence` summarizes bounded research signal strength and must be reduced by stale data, missing evidence, or weak source quality.
 - `scores.liquidity` summarizes tradability and must not bypass options bid/ask, volume, open-interest, IV, max-loss, event-risk, or theta-risk gates.
 - No score can override hard gates for missing citations, stale or missing data, missing evidence, options risk gaps, or paper exposure breaches.
+- The scoring layer also enforces an MVP strategy policy gate. Strategy families marked `context_only`, `test_later`, or `control_layer` cannot promote to `paper_trade` unless a future documented policy explicitly allows it.
 
 ## Quant Strategy Risk Controls
 
@@ -99,6 +100,13 @@ MVP strategy risk stance:
 - Test first: liquid stock/ETF PEAD, earnings surprise continuation, momentum, volatility-adjusted mean reversion, news-confirmed watchlist signals, value/quality context, and portfolio risk overlays.
 - Defer: options recommendations until historical options chains and realistic fill modeling exist; sector rotation until portfolio risk views exist; pairs/stat-arb until short/borrow assumptions can be safely modeled; ML until deterministic baselines and validation gates exist; crypto until a future research-only phase.
 - Avoid: live trading, broker order placement, margin, leverage, naked options, short volatility, 0DTE, HFT, market making, crypto execution, and strategies dependent on optimistic fills or ignored costs.
+
+Milestone 4 encodes the first deterministic strategy policy catalog in `@stockmarket/scoring` and exposes it through `/strategies/policies`:
+
+- `test_now`: earnings, momentum, and mean reversion may become paper-trade candidates only after evidence, citations, freshness, liquidity, and paper-exposure gates pass.
+- `context_only`: volatility, news/sentiment, and value/quality can influence watchlist/scoring context but cannot stand alone as MVP paper-trade strategies.
+- `test_later`: options and sector/macro require stronger data and validation before promotion. Options remain blocked from automatic paper-trade promotion until a future options policy review; contract-level historical options evidence and defined-risk structures are prerequisites for that future review.
+- `control_layer`: portfolio risk is a required guardrail, not a standalone opportunity strategy.
 
 Initial paper-only default limits should be conservative and revisited after paper-trade evidence:
 

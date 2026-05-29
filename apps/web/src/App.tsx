@@ -15,10 +15,25 @@ interface RiskGate {
   message: string;
 }
 
+interface StrategyPolicy {
+  family: string;
+  label: string;
+  mvpDecision: "test_now" | "context_only" | "test_later" | "control_layer";
+  paperTradeAllowed: boolean;
+  requiredData: string[];
+  backtestingRequirements: string[];
+  riskControls: string[];
+  optionsConsiderations: string[];
+  implementationComplexity: string;
+  overfittingRisk: string;
+  notes: string;
+}
+
 interface ScoringResult {
   ticker: string;
   decision: Decision;
   evidenceStatus: string;
+  strategyPolicy: StrategyPolicy;
   scores: ScoreSet;
   gates: RiskGate[];
   explanation: {
@@ -52,6 +67,19 @@ const fallbackScoring: MockScoringResponse = {
     ticker: "MSFT",
     decision: "watchlist",
     evidenceStatus: "research_only",
+    strategyPolicy: {
+      family: "momentum",
+      label: "Momentum",
+      mvpDecision: "test_now",
+      paperTradeAllowed: true,
+      requiredData: ["Adjusted OHLCV"],
+      backtestingRequirements: ["Turnover and cost modeling"],
+      riskControls: ["Liquidity floor"],
+      optionsConsiderations: ["Defined-risk options only after options evidence exists."],
+      implementationComplexity: "medium",
+      overfittingRisk: "medium",
+      notes: "Liquid equity and ETF momentum is an MVP test-first family.",
+    },
     scores: {
       risk: 83,
       confidence: 81,
@@ -88,6 +116,13 @@ const decisionLabels: Record<Decision, string> = {
   paper_trade: "Paper Trade",
   avoid: "Avoid",
   needs_more_data: "Needs More Data",
+};
+
+const mvpDecisionLabels: Record<StrategyPolicy["mvpDecision"], string> = {
+  test_now: "MVP Test Now",
+  context_only: "Context Only",
+  test_later: "Test Later",
+  control_layer: "Control Layer",
 };
 
 function ScoreMeter({ label, value }: { label: string; value: number }) {
@@ -193,6 +228,22 @@ export function App() {
             </span>
           </div>
           <p className="panel-copy">{scoring.result.explanation.summary}</p>
+          <div className="policy-strip" aria-label="Strategy policy">
+            <div>
+              <span>Strategy Policy</span>
+              <strong>{scoring.result.strategyPolicy.label}</strong>
+            </div>
+            <div>
+              <span>MVP Status</span>
+              <strong>{mvpDecisionLabels[scoring.result.strategyPolicy.mvpDecision]}</strong>
+            </div>
+            <div>
+              <span>Paper Trade Gate</span>
+              <strong>
+                {scoring.result.strategyPolicy.paperTradeAllowed ? "Allowed by Policy" : "Blocked"}
+              </strong>
+            </div>
+          </div>
           <div className="score-grid" aria-label="Score summary">
             <ScoreMeter label="Risk Controls" value={scoring.result.scores.risk} />
             <ScoreMeter label="Confidence" value={scoring.result.scores.confidence} />

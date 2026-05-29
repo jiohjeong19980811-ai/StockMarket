@@ -79,9 +79,33 @@ try {
     scoringBody.requiresEnv !== false ||
     scoringBody.liveTradingEnabled !== false ||
     scoringBody.notRecommendation !== true ||
-    scoringBody.result?.decision !== "watchlist"
+    scoringBody.result?.decision !== "watchlist" ||
+    scoringBody.result?.strategyPolicy?.family !== "momentum"
   ) {
     throw new Error(`Unexpected mock scoring response: ${scoringResponse.body}`);
+  }
+
+  const strategyPoliciesResponse = await server.inject({
+    method: "GET",
+    url: "/strategies/policies",
+  });
+
+  if (strategyPoliciesResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /strategies/policies to return 200, got ${strategyPoliciesResponse.statusCode}`,
+    );
+  }
+
+  const strategyPoliciesBody = strategyPoliciesResponse.json();
+  if (
+    strategyPoliciesBody.requiresEnv !== false ||
+    strategyPoliciesBody.liveTradingEnabled !== false ||
+    strategyPoliciesBody.paperTradeFirst !== true ||
+    !strategyPoliciesBody.policies?.some(
+      (policy) => policy.family === "momentum" && policy.mvpDecision === "test_now",
+    )
+  ) {
+    throw new Error(`Unexpected strategy policies response: ${strategyPoliciesResponse.body}`);
   }
 
   console.log("API smoke ok");
