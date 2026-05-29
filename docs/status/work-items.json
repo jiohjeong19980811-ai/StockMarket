@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T13:45:26-04:00",
+  "lastUpdated": "2026-05-29T13:50:21-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,9 +11,9 @@
   ],
   "currentFocus": {
     "phase": "Milestone 7: Backtesting",
-    "task": "Add stock-only backtest evidence contract",
+    "task": "Add durable stock backtest run persistence",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
-    "status": "Needs Review",
+    "status": "Planned",
     "priority": "High",
     "category": "Backtesting validation evidence"
   },
@@ -1196,7 +1196,7 @@
       "priority": "High",
       "category": "Backtesting validation evidence",
       "blockers": [],
-      "nextStep": "Commit eligible-metrics hardening and complete focused re-review before merging.",
+      "nextStep": "Merged to main after focused review and merged-main CI; continue with M7-002 durable backtest-run persistence.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",
@@ -1208,6 +1208,34 @@
       ],
       "validationRequired": [
         "Backtesting package tests",
+        "Root CI",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M7-002",
+      "title": "Add durable stock backtest run persistence",
+      "phase": "Milestone 7",
+      "owner": "Codex founding CTO / lead architect / principal engineer / quantitative research lead / risk reviewer",
+      "status": "Planned",
+      "priority": "High",
+      "category": "Backtesting validation evidence",
+      "blockers": [],
+      "nextStep": "Create a feature branch and write the DB/backtesting persistence plan before implementation.",
+      "relatedDocs": [
+        "docs/backtesting-and-validation.md",
+        "docs/risk-and-compliance.md",
+        "docs/architecture.md",
+        "docs/product-roadmap.md",
+        "packages/backtesting",
+        "packages/db"
+      ],
+      "validationRequired": [
+        "Backtesting package tests",
+        "DB migration tests",
         "Root CI",
         "Status JSON parse",
         "Whitespace check",

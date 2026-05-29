@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-29T13:45:26-04:00
+Last updated: 2026-05-29T13:50:21-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 7: Backtesting |
-| Current task | Add stock-only backtest evidence contract |
+| Current task | Add durable stock backtest run persistence |
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead |
-| Status | Needs Review |
+| Status | Planned |
 | Priority | High |
 | Category | Backtesting validation evidence |
 | Blockers | None |
-| Next step | Commit the eligible-metrics review fix and send the narrowed diff back through focused re-review before merging. |
-| Related docs/files | `packages/backtesting/src/index.ts`, `packages/backtesting/test/backtesting.test.ts`, `packages/backtesting/vitest.config.ts`, `docs/superpowers/specs/2026-05-29-milestone-7-stock-backtest-design.md`, `docs/superpowers/plans/2026-05-29-milestone-7-stock-backtest-contract.md` |
-| Validation required | Completed: root CI passed with 156 unit tests and 16 hook tests after eligible-metrics hardening; status JSON parse and whitespace check passed; secret-pattern scan found no matches; live-trading surface scan found only documented prohibitions, safety flags, and tests. |
+| Next step | Start a new feature branch for M7-002 and design durable backtest-run persistence before API/UI surfaces. |
+| Related docs/files | `packages/backtesting/src/index.ts`, `packages/backtesting/test/backtesting.test.ts`, `packages/db`, `docs/backtesting-and-validation.md`, `docs/superpowers/plans/2026-05-29-milestone-7-stock-backtest-contract.md` |
+| Validation required | M7-001 merged to `main`; root CI passed on merged main with 156 unit tests and 16 hook tests. M7-002 requires DB migration tests, backtesting package tests, root CI, status JSON parse, whitespace check, secret-pattern scan, and live-trading surface scan. |
 
 ## Status Vocabulary
 
