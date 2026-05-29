@@ -238,6 +238,46 @@ async function insertPaperTrade(overrides: Record<string, unknown> = {}) {
   );
 }
 
+async function insertBacktestRun(overrides: Record<string, unknown> = {}) {
+  const row = {
+    id: "backtest_run_1",
+    strategy_version_id: "strategy_earnings_v0",
+    strategy_family: "earnings",
+    strategy_version_label: "earnings-v0",
+    instrument_type: "stock",
+    universe: "mock-liquid-large-cap",
+    period_start: "2026-01-02T14:30:00.000Z",
+    period_end: "2026-05-28T20:00:00.000Z",
+    benchmark_return_pct: 4,
+    promotion_gate: "ready_for_review",
+    reason_codes_json: "[]",
+    metrics_json: '{"tradeCount":4,"winRatePct":75,"maxDrawdownPct":6.25,"netReturnPct":18.2815}',
+    assumptions_json: '{"slippageBps":5,"spreadBps":10,"feePerTrade":1}',
+    source_citations_json:
+      '[{"title":"Mock adjusted OHLCV history","url":"https://example.test/mock/prices","source":"mock-provider","publishedAt":"2026-05-28T19:55:00.000Z","retrievedAt":"2026-05-28T20:00:00.000Z"}]',
+    freshness_status: "fresh",
+    freshness_as_of: "2026-05-28T20:00:00.000Z",
+    freshness_notes_json: "[]",
+    trade_count: 4,
+    win_rate_pct: 75,
+    max_drawdown_pct: 6.25,
+    net_return_pct: 18.2815,
+    benchmark_relative_return_pct: 14.2815,
+    options_proxy: 0,
+    not_recommendation: 1,
+    created_at: now,
+    updated_at: now,
+    ...overrides,
+  };
+
+  const columns = Object.keys(row);
+  const placeholders = columns.map(() => "?").join(", ");
+  await execute(
+    `INSERT INTO backtest_runs (${columns.join(", ")}) VALUES (${placeholders})`,
+    Object.values(row),
+  );
+}
+
 describe("database migrations", () => {
   beforeEach(async () => {
     client = await createLocalClient();
@@ -257,6 +297,7 @@ describe("database migrations", () => {
       "0001_normalized_ingestion_tables.sql",
       "0002_paper_trades.sql",
       "0003_paper_trade_closes.sql",
+      "0004_backtest_runs.sql",
     ]);
     for (const row of result.rows) {
       expect(row.checksum).toEqual(expect.stringMatching(/^[a-f0-9]{64}$/));
@@ -409,6 +450,44 @@ describe("database migrations", () => {
     expect(result.rows.map((row) => row.name)).toEqual(
       expect.arrayContaining(["price_bars", "news_articles", "earnings_events", "option_quotes"]),
     );
+  });
+
+  it("creates durable backtest run tables", async () => {
+    const result = await client.execute(
+      "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
+    );
+
+    expect(result.rows.map((row) => row.name)).toEqual(
+      expect.arrayContaining(["backtest_runs", "backtest_run_trades"]),
+    );
+  });
+
+  it("accepts a stock backtest run with persisted trade rows", async () => {
+    await seedRecommendationDependencies();
+    await insertBacktestRun();
+    await execute(
+      `INSERT INTO backtest_run_trades
+        (id, backtest_run_id, source_trade_id, ticker, net_return_pct,
+         gross_return_pct, holding_days, exit_order, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["backtest_trade_1", "backtest_run_1", "trade-1", "MSFT", 9.85, 10, 7.2, 0, now],
+    );
+
+    const result = await client.execute("SELECT COUNT(*) AS count FROM backtest_run_trades");
+    expect(result.rows[0]?.count).toBe(1);
+  });
+
+  it("rejects unsafe or malformed backtest runs", async () => {
+    await seedRecommendationDependencies();
+
+    await expect(insertBacktestRun({ not_recommendation: 0 })).rejects.toThrow();
+    await expect(
+      insertBacktestRun({ id: "backtest_run_2", instrument_type: "long_call" }),
+    ).rejects.toThrow();
+    await expect(insertBacktestRun({ id: "backtest_run_3", options_proxy: 1 })).rejects.toThrow();
+    await expect(
+      insertBacktestRun({ id: "backtest_run_4", reason_codes_json: "not-json" }),
+    ).rejects.toThrow();
   });
 
   it("accepts normalized ingestion rows linked to provider records", async () => {

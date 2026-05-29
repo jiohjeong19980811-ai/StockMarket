@@ -629,6 +629,135 @@ export const paperTrades = sqliteTable(
   ],
 );
 
+export const backtestRuns = sqliteTable(
+  "backtest_runs",
+  {
+    id: text("id").primaryKey(),
+    strategyVersionId: text("strategy_version_id")
+      .notNull()
+      .references(() => strategyVersions.id),
+    strategyFamily: text("strategy_family").notNull(),
+    strategyVersionLabel: text("strategy_version_label").notNull(),
+    instrumentType: text("instrument_type", { enum: ["stock"] }).notNull(),
+    universe: text("universe").notNull(),
+    periodStart: text("period_start").notNull(),
+    periodEnd: text("period_end").notNull(),
+    benchmarkReturnPct: real("benchmark_return_pct").notNull(),
+    promotionGate: text("promotion_gate", {
+      enum: ["ready_for_review", "needs_more_data", "blocked"],
+    }).notNull(),
+    reasonCodesJson: text("reason_codes_json").notNull(),
+    metricsJson: text("metrics_json").notNull(),
+    assumptionsJson: text("assumptions_json").notNull(),
+    sourceCitationsJson: text("source_citations_json").notNull(),
+    freshnessStatus: text("freshness_status", {
+      enum: ["fresh", "stale", "partial", "missing"],
+    }).notNull(),
+    freshnessAsOf: text("freshness_as_of").notNull(),
+    freshnessNotesJson: text("freshness_notes_json").notNull(),
+    tradeCount: integer("trade_count").notNull(),
+    winRatePct: real("win_rate_pct").notNull(),
+    maxDrawdownPct: real("max_drawdown_pct").notNull(),
+    netReturnPct: real("net_return_pct").notNull(),
+    benchmarkRelativeReturnPct: real("benchmark_relative_return_pct").notNull(),
+    optionsProxy: integer("options_proxy", { mode: "boolean" }).notNull().default(false),
+    notRecommendation: integer("not_recommendation", { mode: "boolean" }).notNull().default(true),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("backtest_runs_strategy_version_idx").on(table.strategyVersionId),
+    index("backtest_runs_gate_idx").on(table.promotionGate),
+    check("backtest_runs_strategy_family_nonempty", sql`length(${table.strategyFamily}) > 0`),
+    check(
+      "backtest_runs_strategy_version_label_nonempty",
+      sql`length(${table.strategyVersionLabel}) > 0`,
+    ),
+    check("backtest_runs_stock_only", sql`${table.instrumentType} = 'stock'`),
+    check("backtest_runs_universe_nonempty", sql`length(${table.universe}) > 0`),
+    check("backtest_runs_period_start_nonempty", sql`length(${table.periodStart}) > 0`),
+    check(
+      "backtest_runs_period_end_valid",
+      sql`length(${table.periodEnd}) > 0 AND ${table.periodEnd} > ${table.periodStart}`,
+    ),
+    check(
+      "backtest_runs_promotion_gate_valid",
+      sql`${table.promotionGate} IN ('ready_for_review', 'needs_more_data', 'blocked')`,
+    ),
+    check(
+      "backtest_runs_reason_codes_valid",
+      sql`json_valid(${table.reasonCodesJson}) AND json_type(${table.reasonCodesJson}) = 'array'`,
+    ),
+    check(
+      "backtest_runs_metrics_valid",
+      sql`json_valid(${table.metricsJson}) AND json_type(${table.metricsJson}) = 'object'`,
+    ),
+    check(
+      "backtest_runs_assumptions_valid",
+      sql`json_valid(${table.assumptionsJson}) AND json_type(${table.assumptionsJson}) = 'object'`,
+    ),
+    check(
+      "backtest_runs_source_citations_valid",
+      sql`
+        json_valid(${table.sourceCitationsJson})
+        AND json_type(${table.sourceCitationsJson}) = 'array'
+        AND json_array_length(${table.sourceCitationsJson}) > 0
+      `,
+    ),
+    check(
+      "backtest_runs_freshness_status_valid",
+      sql`${table.freshnessStatus} IN ('fresh', 'stale', 'partial', 'missing')`,
+    ),
+    check("backtest_runs_freshness_as_of_nonempty", sql`length(${table.freshnessAsOf}) > 0`),
+    check(
+      "backtest_runs_freshness_notes_valid",
+      sql`
+        json_valid(${table.freshnessNotesJson})
+        AND json_type(${table.freshnessNotesJson}) = 'array'
+      `,
+    ),
+    check("backtest_runs_trade_count_nonnegative", sql`${table.tradeCount} >= 0`),
+    check(
+      "backtest_runs_win_rate_range",
+      sql`${table.winRatePct} >= 0 AND ${table.winRatePct} <= 100`,
+    ),
+    check("backtest_runs_max_drawdown_nonnegative", sql`${table.maxDrawdownPct} >= 0`),
+    check("backtest_runs_no_options_proxy", sql`${table.optionsProxy} = 0`),
+    check("backtest_runs_not_recommendation", sql`${table.notRecommendation} = 1`),
+    check("backtest_runs_created_at_nonempty", sql`length(${table.createdAt}) > 0`),
+    check("backtest_runs_updated_at_nonempty", sql`length(${table.updatedAt}) > 0`),
+  ],
+);
+
+export const backtestRunTrades = sqliteTable(
+  "backtest_run_trades",
+  {
+    id: text("id").primaryKey(),
+    backtestRunId: text("backtest_run_id")
+      .notNull()
+      .references(() => backtestRuns.id, { onDelete: "cascade" }),
+    sourceTradeId: text("source_trade_id").notNull(),
+    ticker: text("ticker").notNull(),
+    netReturnPct: real("net_return_pct").notNull(),
+    grossReturnPct: real("gross_return_pct").notNull(),
+    holdingDays: real("holding_days").notNull(),
+    exitOrder: integer("exit_order").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("backtest_run_trades_run_source_unique").on(
+      table.backtestRunId,
+      table.sourceTradeId,
+    ),
+    index("backtest_run_trades_run_idx").on(table.backtestRunId, table.exitOrder),
+    check("backtest_run_trades_source_trade_nonempty", sql`length(${table.sourceTradeId}) > 0`),
+    check("backtest_run_trades_ticker_nonempty", sql`length(${table.ticker}) > 0`),
+    check("backtest_run_trades_holding_days_nonnegative", sql`${table.holdingDays} >= 0`),
+    check("backtest_run_trades_exit_order_nonnegative", sql`${table.exitOrder} >= 0`),
+    check("backtest_run_trades_created_at_nonempty", sql`length(${table.createdAt}) > 0`),
+  ],
+);
+
 export const recommendationCitations = sqliteTable(
   "recommendation_citations",
   {

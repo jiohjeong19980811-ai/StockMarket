@@ -17,7 +17,7 @@
 - Modify: `packages/db/src/schema.ts`
 - Modify: `packages/db/test/migration.test.ts`
 
-- [ ] **Step 1: Write failing migration tests**
+- [x] **Step 1: Write failing migration tests**
 
 Add tests to `packages/db/test/migration.test.ts` that assert:
 
@@ -36,7 +36,7 @@ await expect(insertBacktestRun({ options_proxy: 1 })).rejects.toThrow();
 await expect(insertBacktestRun({ reason_codes_json: "not-json" })).rejects.toThrow();
 ```
 
-- [ ] **Step 2: Run migration tests and confirm failure**
+- [x] **Step 2: Run migration tests and confirm failure**
 
 Run:
 
@@ -46,7 +46,7 @@ npm.cmd run test --workspace @stockmarket/db -- migration
 
 Expected: failure because `0004_backtest_runs.sql` and schema exports do not exist.
 
-- [ ] **Step 3: Add the migration**
+- [x] **Step 3: Add the migration**
 
 Create `packages/db/migrations/0004_backtest_runs.sql` with:
 
@@ -99,11 +99,11 @@ CREATE TABLE backtest_run_trades (
 CREATE INDEX backtest_run_trades_run_idx ON backtest_run_trades(backtest_run_id, exit_order);
 ```
 
-- [ ] **Step 4: Add Drizzle schema exports**
+- [x] **Step 4: Add Drizzle schema exports**
 
 Add `backtestRuns` and `backtestRunTrades` to `packages/db/src/schema.ts` with fields matching the migration. Use `check`, `index`, and `uniqueIndex` in the same style as `paperTrades`.
 
-- [ ] **Step 5: Verify migration tests pass**
+- [x] **Step 5: Verify migration tests pass**
 
 Run:
 
