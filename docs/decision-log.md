@@ -161,3 +161,9 @@ Reason: The project should not accidentally activate paid-provider network calls
 Decision: Treat missing timestamps, future timestamps, invalid price bars, duplicate news records, invalid earnings dates, inverted option quotes, and unusable implied volatility as merge-blocking data quality failures. Persist ingestion runs, provider records, and data-quality events for rejected records, but quarantine missing-quality records from normalized strategy datasets.
 
 Reason: Bad data should not disappear during rollback or silently enter backtests and scoring. The platform needs auditability for rejected provider data while protecting downstream research from lookahead bias, stale/empty responses, invalid market data, and options quote traps.
+
+## 2026-05-28: Scoring Risk-Control Semantics
+
+Decision: In the first scoring package slice, `scores.risk` means risk-control quality where higher is safer. Scoring can return `watchlist`, `avoid`, or `needs_more_data` for research-only inputs, but `paper_trade` requires eligible evidence IDs and passing hard gates.
+
+Reason: The platform needs explainable triage without implying guaranteed returns. A score should never bypass stale-data, citation, evidence, liquidity, options-risk, or paper-exposure controls.

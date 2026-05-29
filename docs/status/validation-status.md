@@ -1,25 +1,31 @@
 # Validation Status
 
-Last updated: 2026-05-28T21:33:48-04:00
+Last updated: 2026-05-28T21:43:23-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 3 provider ingestion validation |
-| Current task | Provider ingestion review hardening completed and validated |
-| Owner/agent | Codex founding CTO / lead architect / security reviewer / data quality reviewer |
+| Current phase | Milestone 4 scoring and risk validation |
+| Current task | Deterministic scoring and risk-gate skeleton added and validated |
+| Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Provider ingestion and data quality |
+| Category | Scoring and risk controls |
 | Blockers | None |
-| Next step | Commit review fixes, then continue with fixture expansion or a lightweight web status panel |
-| Related docs/files | `packages/data`, `packages/db`, `apps/api/src/server.ts`, `docs/provider-configuration.md`, `docs/status/` |
+| Next step | Commit Milestone 4 scoring slice, then continue with scoring API integration or strategy-specific signal components |
+| Related docs/files | `packages/scoring`, `docs/risk-and-compliance.md`, `docs/backtesting-and-validation.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 4 scoring package tests | Completed | 7 scoring tests passed for paper-trade eligible stock candidates, research-only watchlist cap, missing citation/freshness needs-more-data gates, paper exposure avoid gates, options risk-detail gates, complete options evidence, and score clamping | `npm.cmd run test --workspace @stockmarket/scoring -- scoring` |
+| Milestone 4 scoring aggregate CI | Completed | Typecheck, lint, format, 84 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
+| Milestone 4 status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after scoring status updates | `python -m json.tool docs/status/work-items.json` |
+| Milestone 4 whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown files | `git diff --check` |
+| Milestone 4 secret-pattern scan | Completed | No secret-shaped tokens found in app, package, docs, Codex config, env example, or package files | `rg` secret-pattern scan |
+| Milestone 4 live-trading surface scan | Completed | Matches are documented guardrails, env rejection tests, safety docs, or deferred future-phase references; no live order implementation was introduced | `rg` live-trading/order-surface scan |
 | Milestone 3 review-fix aggregate CI | Completed | Typecheck, lint, format, 77 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after ingestion quarantine, lineage, idempotency, and provider terms-gate fixes | `npm.cmd run ci` |
 | Milestone 3 review-fix DB migration tests | Completed | 22 migration tests passed, including dataset-specific provider lineage triggers and natural-key normalized price deduplication | `npm.cmd run test --workspace @stockmarket/db -- migration` |
 | Milestone 3 review-fix DB ingestion sink tests | Completed | 5 ingestion sink tests passed, including idempotent retries, preserved audit trails for rejected data, duplicate-news quarantine, and invalid option-quote quarantine | `npm.cmd run test --workspace @stockmarket/db -- ingestion-sink` |

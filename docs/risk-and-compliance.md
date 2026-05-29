@@ -85,6 +85,13 @@ Every opportunity must include:
 - Backtest or paper-trade evidence run ID when available.
 - Liquidity pass/fail and data freshness pass/fail.
 
+Scoring semantics:
+
+- `scores.risk` is a risk-control quality score where higher means safer controls and fewer unresolved gate failures. It is not a prediction of upside.
+- `scores.confidence` summarizes bounded research signal strength and must be reduced by stale data, missing evidence, or weak source quality.
+- `scores.liquidity` summarizes tradability and must not bypass options bid/ask, volume, open-interest, IV, max-loss, event-risk, or theta-risk gates.
+- No score can override hard gates for missing citations, stale or missing data, missing evidence, options risk gaps, or paper exposure breaches.
+
 ## Quant Strategy Risk Controls
 
 MVP strategy risk stance:

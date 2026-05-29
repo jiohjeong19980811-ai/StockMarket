@@ -89,6 +89,8 @@ A strategy cannot produce `paper trade` candidates unless:
 
 After MVP, selected strategies should be compared against at least one external framework or independent implementation to catch implementation-risk differences.
 
+The scoring layer may surface a `watchlist`, `avoid`, or `needs_more_data` decision from research-only inputs, but it cannot promote an idea to `paper_trade` without eligible evidence IDs and passing risk gates. Scoring is an audit-friendly triage layer, not proof of edge.
+
 Promotion blockers:
 
 - Missing source timestamps or provider lineage.
