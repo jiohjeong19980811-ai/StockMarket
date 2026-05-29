@@ -149,3 +149,5 @@ Commit message: `feat: add stock backtest evidence contract`
 - [x] Return `null` instead of unbounded profit factor for all-winning runs.
 - [x] Downgrade excessive parameter searches until overfitting risk is reviewed.
 - [x] Block out-of-period trades, duplicate trade IDs, duplicate observations, and citations retrieved before publication.
+- [x] Compute returned metrics and trade rows from eligible unique in-period observations only.
+- [x] Block freshness timestamps that predate the declared backtest period end.

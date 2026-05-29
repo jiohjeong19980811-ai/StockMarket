@@ -148,7 +148,9 @@ Backtest evidence controls:
 - Stock backtest trades must pass the configured average daily dollar-volume floor.
 - Options-family strategies cannot use stock-only backtests as options evidence.
 - Stock backtest trades must fall within the declared run period, and duplicate trade IDs or repeated observations are blocked because they can inflate sample size and distort benchmark-relative evidence.
+- Returned stock backtest metrics must use only eligible unique in-period observations; rejected sample-integrity rows cannot count toward trade count, returns, drawdown, or cost-sensitivity evidence.
 - Citation retrieval timestamps must not precede publication timestamps.
+- Freshness timestamps must not precede the declared backtest period end.
 - Heavy parameter searches downgrade evidence until overfitting risk is reviewed.
 
 ## Promotion Gates

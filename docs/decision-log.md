@@ -299,3 +299,9 @@ Reason: Backtest evidence can become misleading if weak source timing, optimisti
 Decision: Add merge-blocking gates for out-of-period trades, duplicate trade identifiers, duplicate trade observations, and citations retrieved before publication.
 
 Reason: Backtest evidence should not be reviewable when sample rows fall outside the declared period, repeated observations inflate the trade count, or citation chronology suggests impossible source timing.
+
+## 2026-05-29: Stock Backtest Eligible Metrics
+
+Decision: Compute returned stock backtest metrics and trade rows from eligible unique in-period observations only, and block freshness timestamps that predate the declared backtest period end.
+
+Reason: Blocked backtest runs should not return inflated evidence metrics from rows that the evaluator already rejected for sample-integrity reasons. Freshness must also cover the full declared run window before evidence can be reviewed.

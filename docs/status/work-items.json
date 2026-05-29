@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T13:26:13-04:00",
+  "lastUpdated": "2026-05-29T13:45:26-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -13,7 +13,7 @@
     "phase": "Milestone 7: Backtesting",
     "task": "Add stock-only backtest evidence contract",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
-    "status": "Completed",
+    "status": "Needs Review",
     "priority": "High",
     "category": "Backtesting validation evidence"
   },
@@ -23,7 +23,7 @@
       "title": "Create repo-level Codex setup",
       "phase": "Milestone 0",
       "owner": "Codex founding CTO / lead architect",
-      "status": "Needs Review",
+      "status": "Completed",
       "priority": "High",
       "category": "Codex setup",
       "blockers": [],
@@ -1196,7 +1196,7 @@
       "priority": "High",
       "category": "Backtesting validation evidence",
       "blockers": [],
-      "nextStep": "Commit the stock backtest sample-integrity review fixes and complete focused re-review before merging.",
+      "nextStep": "Commit eligible-metrics hardening and complete focused re-review before merging.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",

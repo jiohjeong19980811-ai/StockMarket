@@ -1,6 +1,6 @@
 # Current Work Status
 
-Last updated: 2026-05-29T13:37:18-04:00
+Last updated: 2026-05-29T13:45:26-04:00
 
 ## Current Focus
 
@@ -13,9 +13,9 @@ Last updated: 2026-05-29T13:37:18-04:00
 | Priority | High |
 | Category | Backtesting validation evidence |
 | Blockers | None |
-| Next step | Commit the sample-integrity review fixes and send the narrowed diff back through focused re-review before merging. |
+| Next step | Commit the eligible-metrics review fix and send the narrowed diff back through focused re-review before merging. |
 | Related docs/files | `packages/backtesting/src/index.ts`, `packages/backtesting/test/backtesting.test.ts`, `packages/backtesting/vitest.config.ts`, `docs/superpowers/specs/2026-05-29-milestone-7-stock-backtest-design.md`, `docs/superpowers/plans/2026-05-29-milestone-7-stock-backtest-contract.md` |
-| Validation required | Completed: root CI passed with 153 unit tests and 16 hook tests; status JSON parse and whitespace check passed; secret-pattern scan found no matches; live-trading surface scan found only documented prohibitions, safety flags, and tests. |
+| Validation required | Completed: root CI passed with 156 unit tests and 16 hook tests after eligible-metrics hardening; status JSON parse and whitespace check passed; secret-pattern scan found no matches; live-trading surface scan found only documented prohibitions, safety flags, and tests. |
 
 ## Status Vocabulary
 

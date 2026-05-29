@@ -184,20 +184,27 @@ function isTradeInsidePeriod(trade: StockBacktestTrade, period: StockBacktestPer
   return Date.parse(trade.entryAt) >= start && Date.parse(trade.exitAt) <= end;
 }
 
+function tradeIdKey(trade: StockBacktestTrade): string {
+  return trade.id.trim().toUpperCase();
+}
+
+function tradeObservationKey(trade: StockBacktestTrade): string {
+  return [
+    trade.ticker.trim().toUpperCase(),
+    Date.parse(trade.entryAt),
+    Date.parse(trade.exitAt),
+    trade.entryPrice,
+    trade.exitPrice,
+  ].join("|");
+}
+
 function hasDuplicateTrades(trades: StockBacktestTrade[]): boolean {
   const seenIds = new Set<string>();
   const seenSignatures = new Set<string>();
 
   for (const trade of trades.filter(isValidTrade)) {
-    const id = trade.id.trim().toUpperCase();
-    const signature = [
-      trade.ticker.trim().toUpperCase(),
-      Date.parse(trade.entryAt),
-      Date.parse(trade.exitAt),
-      trade.entryPrice,
-      trade.exitPrice,
-      trade.quantity,
-    ].join("|");
+    const id = tradeIdKey(trade);
+    const signature = tradeObservationKey(trade);
 
     if (seenIds.has(id) || seenSignatures.has(signature)) {
       return true;
@@ -207,6 +214,35 @@ function hasDuplicateTrades(trades: StockBacktestTrade[]): boolean {
   }
 
   return false;
+}
+
+function eligibleBacktestTrades(input: StockBacktestInput): StockBacktestTrade[] {
+  if (!hasValidPeriod(input.period)) {
+    return [];
+  }
+
+  const seenIds = new Set<string>();
+  const seenSignatures = new Set<string>();
+  const eligibleTrades: StockBacktestTrade[] = [];
+
+  for (const trade of input.trades) {
+    if (!isValidTrade(trade) || !isTradeInsidePeriod(trade, input.period)) {
+      continue;
+    }
+
+    const id = tradeIdKey(trade);
+    const signature = tradeObservationKey(trade);
+
+    if (seenIds.has(id) || seenSignatures.has(signature)) {
+      continue;
+    }
+
+    seenIds.add(id);
+    seenSignatures.add(signature);
+    eligibleTrades.push(trade);
+  }
+
+  return eligibleTrades;
 }
 
 function uniqueReasons(reasons: BacktestReasonCode[]): BacktestReasonCode[] {
@@ -316,8 +352,7 @@ function evaluateReturns(
   input: StockBacktestInput,
   multiplier: number,
 ): { returns: number[]; trades: BacktestTradeResult[] } {
-  const trades = input.trades
-    .filter(isValidTrade)
+  const trades = eligibleBacktestTrades(input)
     .slice()
     .sort((left, right) => Date.parse(left.exitAt) - Date.parse(right.exitAt))
     .map((trade) => ({
@@ -372,6 +407,7 @@ function metricsFor(input: StockBacktestInput): BacktestMetrics {
 
 function reasonCodesFor(input: StockBacktestInput): BacktestReasonCode[] {
   const reasons: BacktestReasonCode[] = [];
+  const eligibleTradeCount = eligibleBacktestTrades(input).length;
 
   if (input.instrumentType !== "stock") {
     reasons.push("non_stock_instrument");
@@ -395,7 +431,11 @@ function reasonCodesFor(input: StockBacktestInput): BacktestReasonCode[] {
   if (input.dataFreshness.status === "missing") {
     reasons.push("missing_data_freshness");
   }
-  if (!hasValidIsoDate(input.dataFreshness.asOf)) {
+  if (
+    !hasValidIsoDate(input.dataFreshness.asOf) ||
+    (hasValidPeriod(input.period) &&
+      Date.parse(input.dataFreshness.asOf) < Date.parse(input.period.end))
+  ) {
     reasons.push("invalid_freshness_timestamp");
   }
   if (!hasValidPeriod(input.period)) {
@@ -467,7 +507,7 @@ function reasonCodesFor(input: StockBacktestInput): BacktestReasonCode[] {
   ) {
     reasons.push("liquidity_filter_failed");
   }
-  if (input.trades.length > 0 && input.trades.length < input.assumptions.minTradesForReview) {
+  if (input.trades.length > 0 && eligibleTradeCount < input.assumptions.minTradesForReview) {
     reasons.push("insufficient_trade_count");
   }
 

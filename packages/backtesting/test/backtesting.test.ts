@@ -365,6 +365,69 @@ describe("evaluateStockBacktest", () => {
     expect(result.reasonCodes).toContain("duplicate_trade");
   });
 
+  it("blocks duplicate trade observations even when quantity differs", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        trades: baseBacktestInput.trades.map((trade) =>
+          trade.id === "trade-2"
+            ? {
+                ...baseBacktestInput.trades[0]!,
+                id: "trade-1-resized",
+                quantity: 99,
+              }
+            : trade,
+        ),
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toContain("duplicate_trade");
+  });
+
+  it("excludes duplicate and out-of-period rows from returned evidence metrics", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        trades: [
+          baseBacktestInput.trades[0]!,
+          {
+            ...baseBacktestInput.trades[0]!,
+            id: "trade-1-copy",
+            quantity: 99,
+          },
+          {
+            ...baseBacktestInput.trades[1]!,
+            entryAt: "2026-01-01T14:30:00.000Z",
+            exitAt: "2026-01-02T20:00:00.000Z",
+          },
+          baseBacktestInput.trades[2]!,
+          baseBacktestInput.trades[3]!,
+        ],
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toEqual(
+      expect.arrayContaining(["duplicate_trade", "trade_outside_backtest_period"]),
+    );
+    expect(result.metrics.tradeCount).toBe(3);
+    expect(result.trades.map((trade) => trade.id)).toEqual(["trade-1", "trade-3", "trade-4"]);
+  });
+
+  it("blocks freshness timestamps before the backtest period ends", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        dataFreshness: {
+          status: "fresh",
+          asOf: "2026-04-01T20:00:00.000Z",
+          notes: [],
+        },
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toContain("invalid_freshness_timestamp");
+  });
+
   it("sorts trades chronologically before computing drawdown", () => {
     const chronological = evaluateStockBacktest(baseBacktestInput);
     const reversed = evaluateStockBacktest(
