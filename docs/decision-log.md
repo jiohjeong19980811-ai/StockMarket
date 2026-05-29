@@ -275,3 +275,9 @@ Reason: Paper-trading evidence is only useful if it cannot understate risk, mix 
 Decision: Add a DB recommendation evidence resolver and `/paper-trading/mock-evidence-detail-dry-run` so stored recommendations can expose citations, freshness, resolved paper-trade evidence, reason codes, and audit events. Paper-trade evidence is verified only when the referenced trade is closed, paper-only, broker-disabled, and matches the recommendation ticker, instrument, and strategy version. Backtest evidence IDs remain unresolved until a backtest-run resolver is implemented.
 
 Reason: Recommendation and strategy promotion workflows must not trust caller-provided evidence IDs or isolated paper-trade metrics. The operator and future backtesting consumers need an auditable evidence-detail read model before any paper-trade outcome can influence promotion decisions.
+
+## 2026-05-29: Evidence Resolver Review Hardening
+
+Decision: Tighten the evidence detail resolver so any unresolved referenced evidence keeps the top-level evidence gate at `needs_more_data`, unsafe/non-paper/broker-enabled paper rows return blocked evidence detail instead of throwing, and the operator console hides evidence metrics during loading/offline states.
+
+Reason: Evidence inspection should be conservative by default. Mixed evidence must not overstate readiness, corrupt rows should remain auditable blocked evidence, and UI fixture data must not look operational before the API responds.

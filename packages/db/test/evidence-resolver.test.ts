@@ -80,7 +80,12 @@ async function seedAuditLog(
   );
 }
 
-async function seedRecommendation(id: string, ticker: string, paperTradeEvidenceId?: string) {
+async function seedRecommendation(
+  id: string,
+  ticker: string,
+  paperTradeEvidenceId?: string,
+  backtestRunId?: string,
+) {
   await seedAuditLog(
     `audit_${id}`,
     "operator_decision",
@@ -100,9 +105,9 @@ async function seedRecommendation(id: string, ticker: string, paperTradeEvidence
        primary_citation_source, primary_citation_published_at,
        primary_citation_retrieved_at, freshness_status, freshness_as_of,
        freshness_notes_json, risk_score, confidence_score, liquidity_score,
-       liquidity_decision, risk_decision, paper_trade_evidence_id,
+       liquidity_decision, risk_decision, backtest_run_id, paper_trade_evidence_id,
        operator_audit_log_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       ticker,
@@ -129,6 +134,7 @@ async function seedRecommendation(id: string, ticker: string, paperTradeEvidence
       90,
       "pass",
       "pass",
+      backtestRunId ?? null,
       paperTradeEvidenceId ?? "paper_trade_evidence_1",
       `audit_${id}`,
       now,
@@ -316,6 +322,55 @@ describe("recommendation evidence resolver", () => {
       id: "paper_trade_evidence_1",
       status: "blocked",
       reasonCodes: ["paper_trade_evidence_cohort_mismatch"],
+    });
+  });
+
+  it("keeps the evidence gate at needs_more_data when any referenced evidence is unresolved", async () => {
+    await seedClosedEvidencePaperTrade();
+    await seedRecommendation("rec_candidate_1", "MSFT", "paper_trade_evidence_1", "backtest_run_1");
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("needs_more_data");
+    expect(detail.reasonCodes).toContain("backtest_resolver_not_available");
+    expect(detail.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "backtest_run",
+          id: "backtest_run_1",
+          status: "unresolved",
+          reasonCodes: ["backtest_resolver_not_available"],
+        }),
+        expect.objectContaining({
+          kind: "paper_trade",
+          id: "paper_trade_evidence_1",
+          status: "verified",
+        }),
+      ]),
+    );
+  });
+
+  it("blocks unsafe non-paper or broker-enabled evidence without throwing", async () => {
+    await seedClosedEvidencePaperTrade();
+    await execute("PRAGMA ignore_check_constraints = ON");
+    await execute(
+      `UPDATE paper_trades
+       SET mode = ?, live_trading_enabled = ?, broker_execution = ?
+       WHERE id = ?`,
+      ["live", 1, 1, "paper_trade_evidence_1"],
+    );
+    await execute("PRAGMA ignore_check_constraints = OFF");
+    await seedRecommendation("rec_candidate_1", "MSFT", "paper_trade_evidence_1");
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("paper_trade_evidence_unsafe");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "paper_trade",
+      id: "paper_trade_evidence_1",
+      status: "blocked",
+      reasonCodes: ["paper_trade_evidence_unsafe"],
     });
   });
 });

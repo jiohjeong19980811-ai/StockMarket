@@ -840,9 +840,14 @@ export function App() {
   const evidence = evidenceDetail.evidenceDetail;
   const firstCitation = evidence.citations[0];
   const firstEvidenceItem = evidence.evidence[0];
+  const paperEvidenceItem =
+    evidence.evidence.find((item) => item.kind === "paper_trade") ?? firstEvidenceItem;
   const firstAuditEvent = evidence.auditTrail[0];
   const lastAuditEvent = evidence.auditTrail[evidence.auditTrail.length - 1];
   const isOffline = apiState === "offline";
+  const isOnline = apiState === "online";
+  const evidenceReasonText =
+    evidence.reasonCodes.length > 0 ? evidence.reasonCodes.join(", ") : "No evidence reason codes";
   const paperTradeGateLabel =
     failedGates.length > 0
       ? "Blocked pending evidence"
@@ -887,7 +892,11 @@ export function App() {
         <div className="kpi">
           <span>Decision</span>
           <strong>
-            {isOffline ? "No operational decision" : decisionLabels[scoring.result.decision]}
+            {isOffline
+              ? "No operational decision"
+              : isOnline
+                ? decisionLabels[scoring.result.decision]
+                : "Loading"}
           </strong>
         </div>
       </section>
@@ -903,6 +912,16 @@ export function App() {
             <p className="panel-copy">
               Keep live trading disabled and treat the dashboard as unavailable, not as a stale
               recommendation.
+            </p>
+          </article>
+        </section>
+      ) : !isOnline ? (
+        <section className="dashboard-grid" aria-label="Operator scoring dashboard">
+          <article className="panel panel-large">
+            <p className="eyebrow">Loading</p>
+            <h2>Loading operational data</h2>
+            <p className="panel-copy">
+              Evidence and paper-trade metrics stay hidden until the local API responds.
             </p>
           </article>
         </section>
@@ -1146,7 +1165,7 @@ export function App() {
               </div>
               <div>
                 <span>Paper P/L</span>
-                <strong>{formatCurrency(firstEvidenceItem?.realizedPnl ?? 0)}</strong>
+                <strong>{formatCurrency(paperEvidenceItem?.realizedPnl ?? 0)}</strong>
               </div>
             </div>
             <p className="panel-copy">{evidence.recommendation.downsideScenario}</p>
@@ -1164,9 +1183,24 @@ export function App() {
               </div>
               <div>
                 <span>Evidence ID</span>
-                <strong>{firstEvidenceItem?.id ?? "missing"}</strong>
+                <strong>{paperEvidenceItem?.id ?? "missing"}</strong>
               </div>
             </div>
+            <ul className="gate-list" aria-label="Evidence items">
+              {evidence.evidence.map((item) => (
+                <li
+                  key={`${item.kind}-${item.id}`}
+                  className={item.status === "verified" ? "gate-pass" : "gate-fail"}
+                >
+                  <span>{item.kind}</span>
+                  <p>
+                    {item.id} - {item.status}
+                    {item.reasonCodes.length > 0 ? ` - ${item.reasonCodes.join(", ")}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <p className="panel-copy">{evidenceReasonText}</p>
             <div className="decision-actions" aria-label="Operator decision actions">
               <button type="button" disabled>
                 Watchlist

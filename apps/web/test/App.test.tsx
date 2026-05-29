@@ -434,12 +434,33 @@ describe("operator console shell", () => {
     expect(screen.getAllByText("Close below mock breakout level").length).toBeGreaterThan(0);
     expect(screen.getByText("operator_decision")).toBeInTheDocument();
     expect(screen.getByText("paper_trade_closed")).toBeInTheDocument();
+    expect(screen.getByText("paper_trade")).toBeInTheDocument();
+    expect(screen.getByText("No evidence reason codes")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Watchlist" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Paper Trade" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Avoid" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Needs More Data" })).toBeDisabled();
     expect(screen.getByText("Risk Controls")).toBeInTheDocument();
     expect(screen.getByText("83")).toBeInTheDocument();
+  });
+
+  it("keeps evidence metrics hidden while API data is loading", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
+
+    render(<App />);
+
+    expect(screen.getAllByText("Loading").length).toBeGreaterThan(0);
+    expect(screen.getByText("Loading operational data")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Evidence and paper-trade metrics stay hidden until the local API responds.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Evidence Detail")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Watchlist" })).not.toBeInTheDocument();
   });
 
   it("keeps the dashboard usable when the API is offline", async () => {
@@ -460,6 +481,8 @@ describe("operator console shell", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("Simulated Closed")).not.toBeInTheDocument();
     expect(screen.queryByText("Ledger fallback snapshot")).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence Detail")).not.toBeInTheDocument();
     expect(screen.queryByText("Watchlist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Watchlist" })).not.toBeInTheDocument();
   });
 });

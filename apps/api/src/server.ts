@@ -864,77 +864,62 @@ export function buildServer(env: ApiEnv) {
     try {
       await runMigrations(client);
 
-      if (openResult.status === "accepted" && openResult.trade.instrumentType === "stock") {
-        await seedMockPaperTradeLedgerDependencies(client, openResult.trade.id);
-        await persistPaperTrade(client, {
-          id: openResult.trade.id,
-          recommendationId: openResult.trade.recommendationId,
-          accountId: "paper_account_mock",
-          ticker: openResult.trade.ticker,
-          instrumentType: openResult.trade.instrumentType,
-          strategyVersionId: openResult.trade.strategyVersion,
-          operatorApprovalAuditLogId: openResult.trade.audit.auditLogId,
-          entryAuditLogId: "audit_mock_paper_entry_1",
-          thesisSnapshot: openResult.trade.thesisSnapshot,
-          entryReason: "Mock API evidence-detail dry run accepted a simulated stock paper entry.",
-          downsideScenario: mockPaperTradeRecommendation.downsideScenario,
-          invalidationConditions: mockPaperTradeRecommendation.invalidationConditions,
-          entryType: "market",
-          requestedEntryPrice: mockPaperTradeRequest.entry.entryPrice,
-          simulatedEntryPrice: openResult.trade.entryPrice,
-          quantity: openResult.trade.quantity,
-          enteredAt: openResult.trade.openedAt,
-          stopLoss: openResult.trade.stopLossPrice,
-          profitTarget: openResult.trade.profitTargetPrice,
-          timeStopAt: "2026-06-11T20:00:00.000Z",
-          maxLossAmount: openResult.trade.risk.maxLoss,
-          accountEquityAtEntry: openResult.trade.risk.accountEquityAtOpen,
-          singleNameExposurePct: openResult.trade.risk.singleNameExposurePct,
-          sectorExposurePct: openResult.trade.risk.sectorExposurePct,
-          correlatedExposurePct: openResult.trade.risk.correlatedExposurePct,
-          dailyLossPctAtEntry: openResult.trade.risk.currentDailyLossPct,
-          createdAt: openResult.trade.openedAt,
-          updatedAt: openResult.trade.openedAt,
-        });
-
-        const closeResult = closePaperTrade(openResult.trade, mockPaperTradeExitRequest);
-        if (closeResult.status === "accepted") {
-          await seedMockPaperTradeCloseAuditLog(client, closeResult.trade.id);
-          await closePersistedPaperTrade(client, {
-            id: closeResult.trade.id,
-            closeAuditLogId: closeResult.trade.exitAudit.auditLogId,
-            closedAt: closeResult.trade.closedAt,
-            exitPrice: closeResult.trade.exitPrice,
-            exitReason: closeResult.trade.exitReason,
-            lessonsLearned: closeResult.trade.lessons[closeResult.trade.lessons.length - 1] ?? "",
-            updatedAt: closeResult.trade.closedAt,
-          });
-        }
-
-        const candidateRecommendationId = await seedMockEvidenceCandidateRecommendation(
-          client,
-          openResult.trade.id,
-        );
-
-        return {
-          mode: "mock",
-          requiresEnv: false,
-          liveTradingEnabled: env.LIVE_TRADING_ENABLED,
-          providerKeysRequired: [],
-          notRecommendation: true,
-          persistence: {
-            scope: "in_memory",
-            durable: false,
-            note: "Dry-run evidence detail data is discarded after the response.",
-          },
-          persistedInMemory: {
-            recommendations: await countRows(client, "recommendations"),
-            auditLogs: await countRows(client, "audit_logs"),
-            paperTrades: await countRows(client, "paper_trades"),
-          },
-          evidenceDetail: await getRecommendationEvidenceDetail(client, candidateRecommendationId),
-        };
+      if (openResult.status !== "accepted" || openResult.trade.instrumentType !== "stock") {
+        throw new Error("Mock evidence-detail dry run requires an accepted stock paper trade.");
       }
+
+      await seedMockPaperTradeLedgerDependencies(client, openResult.trade.id);
+      await persistPaperTrade(client, {
+        id: openResult.trade.id,
+        recommendationId: openResult.trade.recommendationId,
+        accountId: "paper_account_mock",
+        ticker: openResult.trade.ticker,
+        instrumentType: openResult.trade.instrumentType,
+        strategyVersionId: openResult.trade.strategyVersion,
+        operatorApprovalAuditLogId: openResult.trade.audit.auditLogId,
+        entryAuditLogId: "audit_mock_paper_entry_1",
+        thesisSnapshot: openResult.trade.thesisSnapshot,
+        entryReason: "Mock API evidence-detail dry run accepted a simulated stock paper entry.",
+        downsideScenario: mockPaperTradeRecommendation.downsideScenario,
+        invalidationConditions: mockPaperTradeRecommendation.invalidationConditions,
+        entryType: "market",
+        requestedEntryPrice: mockPaperTradeRequest.entry.entryPrice,
+        simulatedEntryPrice: openResult.trade.entryPrice,
+        quantity: openResult.trade.quantity,
+        enteredAt: openResult.trade.openedAt,
+        stopLoss: openResult.trade.stopLossPrice,
+        profitTarget: openResult.trade.profitTargetPrice,
+        timeStopAt: "2026-06-11T20:00:00.000Z",
+        maxLossAmount: openResult.trade.risk.maxLoss,
+        accountEquityAtEntry: openResult.trade.risk.accountEquityAtOpen,
+        singleNameExposurePct: openResult.trade.risk.singleNameExposurePct,
+        sectorExposurePct: openResult.trade.risk.sectorExposurePct,
+        correlatedExposurePct: openResult.trade.risk.correlatedExposurePct,
+        dailyLossPctAtEntry: openResult.trade.risk.currentDailyLossPct,
+        createdAt: openResult.trade.openedAt,
+        updatedAt: openResult.trade.openedAt,
+      });
+
+      const closeResult = closePaperTrade(openResult.trade, mockPaperTradeExitRequest);
+      if (closeResult.status !== "accepted") {
+        throw new Error("Mock evidence-detail dry run requires an accepted paper-trade close.");
+      }
+
+      await seedMockPaperTradeCloseAuditLog(client, closeResult.trade.id);
+      await closePersistedPaperTrade(client, {
+        id: closeResult.trade.id,
+        closeAuditLogId: closeResult.trade.exitAudit.auditLogId,
+        closedAt: closeResult.trade.closedAt,
+        exitPrice: closeResult.trade.exitPrice,
+        exitReason: closeResult.trade.exitReason,
+        lessonsLearned: closeResult.trade.lessons[closeResult.trade.lessons.length - 1] ?? "",
+        updatedAt: closeResult.trade.closedAt,
+      });
+
+      const candidateRecommendationId = await seedMockEvidenceCandidateRecommendation(
+        client,
+        openResult.trade.id,
+      );
 
       return {
         mode: "mock",
@@ -952,7 +937,7 @@ export function buildServer(env: ApiEnv) {
           auditLogs: await countRows(client, "audit_logs"),
           paperTrades: await countRows(client, "paper_trades"),
         },
-        evidenceDetail: null,
+        evidenceDetail: await getRecommendationEvidenceDetail(client, candidateRecommendationId),
       };
     } finally {
       client.close();

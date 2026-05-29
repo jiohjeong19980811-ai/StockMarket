@@ -129,13 +129,6 @@ function readOptionalNumber(row: Record<string, unknown>, key: string): number |
   return value;
 }
 
-function readSafeFalse(row: Record<string, unknown>, key: string): false {
-  if (readNumber(row, key) !== 0) {
-    throw new Error(`Unsafe evidence row has ${key} enabled.`);
-  }
-  return false;
-}
-
 function parseStringArray(value: string, label: string): string[] {
   const parsed = JSON.parse(value) as unknown;
   if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) {
@@ -149,11 +142,11 @@ function uniqueReasons(reasons: RecommendationEvidenceReason[]): RecommendationE
 }
 
 function evidenceGateFor(items: RecommendationEvidenceItem[]): RecommendationEvidenceGate {
-  if (items.length === 0 || items.every((item) => item.status === "unresolved")) {
-    return "needs_more_data";
-  }
   if (items.some((item) => item.status === "blocked")) {
     return "blocked";
+  }
+  if (items.length === 0 || items.some((item) => item.status === "unresolved")) {
+    return "needs_more_data";
   }
   return "verified";
 }
@@ -237,7 +230,7 @@ async function resolvePaperTradeEvidence(
   },
 ): Promise<{ item: RecommendationEvidenceItem; auditIds: string[] }> {
   const result = await client.execute({
-    sql: `SELECT id, ticker, instrument_type, strategy_version_id, status,
+    sql: `SELECT id, ticker, instrument_type, strategy_version_id, mode, status,
         operator_approval_audit_log_id, entry_audit_log_id, exit_audit_log_id,
         live_trading_enabled, broker_execution, simulated_entry_price, quantity,
         closed_at, exit_price
@@ -264,13 +257,14 @@ async function resolvePaperTradeEvidence(
   const ticker = readString(row, "ticker");
   const instrumentType = readString(row, "instrument_type");
   const strategyVersionId = readString(row, "strategy_version_id");
+  const mode = readString(row, "mode");
   const liveTradingEnabledRaw = readNumber(row, "live_trading_enabled");
   const brokerExecutionRaw = readNumber(row, "broker_execution");
 
   if (status !== "closed") {
     reasonCodes.push("paper_trade_evidence_not_closed");
   }
-  if (liveTradingEnabledRaw !== 0 || brokerExecutionRaw !== 0) {
+  if (mode !== "paper" || liveTradingEnabledRaw !== 0 || brokerExecutionRaw !== 0) {
     reasonCodes.push("paper_trade_evidence_unsafe");
   }
   if (
@@ -296,8 +290,8 @@ async function resolvePaperTradeEvidence(
       instrumentType,
       strategyVersionId,
       closedAt: readOptionalString(row, "closed_at") ?? undefined,
-      liveTradingEnabled: readSafeFalse(row, "live_trading_enabled"),
-      brokerExecution: readSafeFalse(row, "broker_execution"),
+      ...(liveTradingEnabledRaw === 0 ? { liveTradingEnabled: false as const } : {}),
+      ...(brokerExecutionRaw === 0 ? { brokerExecution: false as const } : {}),
       realizedPnl:
         exitPrice === null
           ? undefined
