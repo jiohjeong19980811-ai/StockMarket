@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T21:46:45-04:00
+Last updated: 2026-05-28T21:53:56-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 4: Scoring and risk |
-| Current task | Mock scoring API evaluation endpoint added without provider keys or broker execution |
+| Current task | Operator console now shows mock scoring, risk gates, and API-offline fallback state |
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Scoring and risk controls |
+| Category | Operator UI and scoring visibility |
 | Blockers | None |
-| Next step | Commit Milestone 4 scoring API slice, then continue with strategy-specific signal components or scoring UI visibility |
-| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/scoring.test.ts`, `scripts/smoke-api.mjs`, `packages/scoring/src/index.ts` |
-| Validation required | Completed: focused API scoring test, root CI with 85 unit tests and 16 hook tests, status JSON parse, whitespace check, secret-pattern scan, and live-trading surface scan |
+| Next step | Commit Milestone 4 scoring UI slice, then continue with strategy-specific signal components or paper-trading contracts |
+| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `apps/api/src/server.ts` |
+| Validation required | Completed: focused web dashboard tests, root CI with 86 unit tests and 16 hook tests, status JSON parse, whitespace check, secret-pattern scan, live-trading surface scan, and local web smoke on port 3001 |
 
 ## Status Vocabulary
 

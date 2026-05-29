@@ -1,25 +1,32 @@
 # Validation Status
 
-Last updated: 2026-05-28T21:46:45-04:00
+Last updated: 2026-05-28T21:53:56-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 4 scoring and risk validation |
-| Current task | Mock scoring API evaluation endpoint added and validated |
+| Current task | Operator console scoring visibility added and validated |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Scoring and risk controls |
+| Category | Operator UI and scoring visibility |
 | Blockers | None |
-| Next step | Commit Milestone 4 scoring API slice, then continue with strategy-specific signal components or scoring UI visibility |
-| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/scoring.test.ts`, `scripts/smoke-api.mjs`, `packages/scoring`, `docs/status/` |
+| Next step | Commit Milestone 4 scoring UI slice, then continue with strategy-specific signal components or paper-trading contracts |
+| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 4 scoring UI tests | Completed | 2 web dashboard tests passed for API-online scoring display and API-offline fallback snapshot | `npm.cmd run test --workspace @stockmarket/web -- App` |
+| Milestone 4 scoring UI aggregate CI | Completed | Typecheck, lint, format, 86 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
+| Milestone 4 scoring UI status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after scoring UI status updates | `python -m json.tool docs/status/work-items.json` |
+| Milestone 4 scoring UI whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed status files | `git diff --check` |
+| Milestone 4 scoring UI secret-pattern scan | Completed | No secret-shaped tokens found in app, package, docs, Codex config, env example, or package files | `rg` secret-pattern scan |
+| Milestone 4 scoring UI live-trading surface scan | Completed | Matches are documented guardrails, env rejection tests, safety docs, or deferred future-phase references; no live order implementation was introduced | `rg` live-trading/order-surface scan |
+| Milestone 4 scoring UI local web smoke | Completed | Existing Vite dev server on `http://127.0.0.1:3001` returned HTTP 200 after the dashboard update | `Invoke-WebRequest http://127.0.0.1:3001` |
 | Milestone 4 scoring API test | Completed | Mock scoring route returned `requiresEnv: false`, no provider keys, live trading disabled, `notRecommendation: true`, and a watchlist scoring result with risk/confidence/liquidity scores | `npm.cmd run test --workspace @stockmarket/api -- scoring` |
 | Milestone 4 scoring API aggregate CI | Completed | Typecheck, lint, format, 85 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed; smoke now checks `/scoring/mock-evaluation` | `npm.cmd run ci` |
 | Milestone 4 scoring API status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after scoring API status updates | `python -m json.tool docs/status/work-items.json` |

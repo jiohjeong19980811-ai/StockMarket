@@ -1,10 +1,62 @@
 import "@testing-library/jest-dom/vitest";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 
+const mockScoringBody = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  result: {
+    inputId: "mock-score-MSFT-momentum-watchlist",
+    ticker: "MSFT",
+    decision: "watchlist",
+    evidenceStatus: "research_only",
+    scores: {
+      risk: 83,
+      confidence: 81,
+      liquidity: 86,
+    },
+    gates: [
+      {
+        id: "citations_present",
+        passed: true,
+        impact: "needs_more_data",
+        message: "Source citations and timestamps are required before scoring can promote an idea.",
+      },
+      {
+        id: "paper_trade_evidence",
+        passed: false,
+        impact: "paper_trade_block",
+        message: "Backtest or paper-trade evidence is required before paper-trade promotion.",
+      },
+    ],
+    explanation: {
+      summary: "Scored MSFT as momentum research with 81/100 confidence.",
+      contributors: ["momentum: 78/100 - Mock trend strength is positive but still research-only."],
+      assumptions: [
+        "Scores are research signals only and are not guaranteed to predict returns.",
+        "Risk score is a risk-control quality score where higher means safer controls.",
+      ],
+      blocks: ["Backtest or paper-trade evidence is required before paper-trade promotion."],
+    },
+  },
+};
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
 describe("operator console shell", () => {
-  it("shows research-first safety posture", () => {
+  it("shows research-first safety posture", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify(mockScoringBody))),
+    );
+
     render(<App />);
 
     expect(
@@ -14,5 +66,25 @@ describe("operator console shell", () => {
       screen.getByText("Research first. Paper trading first. Live trading prohibited."),
     ).toBeInTheDocument();
     expect(screen.getByText("No good trades today is a valid outcome.")).toBeInTheDocument();
+    expect(await screen.findByText("Watchlist")).toBeInTheDocument();
+    expect(screen.getByText("No provider keys required")).toBeInTheDocument();
+    expect(screen.getByText("Mock scoring evaluation")).toBeInTheDocument();
+    expect(screen.getByText("Risk Controls")).toBeInTheDocument();
+    expect(screen.getByText("83")).toBeInTheDocument();
+  });
+
+  it("keeps the dashboard usable when the API is offline", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("API offline");
+      }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByText("API offline")).toBeInTheDocument();
+    expect(screen.getByText("Fallback mock snapshot")).toBeInTheDocument();
+    expect(screen.getAllByText("Watchlist").length).toBeGreaterThan(0);
   });
 });
