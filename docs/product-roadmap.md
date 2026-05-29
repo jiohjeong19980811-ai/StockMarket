@@ -40,6 +40,7 @@ Acceptance criteria:
 - Paper-trade performance is visible.
 - Paper-trade entries require operator approval metadata, explicit stop/target/time-stop rules, audit references, and conservative paper exposure limits.
 - Paper-trade closes require timestamped exit prices, exit reasons, lessons learned, and simulated P/L calculations before outcomes feed validation.
+- DB paper-trade closes require close audit linkage and reject duplicate close attempts.
 - Durable paper-trade records remain paper-only, stock-only for MVP, and cannot store live-trading or broker-execution flags.
 - API smoke can verify a mock paper-trade decision is persisted through an in-memory ledger dry run without provider keys or broker execution.
 - Backtesting framework exists.

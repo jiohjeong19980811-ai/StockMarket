@@ -147,4 +147,6 @@ Paper-trade entries must be durable before they are treated as validation eviden
 
 Paper-trade closes require timestamped exit price evidence, an exit reason, lessons learned, and an audit ID. P/L should be compared against the original thesis, stop, target, time stop, and downside scenario before feeding future strategy promotion decisions.
 
+Persisted closes must include close audit linkage and cannot be written twice for the same open paper trade. This preserves a one-entry, one-exit evidence chain for later strategy review.
+
 Lessons learned should be stored and visible on future recommendations from the same strategy.

@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createLocalClient, persistPaperTrade, runMigrations } from "../src/index.js";
+import {
+  closePersistedPaperTrade,
+  createLocalClient,
+  persistPaperTrade,
+  runMigrations,
+} from "../src/index.js";
 import type { Client } from "@libsql/client";
 
 const now = "2026-05-01T12:00:00Z";
@@ -109,6 +114,58 @@ async function seedPaperTradeDependencies(decision = "paper_trade") {
   }
 }
 
+async function seedCloseAuditLog() {
+  await execute(
+    `INSERT INTO audit_logs
+      (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id, risk_decision, operator_decision)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      "audit_paper_trade_close_1",
+      "paper_trade_closed",
+      "system",
+      "paper-trading",
+      "2026-05-06T20:00:00Z",
+      "paper_trade",
+      "paper_trade_1",
+      "pass",
+      "paper_trade",
+    ],
+  );
+}
+
+async function persistOpenPaperTrade() {
+  await persistPaperTrade(client, {
+    id: "paper_trade_1",
+    recommendationId: "rec_1",
+    accountId: "paper_account_default",
+    ticker: "MSFT",
+    instrumentType: "stock",
+    strategyVersionId: "strategy_earnings_v0",
+    operatorApprovalAuditLogId: "audit_paper_trade_approval_1",
+    entryAuditLogId: "audit_paper_trade_entry_1",
+    thesisSnapshot: "Positive earnings surprise research candidate.",
+    entryReason: "Operator approved a simulated long-stock paper trade after risk gates passed.",
+    downsideScenario: "Shares reverse below the event gap.",
+    invalidationConditions: ["Close below event low"],
+    entryType: "market",
+    requestedEntryPrice: 410,
+    simulatedEntryPrice: 410,
+    quantity: 2,
+    enteredAt: now,
+    stopLoss: 395,
+    profitTarget: 435,
+    timeStopAt: "2026-05-15T20:00:00Z",
+    maxLossAmount: 300,
+    accountEquityAtEntry: 100000,
+    singleNameExposurePct: 0.82,
+    sectorExposurePct: 8,
+    correlatedExposurePct: 10,
+    dailyLossPctAtEntry: 0.4,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
 describe("paper trade ledger persistence", () => {
   beforeEach(async () => {
     client = await createLocalClient();
@@ -122,36 +179,7 @@ describe("paper trade ledger persistence", () => {
   it("persists an accepted stock paper trade as a paper-only audit-linked ledger row", async () => {
     await seedPaperTradeDependencies();
 
-    await persistPaperTrade(client, {
-      id: "paper_trade_1",
-      recommendationId: "rec_1",
-      accountId: "paper_account_default",
-      ticker: "MSFT",
-      instrumentType: "stock",
-      strategyVersionId: "strategy_earnings_v0",
-      operatorApprovalAuditLogId: "audit_paper_trade_approval_1",
-      entryAuditLogId: "audit_paper_trade_entry_1",
-      thesisSnapshot: "Positive earnings surprise research candidate.",
-      entryReason: "Operator approved a simulated long-stock paper trade after risk gates passed.",
-      downsideScenario: "Shares reverse below the event gap.",
-      invalidationConditions: ["Close below event low"],
-      entryType: "market",
-      requestedEntryPrice: 410,
-      simulatedEntryPrice: 410,
-      quantity: 2,
-      enteredAt: now,
-      stopLoss: 395,
-      profitTarget: 435,
-      timeStopAt: "2026-05-15T20:00:00Z",
-      maxLossAmount: 300,
-      accountEquityAtEntry: 100000,
-      singleNameExposurePct: 0.82,
-      sectorExposurePct: 8,
-      correlatedExposurePct: 10,
-      dailyLossPctAtEntry: 0.4,
-      createdAt: now,
-      updatedAt: now,
-    });
+    await persistOpenPaperTrade();
 
     const result = await client.execute(
       `SELECT mode, status, live_trading_enabled, broker_execution, risk_pct_of_equity, invalidation_conditions_json
@@ -166,6 +194,64 @@ describe("paper trade ledger persistence", () => {
       risk_pct_of_equity: 0.3,
       invalidation_conditions_json: '["Close below event low"]',
     });
+  });
+
+  it("closes an open paper trade with exit audit linkage and lessons learned", async () => {
+    await seedPaperTradeDependencies();
+    await seedCloseAuditLog();
+    await persistOpenPaperTrade();
+
+    await closePersistedPaperTrade(client, {
+      id: "paper_trade_1",
+      closeAuditLogId: "audit_paper_trade_close_1",
+      closedAt: "2026-05-06T20:00:00Z",
+      exitPrice: 430,
+      exitReason: "Profit target review hit.",
+      lessonsLearned: "Follow-through appeared before the time stop.",
+      updatedAt: "2026-05-06T20:00:00Z",
+    });
+
+    const result = await client.execute(
+      `SELECT status, closed_at, exit_price, exit_reason, lessons_learned, exit_audit_log_id
+       FROM paper_trades WHERE id = ?`,
+      ["paper_trade_1"],
+    );
+    expect(result.rows[0]).toMatchObject({
+      status: "closed",
+      closed_at: "2026-05-06T20:00:00Z",
+      exit_price: 430,
+      exit_reason: "Profit target review hit.",
+      lessons_learned: "Follow-through appeared before the time stop.",
+      exit_audit_log_id: "audit_paper_trade_close_1",
+    });
+  });
+
+  it("rejects duplicate closes for the same persisted paper trade", async () => {
+    await seedPaperTradeDependencies();
+    await seedCloseAuditLog();
+    await persistOpenPaperTrade();
+
+    await closePersistedPaperTrade(client, {
+      id: "paper_trade_1",
+      closeAuditLogId: "audit_paper_trade_close_1",
+      closedAt: "2026-05-06T20:00:00Z",
+      exitPrice: 430,
+      exitReason: "Profit target review hit.",
+      lessonsLearned: "Follow-through appeared before the time stop.",
+      updatedAt: "2026-05-06T20:00:00Z",
+    });
+
+    await expect(
+      closePersistedPaperTrade(client, {
+        id: "paper_trade_1",
+        closeAuditLogId: "audit_paper_trade_close_1",
+        closedAt: "2026-05-07T20:00:00Z",
+        exitPrice: 431,
+        exitReason: "Duplicate close attempt.",
+        lessonsLearned: "Should not be recorded twice.",
+        updatedAt: "2026-05-07T20:00:00Z",
+      }),
+    ).rejects.toThrow(/open paper trade/i);
   });
 
   it("inherits database safety gates when a recommendation is not paper-trade eligible", async () => {

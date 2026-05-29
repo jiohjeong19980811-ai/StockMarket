@@ -163,6 +163,8 @@ Durable paper-trade rows must also preserve recommendation, approval, and entry 
 
 Closing a paper trade requires timestamped exit price evidence, an exit reason, lessons learned, and an audit ID. Simulated P/L must be treated as validation evidence only, not as proof of future returns.
 
+Persisted closes must update an open paper trade exactly once and must include close audit linkage. Duplicate closes, missing close audit IDs, missing exit details, or missing lessons learned are blocked.
+
 Options paper trades remain rejected until the options strategy policy is explicitly promoted after historical options chain and fill-model validation.
 
 ## Audit Requirements

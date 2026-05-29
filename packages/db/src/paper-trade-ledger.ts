@@ -36,6 +36,16 @@ export interface PersistPaperTradeInput {
   updatedAt: string;
 }
 
+export interface ClosePersistedPaperTradeInput {
+  id: string;
+  closeAuditLogId: string;
+  closedAt: string;
+  exitPrice: number;
+  exitReason: string;
+  lessonsLearned: string;
+  updatedAt: string;
+}
+
 function roundedPercent(value: number): number {
   return Math.round(value * 10_000) / 10_000;
 }
@@ -103,4 +113,34 @@ export async function persistPaperTrade(
       trade.updatedAt,
     ],
   });
+}
+
+export async function closePersistedPaperTrade(
+  client: Client,
+  close: ClosePersistedPaperTradeInput,
+): Promise<void> {
+  const result = await client.execute({
+    sql: `UPDATE paper_trades
+      SET status = 'closed',
+        exit_audit_log_id = ?,
+        closed_at = ?,
+        exit_price = ?,
+        exit_reason = ?,
+        lessons_learned = ?,
+        updated_at = ?
+      WHERE id = ? AND status = 'open'`,
+    args: [
+      close.closeAuditLogId,
+      close.closedAt,
+      close.exitPrice,
+      close.exitReason,
+      close.lessonsLearned,
+      close.updatedAt,
+      close.id,
+    ],
+  });
+
+  if (result.rowsAffected !== 1) {
+    throw new Error(`Could not close open paper trade ${close.id}.`);
+  }
 }

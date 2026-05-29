@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T23:31:45-04:00",
+  "lastUpdated": "2026-05-29T08:35:16-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,7 +11,7 @@
   ],
   "currentFocus": {
     "phase": "Milestone 6: Paper trading",
-    "task": "Simulated paper-trade close contract",
+    "task": "DB paper-trade close persistence",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
     "status": "Completed",
     "priority": "High",
@@ -839,6 +839,39 @@
       "validationRequired": [
         "Paper-trading package tests",
         "Paper-trading package typecheck",
+        "Root CI",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M6-007",
+      "title": "Persist paper-trade closes in the DB ledger",
+      "phase": "Milestone 6",
+      "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Paper trading and auditability",
+      "blockers": [],
+      "nextStep": "Commit the DB paper-trade close persistence slice, then continue with UI performance visibility or API close dry-run integration.",
+      "relatedDocs": [
+        "packages/db/migrations/0003_paper_trade_closes.sql",
+        "packages/db/src/paper-trade-ledger.ts",
+        "packages/db/src/schema.ts",
+        "packages/db/test/paper-trade-ledger.test.ts",
+        "packages/db/test/migration.test.ts",
+        "docs/architecture.md",
+        "docs/risk-and-compliance.md",
+        "docs/backtesting-and-validation.md",
+        "docs/product-roadmap.md",
+        "docs/decision-log.md"
+      ],
+      "validationRequired": [
+        "DB migration tests",
+        "DB paper-trade ledger tests",
+        "DB package tests",
         "Root CI",
         "Status JSON parse",
         "Whitespace check",

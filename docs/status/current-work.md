@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-28T23:31:45-04:00
+Last updated: 2026-05-29T08:35:16-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6: Paper trading |
-| Current task | Simulated paper-trade close contract |
+| Current task | DB paper-trade close persistence |
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
 | Category | Paper trading and auditability |
 | Blockers | None |
-| Next step | Commit the paper-trade close contract slice, then continue with DB close persistence or UI performance visibility |
-| Related docs/files | `packages/paper-trading/src/index.ts`, `packages/paper-trading/test/paper-trading.test.ts`, `docs/architecture.md`, `docs/risk-and-compliance.md`, `docs/backtesting-and-validation.md`, `docs/product-roadmap.md`, `docs/decision-log.md` |
-| Validation required | Completed: focused paper-trading package tests, paper-trading package typecheck, root CI with 108 unit tests and 16 hook tests, dependency audit, production build, API smoke, and status JSON parse. |
+| Next step | Commit the DB paper-trade close persistence slice, then continue with UI performance visibility or API close dry-run integration |
+| Related docs/files | `packages/db/migrations/0003_paper_trade_closes.sql`, `packages/db/src/paper-trade-ledger.ts`, `packages/db/src/schema.ts`, `packages/db/test/paper-trade-ledger.test.ts`, `packages/db/test/migration.test.ts`, `docs/architecture.md`, `docs/risk-and-compliance.md`, `docs/backtesting-and-validation.md`, `docs/product-roadmap.md`, `docs/decision-log.md` |
+| Validation required | Completed: DB migration tests, DB paper-trade ledger tests, DB package tests, status JSON parse, root CI with 111 unit tests and 16 hook tests, dependency audit, production build, and API smoke. |
 
 ## Status Vocabulary
 

@@ -190,6 +190,8 @@ Paper-trade persistence is now represented by a dedicated `paper_trades` migrati
 
 The paper-trading package also defines a simulated close contract. Closing a paper trade requires timestamped exit price evidence, an exit reason, lessons learned, and an audit ID; it computes realized P/L and return percent while rejecting duplicate closes and broker-shaped fields.
 
+DB close persistence is handled by `0003_paper_trade_closes.sql` and the paper-trade ledger helper. A persisted close updates only open paper trades, requires a close audit log reference, stores exit price, exit reason, lessons learned, and closed timestamp, and rejects duplicate close attempts.
+
 The API exposes `/paper-trading/mock-decision` as a non-durable contract demonstration. It does not persist records, require provider keys, or execute broker actions.
 
 The API also exposes `/paper-trading/mock-ledger-dry-run` as an in-memory persistence check. It seeds the minimum strategy, recommendation, and audit records, persists one accepted mock stock paper trade through the DB ledger helper, returns safe counts, and discards the database after the response.

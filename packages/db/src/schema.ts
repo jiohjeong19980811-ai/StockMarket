@@ -538,6 +538,7 @@ export const paperTrades = sqliteTable(
       .notNull()
       .default(false),
     brokerExecution: integer("broker_execution", { mode: "boolean" }).notNull().default(false),
+    exitAuditLogId: text("exit_audit_log_id").references(() => auditLogs.id),
     closedAt: text("closed_at"),
     exitPrice: real("exit_price"),
     exitReason: text("exit_reason"),
@@ -619,6 +620,7 @@ export const paperTrades = sqliteTable(
           AND ${table.exitPrice} IS NOT NULL AND ${table.exitPrice} > 0
           AND ${table.exitReason} IS NOT NULL AND length(${table.exitReason}) > 0
           AND ${table.lessonsLearned} IS NOT NULL AND length(${table.lessonsLearned}) > 0
+          AND ${table.exitAuditLogId} IS NOT NULL AND length(${table.exitAuditLogId}) > 0
         )
       `,
     ),

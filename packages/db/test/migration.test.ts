@@ -256,6 +256,7 @@ describe("database migrations", () => {
       "0000_initial_research_schema.sql",
       "0001_normalized_ingestion_tables.sql",
       "0002_paper_trades.sql",
+      "0003_paper_trade_closes.sql",
     ]);
     for (const row of result.rows) {
       expect(row.checksum).toEqual(expect.stringMatching(/^[a-f0-9]{64}$/));
@@ -930,5 +931,19 @@ describe("database migrations", () => {
     await expect(insertPaperTrade({ stop_loss: null })).rejects.toThrow();
     await expect(insertPaperTrade({ id: "paper_trade_2", profit_target: null })).rejects.toThrow();
     await expect(insertPaperTrade({ id: "paper_trade_3", time_stop_at: "" })).rejects.toThrow();
+  });
+
+  it("rejects closed paper trades without close audit linkage", async () => {
+    await seedPaperTradeDependencies();
+
+    await expect(
+      insertPaperTrade({
+        status: "closed",
+        closed_at: "2026-05-06T20:00:00Z",
+        exit_price: 430,
+        exit_reason: "Profit target review hit.",
+        lessons_learned: "Follow-through appeared before the time stop.",
+      }),
+    ).rejects.toThrow(/close audit/i);
   });
 });
