@@ -1,25 +1,33 @@
 # Validation Status
 
-Last updated: 2026-05-29T08:47:26-04:00
+Last updated: 2026-05-29T08:52:19-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6 paper trading validation |
-| Current task | Show paper-trade close outcome in the operator console |
+| Current task | Add local web CORS for mock API routes |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
-| Category | Paper trading UI and auditability |
+| Category | API and operator UI integration |
 | Blockers | None |
-| Next step | Commit the close-outcome UI slice, then continue Milestone 6 with durable paper-trade lifecycle/read APIs or paper-trade evidence summaries. |
-| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `docs/architecture.md`, `docs/product-roadmap.md`, `docs/decision-log.md`, `docs/status/` |
+| Next step | Commit the local CORS slice, then continue Milestone 6 with durable paper-trade lifecycle/read APIs or paper-trade evidence summaries. |
+| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/cors.test.ts`, `docs/architecture.md`, `docs/security.md`, `docs/decision-log.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 local API CORS aggregate CI | Completed | Typecheck, lint, format, 115 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding local CORS handling | `npm.cmd run ci` |
+| Milestone 6 local API CORS focused test | Completed | Red-green API tests passed for allowed local web origin, POST preflight, and disallowed arbitrary browser origin | `npm.cmd run test --workspace @stockmarket/api -- cors` |
+| Milestone 6 local API CORS status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-010 | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 local API CORS whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 6 local API CORS secret-pattern scan | Completed | No secret-shaped tokens found in changed API/status/doc files | `rg` secret-pattern scan |
+| Milestone 6 local API CORS live-trading surface scan | Completed | Matches are documented prohibitions, explicit no-broker wording, or existing safety copy; no live order implementation was introduced | `rg` live-trading/order-surface scan |
+| Milestone 6 local API CORS HTTP smoke | Completed | Temporary Fastify listener returned CORS headers for local web GET and POST preflight requests | Node HTTP smoke against built API server |
+| Milestone 6 local API CORS web smoke | Completed | Existing Vite dev server on `http://127.0.0.1:3001` returned HTTP 200 after the CORS update | `Invoke-WebRequest http://127.0.0.1:3001` |
 | Milestone 6 paper-trade close UI aggregate CI | Completed | Typecheck, lint, format, 112 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding the paper-trade close outcome panel | `npm.cmd run ci` |
 | Milestone 6 paper-trade close UI focused test | Completed | Red-green web test passed for API-online simulated close outcome display and API-offline close fallback snapshot | `npm.cmd run test --workspace @stockmarket/web -- App` |
 | Milestone 6 paper-trade close UI status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after adding M6-009 | `python -m json.tool docs/status/work-items.json` |

@@ -164,6 +164,8 @@ The API should expose typed endpoints for:
 
 No API route should place real-money trades in the MVP.
 
+During local MVP development, the API allows browser access only from the StockMarket web dev origins `http://127.0.0.1:3001` and `http://localhost:3001`. The CORS policy handles `GET`, `POST`, and `OPTIONS` for the local operator UI without enabling wildcard origins, credentials, broker execution, or live trading.
+
 ### Operator UI
 
 The UI is an operator console, not a marketing site. It should be dense, scan-friendly, and built around decisions:

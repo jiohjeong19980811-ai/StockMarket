@@ -1,4 +1,4 @@
-import fastify from "fastify";
+import fastify, { type FastifyReply } from "fastify";
 import {
   createMockEarningsProvider,
   createMockMarketDataProvider,
@@ -42,6 +42,23 @@ type DryRunTableName =
   | "paper_trades";
 
 type LocalClient = Awaited<ReturnType<typeof createLocalClient>>;
+
+const allowedWebOrigins = new Set(["http://127.0.0.1:3001", "http://localhost:3001"]);
+const corsAllowMethods = "GET,POST,OPTIONS";
+const corsAllowHeaders = "content-type";
+
+function applyLocalWebCors(origin: unknown, reply: FastifyReply) {
+  if (typeof origin !== "string" || !allowedWebOrigins.has(origin)) {
+    return;
+  }
+
+  reply
+    .header("Access-Control-Allow-Origin", origin)
+    .header("Access-Control-Allow-Methods", corsAllowMethods)
+    .header("Access-Control-Allow-Headers", corsAllowHeaders)
+    .header("Access-Control-Max-Age", "600")
+    .header("Vary", "Origin");
+}
 
 const mockScoringInput: ScoringInput = {
   id: "mock-score-MSFT-momentum-watchlist",
@@ -357,6 +374,15 @@ async function seedMockPaperTradeCloseAuditLog(client: LocalClient, paperTradeId
 export function buildServer(env: ApiEnv) {
   const server = fastify({
     logger: env.APP_ENV !== "test",
+  });
+
+  server.addHook("onRequest", (request, reply, done) => {
+    applyLocalWebCors(request.headers.origin, reply);
+    if (request.method === "OPTIONS") {
+      reply.code(204).send();
+      return;
+    }
+    done();
   });
 
   server.get("/health", async () => ({

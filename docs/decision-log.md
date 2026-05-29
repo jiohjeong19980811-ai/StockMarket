@@ -227,3 +227,9 @@ Reason: The API needs a repeatable end-to-end lifecycle smoke path before real d
 Decision: Show `/paper-trading/mock-close-dry-run` in the operator console as a simulated paper-trade outcome panel with P/L, return percent, exit price, lessons learned, and a close-audit linkage note.
 
 Reason: Operators need performance visibility before paper-trade outcomes can become validation evidence. Surfacing the close dry run in the UI keeps the workflow paper-only, auditable, and explicitly separated from broker execution or investment recommendations.
+
+## 2026-05-29: Local Web API CORS
+
+Decision: Add a narrow local CORS policy to the API for `http://127.0.0.1:3001` and `http://localhost:3001`, including `GET`, `POST`, and `OPTIONS` support for the operator web app.
+
+Reason: The Vite web app and Fastify API run on separate local ports. Browser integration needs explicit CORS headers, but the MVP should not use wildcard origins, credentials, or broad API exposure.

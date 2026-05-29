@@ -26,6 +26,10 @@ Local `.env` files are optional during mock-provider development and must never 
 
 Current real-provider adapter stubs fail closed until provider terms are reviewed. A local API key alone must not activate external provider calls during the mock-provider MVP workflow.
 
+## Local Browser Access
+
+The API CORS policy is intentionally narrow for local development. It allows the StockMarket web dev origins `http://127.0.0.1:3001` and `http://localhost:3001`, supports `GET`, `POST`, and `OPTIONS`, and does not use wildcard origins or browser credentials. Future deployed origins require an explicit security review and configuration decision.
+
 ## Research Basis
 
 Security decisions are informed by OWASP LLM guidance, NIST AI RMF guidance, MCP security best practices, GitHub secret scanning guidance, SEC automated investment advice materials, and official options/crypto risk disclosures. See `docs/research/security-and-compliance.md`.
