@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T16:26:02-04:00",
+  "lastUpdated": "2026-05-29T16:31:12-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -1224,7 +1224,7 @@
       "priority": "High",
       "category": "Backtesting validation evidence",
       "blockers": [],
-      "nextStep": "Commit the reviewed evidence-gate fix, then prepare the branch for fast-forward merge to main.",
+      "nextStep": "Merged to main after focused review and merged-main CI; choose the next Milestone 7 backtesting follow-up.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",
