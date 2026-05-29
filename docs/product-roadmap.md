@@ -40,6 +40,7 @@ Acceptance criteria:
 - Paper-trade performance is visible.
 - Paper-trade entries require operator approval metadata, explicit stop/target/time-stop rules, audit references, and conservative paper exposure limits.
 - Durable paper-trade records remain paper-only, stock-only for MVP, and cannot store live-trading or broker-execution flags.
+- API smoke can verify a mock paper-trade decision is persisted through an in-memory ledger dry run without provider keys or broker execution.
 - Backtesting framework exists.
 - Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.
 - Context-only and deferred strategy families cannot bypass the scoring strategy-policy gate.

@@ -12,7 +12,12 @@ import {
   providerSelectionCandidates,
   type IngestionClock,
 } from "@stockmarket/data";
-import { createLocalClient, persistIngestionBatch, runMigrations } from "@stockmarket/db";
+import {
+  createLocalClient,
+  persistIngestionBatch,
+  persistPaperTrade,
+  runMigrations,
+} from "@stockmarket/db";
 import { createPaperTrade, type PaperTradeRequest } from "@stockmarket/paper-trading";
 import { listStrategyPolicies, scoreOpportunity, type ScoringInput } from "@stockmarket/scoring";
 import type { Recommendation } from "@stockmarket/core";
@@ -25,7 +30,12 @@ type DryRunTableName =
   | "news_articles"
   | "earnings_events"
   | "option_quotes"
-  | "data_quality_events";
+  | "data_quality_events"
+  | "recommendations"
+  | "audit_logs"
+  | "paper_trades";
+
+type LocalClient = Awaited<ReturnType<typeof createLocalClient>>;
 
 const mockScoringInput: ScoringInput = {
   id: "mock-score-MSFT-momentum-watchlist",
@@ -159,12 +169,153 @@ const mockPaperTradeRequest: PaperTradeRequest = {
   },
 };
 
-async function countRows(
-  client: Awaited<ReturnType<typeof createLocalClient>>,
-  tableName: DryRunTableName,
-) {
+async function countRows(client: LocalClient, tableName: DryRunTableName) {
   const result = await client.execute(`SELECT COUNT(*) AS count FROM ${tableName}`);
   return Number(result.rows[0]?.count ?? 0);
+}
+
+function mockPaperTradePrimaryCitation() {
+  const citation = mockPaperTradeRecommendation.sourceCitations[0];
+  if (citation === undefined) {
+    throw new Error("Mock paper-trade recommendation requires a primary citation.");
+  }
+  return citation;
+}
+
+async function seedMockPaperTradeLedgerDependencies(client: LocalClient, paperTradeId: string) {
+  const citation = mockPaperTradePrimaryCitation();
+
+  await client.batch(
+    [
+      {
+        sql: `INSERT INTO strategy_definitions
+          (id, family, name, description, allowed_instrument_types_json, created_at)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [
+          "strategy_mock_momentum",
+          mockPaperTradeRecommendation.strategyFamily,
+          "Mock momentum paper-trade strategy",
+          "Mock strategy definition for paper-trade API ledger dry runs.",
+          '["stock"]',
+          mockPaperTradeRecommendation.createdAt,
+        ],
+      },
+      {
+        sql: `INSERT INTO strategy_versions
+          (id, strategy_definition_id, version, validation_status, promotion_state,
+           required_data_json, risk_policy_version, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          mockPaperTradeRecommendation.strategyVersion,
+          "strategy_mock_momentum",
+          "v0",
+          "paper_trade_eligible",
+          "paper_trade_eligible",
+          '["prices","risk","audit"]',
+          "risk-v0",
+          mockPaperTradeRecommendation.createdAt,
+        ],
+      },
+      {
+        sql: `INSERT INTO audit_logs
+          (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id,
+           risk_decision, operator_decision, operator_notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          mockPaperTradeRecommendation.operatorDecision.auditLogId,
+          "operator_decision",
+          "operator",
+          mockPaperTradeRecommendation.operatorDecision.decidedBy,
+          mockPaperTradeRecommendation.operatorDecision.decidedAt,
+          "recommendation",
+          mockPaperTradeRecommendation.id,
+          "pass",
+          "paper_trade",
+          mockPaperTradeRecommendation.operatorDecision.notes,
+        ],
+      },
+      {
+        sql: `INSERT INTO audit_logs
+          (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id,
+           risk_decision, operator_decision, operator_notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          mockPaperTradeRequest.operatorApproval.auditLogId,
+          "operator_decision",
+          "operator",
+          mockPaperTradeRequest.operatorApproval.approvedBy,
+          mockPaperTradeRequest.operatorApproval.approvedAt,
+          "paper_trade",
+          paperTradeId,
+          "pass",
+          "paper_trade",
+          mockPaperTradeRequest.operatorApproval.notes,
+        ],
+      },
+      {
+        sql: `INSERT INTO audit_logs
+          (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id,
+           risk_decision, operator_decision, operator_notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          "audit_mock_paper_entry_1",
+          "paper_trade_opened",
+          "system",
+          "paper-trading",
+          mockPaperTradeRequest.entry.requestedAt,
+          "paper_trade",
+          paperTradeId,
+          "pass",
+          "paper_trade",
+          "Mock in-memory ledger dry run.",
+        ],
+      },
+      {
+        sql: `INSERT INTO recommendations
+          (id, ticker, instrument_type, strategy_version_id, decision, evidence_status,
+           thesis, bull_case, bear_case, downside_scenario, invalidation_conditions_json,
+           why_system_might_be_wrong, primary_citation_title, primary_citation_url,
+           primary_citation_source, primary_citation_published_at,
+           primary_citation_retrieved_at, freshness_status, freshness_as_of,
+           freshness_notes_json, risk_score, confidence_score, liquidity_score,
+           liquidity_decision, risk_decision, backtest_run_id, operator_audit_log_id,
+           created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          mockPaperTradeRecommendation.id,
+          mockPaperTradeRecommendation.ticker,
+          mockPaperTradeRecommendation.instrumentType,
+          mockPaperTradeRecommendation.strategyVersion,
+          mockPaperTradeRecommendation.decision,
+          mockPaperTradeRecommendation.evidenceStatus,
+          mockPaperTradeRecommendation.thesis,
+          mockPaperTradeRecommendation.bullCase,
+          mockPaperTradeRecommendation.bearCase,
+          mockPaperTradeRecommendation.downsideScenario,
+          JSON.stringify(mockPaperTradeRecommendation.invalidationConditions),
+          mockPaperTradeRecommendation.whySystemMightBeWrong,
+          citation.title,
+          citation.url,
+          citation.source,
+          citation.publishedAt,
+          citation.retrievedAt,
+          mockPaperTradeRecommendation.dataFreshness.status,
+          mockPaperTradeRecommendation.dataFreshness.asOf,
+          JSON.stringify(mockPaperTradeRecommendation.dataFreshness.notes),
+          mockPaperTradeRecommendation.scores.risk,
+          mockPaperTradeRecommendation.scores.confidence,
+          mockPaperTradeRecommendation.scores.liquidity,
+          "pass",
+          "pass",
+          mockPaperTradeRecommendation.backtestRunId ?? null,
+          mockPaperTradeRecommendation.operatorDecision.auditLogId,
+          mockPaperTradeRecommendation.createdAt,
+          mockPaperTradeRecommendation.updatedAt,
+        ],
+      },
+    ],
+    "write",
+  );
 }
 
 export function buildServer(env: ApiEnv) {
@@ -232,6 +383,88 @@ export function buildServer(env: ApiEnv) {
     },
     result: createPaperTrade(mockPaperTradeRequest),
   }));
+
+  server.post("/paper-trading/mock-ledger-dry-run", async () => {
+    const client = await createLocalClient();
+    const result = createPaperTrade(mockPaperTradeRequest);
+
+    try {
+      await runMigrations(client);
+
+      if (result.status === "accepted" && result.trade.instrumentType === "stock") {
+        await seedMockPaperTradeLedgerDependencies(client, result.trade.id);
+        await persistPaperTrade(client, {
+          id: result.trade.id,
+          recommendationId: result.trade.recommendationId,
+          accountId: "paper_account_mock",
+          ticker: result.trade.ticker,
+          instrumentType: result.trade.instrumentType,
+          strategyVersionId: result.trade.strategyVersion,
+          operatorApprovalAuditLogId: result.trade.audit.auditLogId,
+          entryAuditLogId: "audit_mock_paper_entry_1",
+          thesisSnapshot: result.trade.thesisSnapshot,
+          entryReason: "Mock API ledger dry-run accepted a simulated stock paper entry.",
+          downsideScenario: mockPaperTradeRecommendation.downsideScenario,
+          invalidationConditions: mockPaperTradeRecommendation.invalidationConditions,
+          entryType: "market",
+          requestedEntryPrice: mockPaperTradeRequest.entry.entryPrice,
+          simulatedEntryPrice: result.trade.entryPrice,
+          quantity: result.trade.quantity,
+          enteredAt: result.trade.openedAt,
+          stopLoss: result.trade.stopLossPrice,
+          profitTarget: result.trade.profitTargetPrice,
+          timeStopAt: "2026-06-11T20:00:00.000Z",
+          maxLossAmount: result.trade.risk.maxLoss,
+          accountEquityAtEntry: result.trade.risk.accountEquityAtOpen,
+          singleNameExposurePct: result.trade.risk.singleNameExposurePct,
+          sectorExposurePct: result.trade.risk.sectorExposurePct,
+          correlatedExposurePct: result.trade.risk.correlatedExposurePct,
+          dailyLossPctAtEntry: result.trade.risk.currentDailyLossPct,
+          createdAt: result.trade.openedAt,
+          updatedAt: result.trade.openedAt,
+        });
+      }
+
+      const ledgerResult = await client.execute({
+        sql: `SELECT mode, ticker, live_trading_enabled, broker_execution, risk_pct_of_equity
+          FROM paper_trades
+          LIMIT 1`,
+        args: [],
+      });
+      const ledgerRow = ledgerResult.rows[0];
+
+      return {
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+          note: "Dry-run paper-trade ledger data is discarded after the response.",
+        },
+        result,
+        persistedInMemory: {
+          recommendations: await countRows(client, "recommendations"),
+          auditLogs: await countRows(client, "audit_logs"),
+          paperTrades: await countRows(client, "paper_trades"),
+        },
+        ledger:
+          ledgerRow === undefined
+            ? null
+            : {
+                mode: ledgerRow.mode,
+                liveTradingEnabled: ledgerRow.live_trading_enabled === 1,
+                brokerExecution: ledgerRow.broker_execution === 1,
+                ticker: ledgerRow.ticker,
+                riskPctOfEquity: Number(ledgerRow.risk_pct_of_equity),
+              },
+      };
+    } finally {
+      client.close();
+    }
+  });
 
   server.post("/ingestion/mock-dry-run", async () => {
     const clock: IngestionClock = {

@@ -197,3 +197,9 @@ Reason: Paper-trading outcomes cannot become validation evidence unless entries 
 Decision: Tighten the paper-trading contract so accepted stock paper trades must include valid numeric stop-loss and profit-target prices in addition to text exit rules and a time stop.
 
 Reason: Text rules are useful for operator review, but database constraints and later P/L validation need numeric levels to enforce max-loss assumptions, detect invalid entries, and compare exits against the original approved plan.
+
+## 2026-05-28: Paper-Trade Ledger API Dry Run
+
+Decision: Add `/paper-trading/mock-ledger-dry-run` as an in-memory API integration check that evaluates the mock paper-trade contract, seeds the minimum recommendation/audit records, persists one accepted paper row through the DB ledger helper, and discards the database after the response.
+
+Reason: The API needs a repeatable bridge between paper-trading decisions and the durable ledger before adding real persistent application state. Keeping this endpoint mock-only and in-memory preserves the no-provider-key and no-broker-execution boundary.

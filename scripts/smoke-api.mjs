@@ -130,6 +130,29 @@ try {
     throw new Error(`Unexpected mock paper-trading response: ${paperTradingResponse.body}`);
   }
 
+  const paperLedgerResponse = await server.inject({
+    method: "POST",
+    url: "/paper-trading/mock-ledger-dry-run",
+  });
+
+  if (paperLedgerResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /paper-trading/mock-ledger-dry-run to return 200, got ${paperLedgerResponse.statusCode}`,
+    );
+  }
+
+  const paperLedgerBody = paperLedgerResponse.json();
+  if (
+    paperLedgerBody.requiresEnv !== false ||
+    paperLedgerBody.liveTradingEnabled !== false ||
+    paperLedgerBody.persistence?.durable !== false ||
+    paperLedgerBody.result?.status !== "accepted" ||
+    paperLedgerBody.persistedInMemory?.paperTrades !== 1 ||
+    paperLedgerBody.ledger?.brokerExecution !== false
+  ) {
+    throw new Error(`Unexpected mock paper-trade ledger response: ${paperLedgerResponse.body}`);
+  }
+
   console.log("API smoke ok");
 } finally {
   await server.close();

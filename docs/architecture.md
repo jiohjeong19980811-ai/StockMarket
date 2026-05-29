@@ -190,6 +190,8 @@ Paper-trade persistence is now represented by a dedicated `paper_trades` migrati
 
 The API exposes `/paper-trading/mock-decision` as a non-durable contract demonstration. It does not persist records, require provider keys, or execute broker actions.
 
+The API also exposes `/paper-trading/mock-ledger-dry-run` as an in-memory persistence check. It seeds the minimum strategy, recommendation, and audit records, persists one accepted mock stock paper trade through the DB ledger helper, returns safe counts, and discards the database after the response.
+
 The operator console can display the mock paper-trading contract state beside scoring gates so the operator sees paper-only status, max loss, and risk percent without turning the mock result into a recommendation.
 
 ### Project Status And Roadmap Visibility
