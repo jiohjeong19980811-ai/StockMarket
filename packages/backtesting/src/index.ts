@@ -15,6 +15,8 @@ export type BacktestReasonCode =
   | "missing_data_freshness"
   | "invalid_freshness_timestamp"
   | "invalid_backtest_period"
+  | "trade_outside_backtest_period"
+  | "duplicate_trade"
   | "missing_point_in_time_control"
   | "missing_survivorship_bias_control"
   | "missing_lookahead_bias_control"
@@ -137,13 +139,22 @@ function hasText(value: string): boolean {
 }
 
 function hasValidCitationTimestamps(citation: SourceCitation): boolean {
+  const publishedAt = Date.parse(citation.publishedAt);
+  const retrievedAt = Date.parse(citation.retrievedAt);
   return (
     hasText(citation.title) &&
     hasText(citation.url) &&
     hasText(citation.source) &&
-    hasValidIsoDate(citation.publishedAt) &&
-    hasValidIsoDate(citation.retrievedAt)
+    Number.isFinite(publishedAt) &&
+    Number.isFinite(retrievedAt) &&
+    retrievedAt >= publishedAt
   );
+}
+
+function hasValidPeriod(period: StockBacktestPeriod): boolean {
+  const start = Date.parse(period.start);
+  const end = Date.parse(period.end);
+  return Number.isFinite(start) && Number.isFinite(end) && end > start;
 }
 
 function isValidTrade(trade: StockBacktestTrade): boolean {
@@ -162,6 +173,40 @@ function isValidTrade(trade: StockBacktestTrade): boolean {
     Number.isFinite(trade.averageDailyDollarVolume) &&
     trade.averageDailyDollarVolume >= 0
   );
+}
+
+function isTradeInsidePeriod(trade: StockBacktestTrade, period: StockBacktestPeriod): boolean {
+  if (!isValidTrade(trade) || !hasValidPeriod(period)) {
+    return true;
+  }
+  const start = Date.parse(period.start);
+  const end = Date.parse(period.end);
+  return Date.parse(trade.entryAt) >= start && Date.parse(trade.exitAt) <= end;
+}
+
+function hasDuplicateTrades(trades: StockBacktestTrade[]): boolean {
+  const seenIds = new Set<string>();
+  const seenSignatures = new Set<string>();
+
+  for (const trade of trades.filter(isValidTrade)) {
+    const id = trade.id.trim().toUpperCase();
+    const signature = [
+      trade.ticker.trim().toUpperCase(),
+      Date.parse(trade.entryAt),
+      Date.parse(trade.exitAt),
+      trade.entryPrice,
+      trade.exitPrice,
+      trade.quantity,
+    ].join("|");
+
+    if (seenIds.has(id) || seenSignatures.has(signature)) {
+      return true;
+    }
+    seenIds.add(id);
+    seenSignatures.add(signature);
+  }
+
+  return false;
 }
 
 function uniqueReasons(reasons: BacktestReasonCode[]): BacktestReasonCode[] {
@@ -247,6 +292,8 @@ function promotionGateFor(reasons: BacktestReasonCode[]): BacktestPromotionGate 
     "invalid_source_timestamps",
     "invalid_freshness_timestamp",
     "invalid_backtest_period",
+    "trade_outside_backtest_period",
+    "duplicate_trade",
     "missing_point_in_time_control",
     "missing_survivorship_bias_control",
     "missing_lookahead_bias_control",
@@ -351,11 +398,7 @@ function reasonCodesFor(input: StockBacktestInput): BacktestReasonCode[] {
   if (!hasValidIsoDate(input.dataFreshness.asOf)) {
     reasons.push("invalid_freshness_timestamp");
   }
-  if (
-    !hasValidIsoDate(input.period.start) ||
-    !hasValidIsoDate(input.period.end) ||
-    Date.parse(input.period.end) <= Date.parse(input.period.start)
-  ) {
+  if (!hasValidPeriod(input.period)) {
     reasons.push("invalid_backtest_period");
   }
   if (
@@ -408,6 +451,12 @@ function reasonCodesFor(input: StockBacktestInput): BacktestReasonCode[] {
   }
   if (input.trades.some((trade) => !isValidTrade(trade))) {
     reasons.push("invalid_trade");
+  }
+  if (input.trades.some((trade) => !isTradeInsidePeriod(trade, input.period))) {
+    reasons.push("trade_outside_backtest_period");
+  }
+  if (hasDuplicateTrades(input.trades)) {
+    reasons.push("duplicate_trade");
   }
   if (
     input.trades.some(

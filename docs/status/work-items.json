@@ -23,7 +23,7 @@
       "title": "Create repo-level Codex setup",
       "phase": "Milestone 0",
       "owner": "Codex founding CTO / lead architect",
-      "status": "Completed",
+      "status": "Needs Review",
       "priority": "High",
       "category": "Codex setup",
       "blockers": [],
@@ -1196,7 +1196,7 @@
       "priority": "High",
       "category": "Backtesting validation evidence",
       "blockers": [],
-      "nextStep": "Commit the package-level stock-only backtest evaluator review hardening, then continue M7 with durable backtest-run persistence.",
+      "nextStep": "Commit the stock backtest sample-integrity review fixes and complete focused re-review before merging.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",

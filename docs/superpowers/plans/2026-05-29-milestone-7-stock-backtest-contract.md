@@ -137,3 +137,15 @@ Commit message: `feat: add stock backtest evidence contract`
 - Spec coverage: The plan covers package setup, happy-path metrics, conservative negative gates, docs, status, and validation.
 - Placeholder scan: No placeholder markers are used.
 - Type consistency: The evaluator and result names are consistent across tasks.
+
+## Review Hardening
+
+- [x] Block options-family stock proxies so stock-only backtests cannot be used as options evidence.
+- [x] Require valid source, freshness, and period timestamps.
+- [x] Require 1x, 2x, and 3x cost stress scenarios.
+- [x] Block failed average daily dollar-volume liquidity floors.
+- [x] Compute drawdown from chronologically sorted compounded equity returns.
+- [x] Compare benchmark return against period-level net return.
+- [x] Return `null` instead of unbounded profit factor for all-winning runs.
+- [x] Downgrade excessive parameter searches until overfitting risk is reviewed.
+- [x] Block out-of-period trades, duplicate trade IDs, duplicate observations, and citations retrieved before publication.

@@ -293,3 +293,9 @@ Reason: The platform needs reproducible backtest evidence before strategy promot
 Decision: Harden the first stock backtest evaluator by blocking options-family stock proxies, invalid source/freshness/period timestamps, invalid cost assumptions, missing 1x/2x/3x stress scenarios, failed liquidity floors, and invalid trade rows. Compute drawdown from chronologically sorted compounded equity returns, compare the benchmark against period-level net return, and downgrade excessive parameter searches to `needs_more_data`.
 
 Reason: Backtest evidence can become misleading if weak source timing, optimistic costs, illiquid samples, options proxies, or over-tuned parameter searches reach `ready_for_review`. The first backtesting contract should be conservative even before persistence and UI layers exist.
+
+## 2026-05-29: Stock Backtest Sample Integrity Gates
+
+Decision: Add merge-blocking gates for out-of-period trades, duplicate trade identifiers, duplicate trade observations, and citations retrieved before publication.
+
+Reason: Backtest evidence should not be reviewable when sample rows fall outside the declared period, repeated observations inflate the trade count, or citation chronology suggests impossible source timing.

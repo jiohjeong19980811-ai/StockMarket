@@ -147,6 +147,8 @@ Backtest evidence controls:
 - Cost sensitivity must show baseline, 2x, and 3x fee/spread/slippage assumptions before review.
 - Stock backtest trades must pass the configured average daily dollar-volume floor.
 - Options-family strategies cannot use stock-only backtests as options evidence.
+- Stock backtest trades must fall within the declared run period, and duplicate trade IDs or repeated observations are blocked because they can inflate sample size and distort benchmark-relative evidence.
+- Citation retrieval timestamps must not precede publication timestamps.
 - Heavy parameter searches downgrade evidence until overfitting risk is reviewed.
 
 ## Promotion Gates

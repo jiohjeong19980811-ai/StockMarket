@@ -249,6 +249,23 @@ describe("evaluateStockBacktest", () => {
     );
   });
 
+  it("blocks citations retrieved before publication", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        sourceCitations: [
+          {
+            ...baseBacktestInput.sourceCitations[0]!,
+            publishedAt: "2026-05-28T20:00:00.000Z",
+            retrievedAt: "2026-05-28T19:55:00.000Z",
+          },
+        ],
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toContain("invalid_source_timestamps");
+  });
+
   it("blocks invalid cost assumptions and missing required stress multipliers", () => {
     const result = evaluateStockBacktest(
       inputWith({
@@ -292,6 +309,60 @@ describe("evaluateStockBacktest", () => {
 
     expect(result.promotionGate).toBe("blocked");
     expect(result.reasonCodes).toContain("liquidity_filter_failed");
+  });
+
+  it("blocks trades outside the declared backtest period", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        trades: baseBacktestInput.trades.map((trade) =>
+          trade.id === "trade-1"
+            ? {
+                ...trade,
+                entryAt: "2026-01-01T14:30:00.000Z",
+              }
+            : trade,
+        ),
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toContain("trade_outside_backtest_period");
+  });
+
+  it("blocks duplicate trade identifiers", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        trades: baseBacktestInput.trades.map((trade) =>
+          trade.id === "trade-2"
+            ? {
+                ...trade,
+                id: "trade-1",
+              }
+            : trade,
+        ),
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toContain("duplicate_trade");
+  });
+
+  it("blocks duplicate trade observations", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        trades: baseBacktestInput.trades.map((trade) =>
+          trade.id === "trade-2"
+            ? {
+                ...baseBacktestInput.trades[0]!,
+                id: "trade-1-copy",
+              }
+            : trade,
+        ),
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toContain("duplicate_trade");
   });
 
   it("sorts trades chronologically before computing drawdown", () => {
