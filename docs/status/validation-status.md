@@ -1,6 +1,6 @@
 # Validation Status
 
-Last updated: 2026-05-29T13:01:51-04:00
+Last updated: 2026-05-29T13:06:17-04:00
 
 ## Current State
 
@@ -20,8 +20,8 @@ Last updated: 2026-05-29T13:01:51-04:00
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
-| Milestone 6 evidence detail resolver aggregate CI | Completed | Typecheck, lint, format check, 137 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after review hardening for mixed unresolved evidence, unsafe paper rows, loading-state UI, and non-null API contract | `npm.cmd run ci` |
-| Milestone 6 evidence detail resolver DB regression | Completed | 4 DB evidence resolver tests passed for verified paper-trade evidence, cohort mismatch, mixed unresolved backtest evidence, and unsafe non-paper/broker-enabled rows returning blocked detail | `npm.cmd run test --workspace @stockmarket/db -- evidence-resolver` |
+| Milestone 6 evidence detail resolver aggregate CI | Completed | Typecheck, lint, format check, 137 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after review hardening for mixed unresolved evidence, unsafe paper rows, blocked evidence P/L hiding, loading-state UI, and non-null API contract | `npm.cmd run ci` |
+| Milestone 6 evidence detail resolver DB regression | Completed | 4 DB evidence resolver tests passed for verified paper-trade evidence, cohort mismatch, mixed unresolved backtest evidence, and unsafe non-paper/broker-enabled rows returning blocked detail without P/L metrics | `npm.cmd run test --workspace @stockmarket/db -- evidence-resolver` |
 | Milestone 6 evidence detail resolver API regression | Completed | 6 API paper-trading route tests passed after adding the mock evidence-detail dry run | `npm.cmd run build --workspace @stockmarket/db`; `npm.cmd run test --workspace @stockmarket/api -- paper-trading` |
 | Milestone 6 evidence detail resolver web regression | Completed | 3 web dashboard tests passed after hiding evidence metrics during loading and offline states, showing all evidence items, and keeping decision actions disabled online | `npm.cmd run test --workspace @stockmarket/web -- App` |
 | Milestone 6 evidence detail resolver status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after review-hardening status updates | `python -m json.tool docs/status/work-items.json` |

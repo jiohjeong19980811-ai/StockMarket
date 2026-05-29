@@ -372,5 +372,7 @@ describe("recommendation evidence resolver", () => {
       status: "blocked",
       reasonCodes: ["paper_trade_evidence_unsafe"],
     });
+    expect(detail.evidence[0]?.realizedPnl).toBeUndefined();
+    expect(detail.evidence[0]?.realizedReturnPct).toBeUndefined();
   });
 });

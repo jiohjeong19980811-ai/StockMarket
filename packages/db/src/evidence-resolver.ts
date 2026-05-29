@@ -293,13 +293,13 @@ async function resolvePaperTradeEvidence(
       ...(liveTradingEnabledRaw === 0 ? { liveTradingEnabled: false as const } : {}),
       ...(brokerExecutionRaw === 0 ? { brokerExecution: false as const } : {}),
       realizedPnl:
-        exitPrice === null
-          ? undefined
-          : roundedCurrency((exitPrice - simulatedEntryPrice) * quantity),
+        verified && exitPrice !== null
+          ? roundedCurrency((exitPrice - simulatedEntryPrice) * quantity)
+          : undefined,
       realizedReturnPct:
-        exitPrice === null
-          ? undefined
-          : roundedPercent(((exitPrice - simulatedEntryPrice) / simulatedEntryPrice) * 100),
+        verified && exitPrice !== null
+          ? roundedPercent(((exitPrice - simulatedEntryPrice) / simulatedEntryPrice) * 100)
+          : undefined,
     },
     auditIds: [
       readString(row, "operator_approval_audit_log_id"),

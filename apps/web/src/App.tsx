@@ -848,6 +848,10 @@ export function App() {
   const isOnline = apiState === "online";
   const evidenceReasonText =
     evidence.reasonCodes.length > 0 ? evidence.reasonCodes.join(", ") : "No evidence reason codes";
+  const paperEvidencePnl =
+    paperEvidenceItem?.status === "verified" && paperEvidenceItem.realizedPnl !== undefined
+      ? formatCurrency(paperEvidenceItem.realizedPnl)
+      : "Unavailable";
   const paperTradeGateLabel =
     failedGates.length > 0
       ? "Blocked pending evidence"
@@ -1165,7 +1169,7 @@ export function App() {
               </div>
               <div>
                 <span>Paper P/L</span>
-                <strong>{formatCurrency(paperEvidenceItem?.realizedPnl ?? 0)}</strong>
+                <strong>{paperEvidencePnl}</strong>
               </div>
             </div>
             <p className="panel-copy">{evidence.recommendation.downsideScenario}</p>

@@ -278,6 +278,6 @@ Reason: Recommendation and strategy promotion workflows must not trust caller-pr
 
 ## 2026-05-29: Evidence Resolver Review Hardening
 
-Decision: Tighten the evidence detail resolver so any unresolved referenced evidence keeps the top-level evidence gate at `needs_more_data`, unsafe/non-paper/broker-enabled paper rows return blocked evidence detail instead of throwing, and the operator console hides evidence metrics during loading/offline states.
+Decision: Tighten the evidence detail resolver so any unresolved referenced evidence keeps the top-level evidence gate at `needs_more_data`, unsafe/non-paper/broker-enabled paper rows return blocked evidence detail without performance metrics instead of throwing, and the operator console hides evidence metrics during loading/offline states.
 
 Reason: Evidence inspection should be conservative by default. Mixed evidence must not overstate readiness, corrupt rows should remain auditable blocked evidence, and UI fixture data must not look operational before the API responds.
