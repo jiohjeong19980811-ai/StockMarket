@@ -1,6 +1,6 @@
 # Validation Status
 
-Last updated: 2026-05-29T13:12:38-04:00
+Last updated: 2026-05-29T13:17:17-04:00
 
 ## Current State
 
@@ -9,19 +9,19 @@ Last updated: 2026-05-29T13:12:38-04:00
 | Current phase | Milestone 7 backtesting validation |
 | Current task | Add stock-only backtest evidence contract |
 | Owner/agent | Codex founding CTO / lead architect / principal engineer / security reviewer / risk reviewer / QA reviewer |
-| Status | In Progress |
+| Status | Completed |
 | Priority | High |
 | Category | Backtesting validation evidence |
 | Blockers | None |
-| Next step | Run red-green backtesting package tests, then aggregate validation and scans before committing M7-001. |
+| Next step | Commit M7-001 and request focused review before the next M7 slice. |
 | Related docs/files | `packages/backtesting/src/index.ts`, `packages/backtesting/test/backtesting.test.ts`, `docs/superpowers/plans/2026-05-29-milestone-7-stock-backtest-contract.md`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
-| Milestone 7 stock backtest contract aggregate CI | Pending | Awaiting implementation and final validation | `npm.cmd run ci` |
-| Milestone 7 stock backtest contract focused regression | Pending | Awaiting red-green package tests | `npm.cmd run test --workspace @stockmarket/backtesting` |
+| Milestone 7 stock backtest contract aggregate CI | Completed | Typecheck, lint, format check, 143 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after adding the stock-only backtest evidence contract | `npm.cmd run ci` |
+| Milestone 7 stock backtest contract focused regression | Completed | 6 backtesting package tests passed for happy-path metrics, insufficient samples, missing anti-bias controls, missing citations/freshness, non-stock/options proxy blocking, and empty trade runs | `npm.cmd run test --workspace @stockmarket/backtesting` |
 | Milestone 6 evidence detail resolver aggregate CI | Completed | Typecheck, lint, format check, 137 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed after review hardening for mixed unresolved evidence, unsafe paper rows, blocked evidence P/L hiding, loading-state UI, and non-null API contract | `npm.cmd run ci` |
 | Milestone 6 evidence detail resolver DB regression | Completed | 4 DB evidence resolver tests passed for verified paper-trade evidence, cohort mismatch, mixed unresolved backtest evidence, and unsafe non-paper/broker-enabled rows returning blocked detail without P/L metrics | `npm.cmd run test --workspace @stockmarket/db -- evidence-resolver` |
 | Milestone 6 evidence detail resolver API regression | Completed | 6 API paper-trading route tests passed after adding the mock evidence-detail dry run | `npm.cmd run build --workspace @stockmarket/db`; `npm.cmd run test --workspace @stockmarket/api -- paper-trading` |

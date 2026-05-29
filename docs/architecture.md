@@ -214,6 +214,12 @@ The API exposes `/paper-trading/mock-evidence-detail-dry-run` as an in-memory in
 
 The operator console can display the mock paper-trading contract state beside scoring gates so the operator sees paper-only status, max loss, and risk percent without turning the mock result into a recommendation. It also displays the mock close dry-run outcome with simulated P/L, return percent, exit price, lessons learned, and close audit linkage so performance visibility stays tied to paper-only evidence. The console now also shows the mock paper-trade evidence summary with closed/open counts, win rate, realized P/L, average return, average risk, review status, and explicit non-recommendation wording. The mock ledger readback panel shows persisted status, audit ID, entry/exit prices, P/L, return, and risk percent from the read-model dry run. The evidence detail panel shows resolved paper-trade evidence, citation timestamps, freshness state, downside/invalidation text, and audit events while keeping operator decision buttons disabled until audit-backed decision writes are implemented. If the API is offline, sample paper-trade metrics are hidden behind a `Data unavailable` state so fixture values do not look operational.
 
+### Backtesting
+
+Milestone 7 begins the custom backtesting harness as a package-only contract in `@stockmarket/backtesting`. The first evaluator is stock-only and deterministic: callers provide closed long-stock trade observations, source citations, freshness state, and explicit assumptions for costs, minimum sample size, and anti-bias controls. The package returns validation metrics and `ready_for_review`, `needs_more_data`, or `blocked` gates while preserving `notRecommendation: true`.
+
+This package does not fetch data, optimize parameters, persist backtest runs, expose API routes, or evaluate options in the first slice. DB persistence and recommendation evidence resolver support for durable backtest IDs remain follow-up work.
+
 ### Project Status And Roadmap Visibility
 
 Until the application has a database-backed admin UI, lightweight project status lives under `docs/status/`. The future operator UI should include a Project Status / Roadmap dashboard that can surface:

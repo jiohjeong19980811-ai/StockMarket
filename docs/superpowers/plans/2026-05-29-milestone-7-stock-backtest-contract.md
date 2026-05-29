@@ -17,11 +17,11 @@
 - Create: `packages/backtesting/vitest.config.ts`
 - Create: `packages/backtesting/test/backtesting.test.ts`
 
-- [ ] **Step 1: Add the package test script and Vitest config**
+- [x] **Step 1: Add the package test script and Vitest config**
 
 Add `"test": "vitest run"` to `packages/backtesting/package.json` and create `packages/backtesting/vitest.config.ts` with node environment and `test/**/*.test.ts` include.
 
-- [ ] **Step 2: Write failing happy-path metrics test**
+- [x] **Step 2: Write failing happy-path metrics test**
 
 Create `packages/backtesting/test/backtesting.test.ts` and import `evaluateStockBacktest`. The first test should build a momentum stock run with four closed long trades, source citations, fresh data, point-in-time controls, slippage/spread/fee assumptions, and `minTradesForReview: 4`. Assert:
 
@@ -33,7 +33,7 @@ Create `packages/backtesting/test/backtesting.test.ts` and import `evaluateStock
 - `metrics.worstTradeReturnPct` is negative
 - `metrics.costSensitivity` includes baseline, 2x, and 3x cost scenarios
 
-- [ ] **Step 3: Verify the test fails**
+- [x] **Step 3: Verify the test fails**
 
 Run: `npm.cmd run test --workspace @stockmarket/backtesting`
 
@@ -45,7 +45,7 @@ Expected: fail because `evaluateStockBacktest` does not exist.
 - Modify: `packages/backtesting/src/index.ts`
 - Test: `packages/backtesting/test/backtesting.test.ts`
 
-- [ ] **Step 1: Implement types and evaluator**
+- [x] **Step 1: Implement types and evaluator**
 
 Replace the placeholder export with:
 
@@ -66,7 +66,7 @@ The evaluator should:
 - Compute trade count, win rate, average/median return, max drawdown, profit factor, best/worst trade, average holding days, benchmark-relative return, and cost sensitivity at 1x, 2x, and 3x costs.
 - Return `ready_for_review` only when all hard gates pass and trade count meets the configured minimum.
 
-- [ ] **Step 2: Verify the happy path passes**
+- [x] **Step 2: Verify the happy path passes**
 
 Run: `npm.cmd run test --workspace @stockmarket/backtesting`
 
@@ -78,7 +78,7 @@ Expected: the happy-path metrics test passes.
 - Modify: `packages/backtesting/test/backtesting.test.ts`
 - Modify: `packages/backtesting/src/index.ts`
 
-- [ ] **Step 1: Add failing negative tests**
+- [x] **Step 1: Add failing negative tests**
 
 Add tests for:
 
@@ -88,11 +88,11 @@ Add tests for:
 - `instrumentType: "long_call"` or `optionsProxy: true` returns `blocked` with `options_backtest_not_supported`.
 - Empty trades return `needs_more_data`.
 
-- [ ] **Step 2: Implement missing gates**
+- [x] **Step 2: Implement missing gates**
 
 Extend `evaluateStockBacktest` to produce stable reason codes for each negative test without throwing for expected validation failures.
 
-- [ ] **Step 3: Verify negative tests pass**
+- [x] **Step 3: Verify negative tests pass**
 
 Run: `npm.cmd run test --workspace @stockmarket/backtesting`
 
@@ -110,11 +110,11 @@ Expected: all backtesting package tests pass.
 - Modify: `docs/status/work-items.json`
 - Modify: `docs/status/validation-status.md`
 
-- [ ] **Step 1: Update docs**
+- [x] **Step 1: Update docs**
 
 Document that M7 starts with a pure package-level stock-only evaluator. Note that DB persistence, API/UI, and options backtesting are still deferred.
 
-- [ ] **Step 2: Run focused and aggregate validation**
+- [x] **Step 2: Run focused and aggregate validation**
 
 Run:
 
@@ -128,7 +128,7 @@ rg -n --hidden -S "sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xo
 
 Expected: focused tests, CI, JSON parse, whitespace check, and secret scan pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 Commit message: `feat: add stock backtest evidence contract`
 

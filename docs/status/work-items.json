@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T13:12:38-04:00",
+  "lastUpdated": "2026-05-29T13:17:17-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -13,7 +13,7 @@
     "phase": "Milestone 7: Backtesting",
     "task": "Add stock-only backtest evidence contract",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
-    "status": "In Progress",
+    "status": "Completed",
     "priority": "High",
     "category": "Backtesting validation evidence"
   },
@@ -1192,11 +1192,11 @@
       "title": "Add stock-only backtest evidence contract",
       "phase": "Milestone 7",
       "owner": "Codex founding CTO / lead architect / principal engineer / quantitative research lead / risk reviewer",
-      "status": "In Progress",
+      "status": "Completed",
       "priority": "High",
       "category": "Backtesting validation evidence",
       "blockers": [],
-      "nextStep": "Implement the package-level stock-only backtest evaluator with TDD, conservative evidence gates, docs, validation, and commit.",
+      "nextStep": "Commit the package-level stock-only backtest evaluator, then continue M7 with durable backtest-run persistence.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",

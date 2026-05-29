@@ -281,3 +281,9 @@ Reason: Recommendation and strategy promotion workflows must not trust caller-pr
 Decision: Tighten the evidence detail resolver so any unresolved referenced evidence keeps the top-level evidence gate at `needs_more_data`, unsafe/non-paper/broker-enabled paper rows return blocked evidence detail without performance metrics instead of throwing, and the operator console hides evidence metrics during loading/offline states.
 
 Reason: Evidence inspection should be conservative by default. Mixed evidence must not overstate readiness, corrupt rows should remain auditable blocked evidence, and UI fixture data must not look operational before the API responds.
+
+## 2026-05-29: Stock-Only Backtest Evidence Contract
+
+Decision: Start Milestone 7 with a pure package-level stock backtest evaluator in `@stockmarket/backtesting`. The evaluator computes validation metrics from caller-provided closed long-stock trades, citations, freshness, costs, and anti-bias assumptions while returning `notRecommendation` plus conservative promotion gates.
+
+Reason: The platform needs reproducible backtest evidence before strategy promotion, but DB persistence, API/UI surfaces, options backtests, and parameter optimization should wait until the first deterministic stock-only contract is proven.

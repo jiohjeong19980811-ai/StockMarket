@@ -8,6 +8,8 @@ Backtesting exists to prevent attractive narratives from becoming recommendation
 
 The MVP should start with a small, custom, auditable backtesting harness. Mature frameworks such as QuantConnect LEAN, vectorbt, Qlib, Backtrader, Zipline Reloaded, and QuantStats should be used as references or later comparison tools, not as the MVP's core dependency. This keeps evidence gates, assumptions, and audit records aligned with the product domain from day one.
 
+Milestone 7 starts with a pure package-level stock backtest evaluator in `@stockmarket/backtesting`. It consumes closed long-stock trade observations, source citations, freshness state, and explicit assumptions, then returns metrics and conservative evidence gates. It does not fetch provider data, persist DB rows, expose API routes, optimize parameters, evaluate options, or promote strategies.
+
 ## Strategy Types
 
 The framework should support:
@@ -160,3 +162,13 @@ Durable paper-trade evidence verification now starts in the DB package through t
 Backtest-run evidence verification remains a follow-up before strategy promotion. Until a durable backtest-run resolver exists, backtest evidence IDs must be returned as unresolved and cannot by themselves make a recommendation `paper_trade` eligible.
 
 Lessons learned should be stored and visible on future recommendations from the same strategy.
+
+## Milestone 7 Stock Backtest Contract
+
+The first backtesting package slice returns `notRecommendation: true` and one of three promotion gates:
+
+- `ready_for_review` when the stock-only run has enough trades, citations, freshness, and anti-bias controls.
+- `needs_more_data` when the run is missing citations, freshness, trades, or minimum sample size.
+- `blocked` when the run is non-stock, options proxy, missing point-in-time controls, missing survivorship-bias controls, missing lookahead-bias controls, or has invalid trade records.
+
+The evaluator reports trade count, win rate, average return, median return, max drawdown, profit factor, best/worst trade, average holding period, benchmark-relative return, and cost sensitivity at 1x/2x/3x assumptions. These metrics are validation evidence only and do not override scoring, risk, or operator review gates.

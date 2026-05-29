@@ -137,6 +137,15 @@ Hard no-trade gates:
 - Backtest evidence based on lookahead, survivorship bias, insufficient sample, or unmodeled transaction costs.
 - Options proxy analysis presented as real options evidence.
 
+Backtest evidence controls:
+
+- Backtest results are validation evidence, not financial advice or performance claims.
+- Package-level backtests must return `notRecommendation: true`.
+- Missing point-in-time, survivorship-bias, or lookahead-bias controls block the run.
+- Missing citations, missing freshness, no trades, or insufficient trade count keep the run at `needs_more_data`.
+- Non-stock or options-proxy runs are blocked until historical options chain validation exists.
+- Cost sensitivity must show baseline, 2x, and 3x fee/spread/slippage assumptions before review.
+
 ## Promotion Gates
 
 A strategy can move from research candidate to paper-trade candidate only when:

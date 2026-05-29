@@ -56,6 +56,7 @@ Acceptance criteria:
 - Operator console hides sample paper-trade metrics when the API is unavailable and shows `Data unavailable` / `No operational decision` instead of an actionable-looking fallback.
 - Paper-trade evidence summaries aggregate closed simulated trades for validation metrics while remaining non-recommendation and review-gated.
 - Backtesting framework exists.
+- Initial backtesting framework can evaluate stock-only closed trade observations with documented assumptions, source citations, data freshness, anti-bias controls, and cost sensitivity while returning `notRecommendation`.
 - Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.
 - Context-only and deferred strategy families cannot bypass the scoring strategy-policy gate.
 - Options strategies remain research/manual review only until historical options chains and realistic fill assumptions are available.
