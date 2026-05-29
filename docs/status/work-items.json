@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T13:06:17-04:00",
+  "lastUpdated": "2026-05-29T13:09:48-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -10,12 +10,12 @@
     "Deferred"
   ],
   "currentFocus": {
-    "phase": "Milestone 6: Paper trading",
-    "task": "Add durable evidence resolver and operator evidence inspection",
+    "phase": "Milestone 6: Paper trading merge complete",
+    "task": "Milestone 6 paper-trading contracts merged to main",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
     "status": "Completed",
     "priority": "High",
-    "category": "Paper trading evidence and operator workflow"
+    "category": "Paper trading merge readiness"
   },
   "items": [
     {

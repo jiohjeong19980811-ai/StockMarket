@@ -1,19 +1,19 @@
 # Validation Status
 
-Last updated: 2026-05-29T13:06:17-04:00
+Last updated: 2026-05-29T13:09:48-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 6 paper trading evidence validation |
-| Current task | Add durable evidence resolver and operator evidence inspection |
+| Current phase | Milestone 6 paper trading merge validation |
+| Current task | Milestone 6 paper-trading contracts merged to main |
 | Owner/agent | Codex founding CTO / lead architect / principal engineer / security reviewer / risk reviewer / QA reviewer |
 | Status | Completed |
 | Priority | High |
 | Category | Paper trading evidence and operator workflow |
 | Blockers | None |
-| Next step | Commit the M6-017 review hardening fix slice, then prepare Milestone 6 review/merge readiness. |
+| Next step | Start next milestone planning from merged `main`. |
 | Related docs/files | `packages/db/src/evidence-resolver.ts`, `apps/api/src/server.ts`, `apps/web/src/App.tsx`, `scripts/smoke-api.mjs`, `docs/status/` |
 
 ## Checks
