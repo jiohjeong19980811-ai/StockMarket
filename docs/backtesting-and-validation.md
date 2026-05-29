@@ -8,7 +8,7 @@ Backtesting exists to prevent attractive narratives from becoming recommendation
 
 The MVP should start with a small, custom, auditable backtesting harness. Mature frameworks such as QuantConnect LEAN, vectorbt, Qlib, Backtrader, Zipline Reloaded, and QuantStats should be used as references or later comparison tools, not as the MVP's core dependency. This keeps evidence gates, assumptions, and audit records aligned with the product domain from day one.
 
-Milestone 7 starts with a pure package-level stock backtest evaluator in `@stockmarket/backtesting`. It consumes closed long-stock trade observations, source citations, freshness state, and explicit assumptions, then returns metrics and conservative evidence gates. It does not fetch provider data, persist DB rows, expose API routes, optimize parameters, evaluate options, or promote strategies.
+Milestone 7 starts with a pure package-level stock backtest evaluator in `@stockmarket/backtesting`. It consumes closed long-stock trade observations, source citations, freshness state, and explicit assumptions, then returns metrics and conservative evidence gates. M7-002 adds durable DB persistence for stock-only backtest runs and conservative recommendation evidence resolution for stored backtest IDs. The milestone still does not fetch provider data, expose API routes, optimize parameters, evaluate options, automate strategy promotion, or make performance claims.
 
 ## Strategy Types
 
@@ -159,7 +159,7 @@ Paper-trade evidence summaries should aggregate only closed paper trades for per
 
 Durable paper-trade evidence verification now starts in the DB package through the recommendation evidence resolver. Backtesting consumers should resolve recommendation evidence IDs through this helper before trusting a paper-trade evidence reference. A paper-trade evidence item is verified only when it resolves to a closed persisted paper trade, remains paper-only, has broker execution disabled, and matches the recommendation ticker, instrument type, and strategy version.
 
-Backtest-run evidence verification remains a follow-up before strategy promotion. Until a durable backtest-run resolver exists, backtest evidence IDs must be returned as unresolved and cannot by themselves make a recommendation `paper_trade` eligible.
+Durable stock backtest evidence verification is now also handled by the DB evidence resolver. A stored backtest evidence item is verified only when the referenced run is stock-only, marked `notRecommendation`, has `options_proxy = 0`, reaches `ready_for_review`, matches the recommendation ticker/instrument/strategy cohort, and includes at least one persisted trade row for the recommendation ticker. Missing, `needs_more_data`, blocked, unsafe, or cohort-mismatched runs downgrade or block the evidence gate and cannot by themselves make a recommendation operational.
 
 Lessons learned should be stored and visible on future recommendations from the same strategy.
 
@@ -176,3 +176,17 @@ The evaluator reports trade count, win rate, average return, median return, equi
 Review hardening blocks options-family stock proxies, invalid source/freshness/period timestamps, freshness timestamps that precede the period end, citations retrieved before publication, out-of-period trades, duplicate trade IDs or observations, invalid cost assumptions, missing required stress scenarios, failed stock liquidity floors, invalid trade rows, and missing anti-bias controls. Heavy parameter searches downgrade to `needs_more_data` until the search process is reviewed.
 
 Returned stock backtest metrics and trade rows are computed only from eligible shape-valid, unique, in-period observations. Duplicate or out-of-period rows still block the run, but they are excluded from reported evidence metrics so sample-size and return figures cannot be inflated by rejected rows.
+
+## Milestone 7 Backtest Persistence
+
+M7-002 persists stock backtest evaluator output in the DB package without recalculating strategy performance. The `backtest_runs` table stores strategy version, family, stock-only instrument type, universe, period, benchmark return, promotion gate, reason codes, metrics, assumptions, citations, freshness, safety flags, and timestamps. The `backtest_run_trades` table stores the eligible trade rows tied to the run.
+
+Persistence remains stock-only for MVP. The helper rejects non-stock inputs, options-family proxies, `optionsProxy: true`, and any result that is not explicitly `notRecommendation`. Persisted backtest evidence can support recommendation evidence detail and later operator review, but it does not promote strategies automatically and does not replace paper trading, risk review, or out-of-sample validation.
+
+Deferred follow-up work:
+
+- API/read endpoints for durable backtest runs.
+- Operator UI surfaces for backtest evidence detail.
+- Strategy promotion automation.
+- Options backtests with contract-level historical chain data.
+- External framework comparison and walk-forward validation surfaces.

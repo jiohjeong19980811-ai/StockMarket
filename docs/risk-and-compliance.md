@@ -119,7 +119,7 @@ Initial paper-only default limits should be conservative and revisited after pap
 
 Paper-trade evidence summaries may inform later risk-limit reviews, but they are not performance claims and cannot automatically promote a strategy. Summaries must separate open trades from closed-trade metrics, require close audit IDs, block broker/live-shaped records, reject mixed ticker/instrument/strategy/version cohorts, and keep operator plus backtest review as a promotion prerequisite.
 
-Recommendation evidence detail must be resolved from stored data, not caller-provided claims. The DB evidence resolver verifies paper-trade evidence only when the referenced row is closed, paper-only, broker-disabled, and in the same ticker/instrument/strategy cohort as the recommendation. Missing, open, unsafe, or mismatched evidence blocks or downgrades the evidence gate. Backtest evidence IDs remain unresolved until the backtest-run table and resolver are implemented.
+Recommendation evidence detail must be resolved from stored data, not caller-provided claims. The DB evidence resolver verifies paper-trade evidence only when the referenced row is closed, paper-only, broker-disabled, and in the same ticker/instrument/strategy cohort as the recommendation. It verifies stock backtest evidence only when the referenced run is stock-only, marked `notRecommendation`, not an options proxy, `ready_for_review`, cohort-compatible, and tied to the recommendation ticker through a persisted trade row. Missing, open, unsafe, `needs_more_data`, blocked, or mismatched evidence blocks or downgrades the evidence gate.
 
 When the operator UI cannot reach the API, paper-trading metrics should be hidden behind a `Data unavailable` state. Offline fixture data may support smoke tests, but it must not look like an operational recommendation, strategy promotion, or current paper-trade decision.
 
@@ -152,6 +152,8 @@ Backtest evidence controls:
 - Citation retrieval timestamps must not precede publication timestamps.
 - Freshness timestamps must not precede the declared backtest period end.
 - Heavy parameter searches downgrade evidence until overfitting risk is reviewed.
+- Durable stock backtest rows must remain validation-only: `notRecommendation = 1`, `instrument_type = stock`, `options_proxy = 0`, and no broker/live-trading fields.
+- Stored backtest evidence cannot be verified unless the recommendation ticker appears in the persisted run trades and the strategy/instrument cohort matches the recommendation.
 
 ## Promotion Gates
 

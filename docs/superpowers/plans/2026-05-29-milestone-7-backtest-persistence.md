@@ -368,11 +368,11 @@ Expected: resolver tests pass and backtest evidence no longer returns the resolv
 - Modify: `docs/status/work-items.json`
 - Modify: `docs/status/validation-status.md`
 
-- [ ] **Step 1: Update docs**
+- [x] **Step 1: Update docs**
 
 Document that M7-002 adds durable stock backtest-run persistence and recommendation evidence resolver support, while API/UI, options backtests, and strategy promotion automation remain deferred.
 
-- [ ] **Step 2: Run validation**
+- [x] **Step 2: Run validation**
 
 Run:
 

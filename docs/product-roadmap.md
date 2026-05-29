@@ -24,6 +24,7 @@ Capabilities:
 - Ticker and opportunity detail pages.
 - Paper-trading ledger contracts and durable DB rows, starting stock-only and simulated-only.
 - Basic backtesting framework.
+- Durable stock backtest-run persistence and recommendation evidence resolution for stored stock backtest IDs.
 - Risk manager module and no-trade rules.
 - Data freshness and audit logs.
 - Lightweight Project Status / Roadmap dashboard after the core operator workflow exists.
@@ -57,6 +58,9 @@ Acceptance criteria:
 - Paper-trade evidence summaries aggregate closed simulated trades for validation metrics while remaining non-recommendation and review-gated.
 - Backtesting framework exists.
 - Initial backtesting framework can evaluate stock-only closed trade observations with documented assumptions, source citations, data freshness, anti-bias controls, and cost sensitivity while returning `notRecommendation`.
+- DB can persist stock-only backtest runs and eligible trade rows with strategy version, assumptions, citations, freshness, metrics, reason codes, and safety flags.
+- Recommendation evidence detail can verify stored stock backtest evidence only when the run is stock-only, `notRecommendation`, not an options proxy, `ready_for_review`, cohort-compatible, and tied to the recommendation ticker.
+- Missing, `needs_more_data`, blocked, unsafe, or cohort-mismatched backtest evidence downgrades or blocks the evidence gate instead of being treated as proof.
 - Strategies cannot produce `paper trade` candidates without stored backtesting or paper-trading evidence.
 - Context-only and deferred strategy families cannot bypass the scoring strategy-policy gate.
 - Options strategies remain research/manual review only until historical options chains and realistic fill assumptions are available.

@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-29T13:54:19-04:00
+Last updated: 2026-05-29T14:09:42-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 7: Backtesting |
-| Current task | Add durable stock backtest run persistence |
+| Current task | Validate and review durable stock backtest run persistence |
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead |
-| Status | In Progress |
+| Status | Needs Review |
 | Priority | High |
 | Category | Backtesting validation evidence |
 | Blockers | None |
-| Next step | Execute the M7-002 persistence plan with migration tests first. |
+| Next step | Request focused quant/risk/QA/architecture review for M7-002 and fix any blockers before merge. |
 | Related docs/files | `packages/backtesting/src/index.ts`, `packages/backtesting/test/backtesting.test.ts`, `packages/db`, `docs/backtesting-and-validation.md`, `docs/superpowers/specs/2026-05-29-milestone-7-backtest-persistence-design.md`, `docs/superpowers/plans/2026-05-29-milestone-7-backtest-persistence.md` |
-| Validation required | M7-001 merged to `main`; root CI passed on merged main with 156 unit tests and 16 hook tests. M7-002 requires DB migration tests, backtesting package tests, root CI, status JSON parse, whitespace check, secret-pattern scan, and live-trading surface scan. |
+| Validation required | M7-002 validation passed locally; focused review is still required before merge. |
 
 ## Status Vocabulary
 

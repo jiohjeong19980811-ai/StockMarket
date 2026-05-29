@@ -208,7 +208,7 @@ The API evidence summary route, `/paper-trading/mock-evidence-summary`, creates 
 
 The DB package now includes a durable paper-trade read model helper for persisted simulated trades. It returns paper-only rows with parsed invalidation conditions, entry risk snapshots, audit IDs, and computed closed-trade P/L/return while asserting that live trading and broker execution flags remain disabled. The API exposes `/paper-trading/mock-read-model-dry-run` as an in-memory integration check for this read path before adding real application read APIs.
 
-The DB package also includes a recommendation evidence resolver. It loads a stored recommendation, citations, freshness state, evidence IDs, and audit events, then resolves paper-trade evidence against persisted paper-trade rows. Paper-trade evidence is verified only when the paper trade is closed, remains paper-only, has broker execution disabled, and matches the recommendation ticker, instrument, and strategy version. Backtest evidence IDs are intentionally returned as unresolved until a durable backtest-run resolver exists.
+The DB package also includes a recommendation evidence resolver. It loads a stored recommendation, citations, freshness state, evidence IDs, and audit events, then resolves paper-trade evidence against persisted paper-trade rows and stock backtest evidence against persisted backtest-run rows. Paper-trade evidence is verified only when the paper trade is closed, remains paper-only, has broker execution disabled, and matches the recommendation ticker, instrument, and strategy version. Backtest evidence is verified only when the run is stock-only, `notRecommendation`, not an options proxy, `ready_for_review`, strategy/instrument compatible, and contains a persisted trade for the recommendation ticker.
 
 The API exposes `/paper-trading/mock-evidence-detail-dry-run` as an in-memory integration check for the resolver. It seeds one closed paper trade and one candidate recommendation that references it, returns citations/freshness/evidence/audit detail, requires no provider keys, and discards state after the response.
 
@@ -216,9 +216,9 @@ The operator console can display the mock paper-trading contract state beside sc
 
 ### Backtesting
 
-Milestone 7 begins the custom backtesting harness as a package-only contract in `@stockmarket/backtesting`. The first evaluator is stock-only and deterministic: callers provide closed long-stock trade observations, source citations, freshness state, and explicit assumptions for costs, minimum sample size, and anti-bias controls. The package returns validation metrics and `ready_for_review`, `needs_more_data`, or `blocked` gates while preserving `notRecommendation: true`.
+Milestone 7 begins the custom backtesting harness in `@stockmarket/backtesting`. The first evaluator is stock-only and deterministic: callers provide closed long-stock trade observations, source citations, freshness state, and explicit assumptions for costs, minimum sample size, and anti-bias controls. The package returns validation metrics and `ready_for_review`, `needs_more_data`, or `blocked` gates while preserving `notRecommendation: true`.
 
-This package does not fetch data, optimize parameters, persist backtest runs, expose API routes, or evaluate options in the first slice. DB persistence and recommendation evidence resolver support for durable backtest IDs remain follow-up work.
+M7-002 adds `backtest_runs` and `backtest_run_trades` persistence in `packages/db` plus recommendation evidence resolver support for durable stock backtest IDs. The persistence helper stores evaluator input/result evidence without recalculating performance, rejects non-stock/options-proxy evidence, and keeps the result validation-only. Provider fetches, API routes, UI read surfaces, options backtests, parameter optimization, and strategy promotion automation remain deferred.
 
 ### Project Status And Roadmap Visibility
 

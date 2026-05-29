@@ -272,7 +272,7 @@ Reason: Paper-trading evidence is only useful if it cannot understate risk, mix 
 
 ## 2026-05-29: Recommendation Evidence Detail Resolver
 
-Decision: Add a DB recommendation evidence resolver and `/paper-trading/mock-evidence-detail-dry-run` so stored recommendations can expose citations, freshness, resolved paper-trade evidence, reason codes, and audit events. Paper-trade evidence is verified only when the referenced trade is closed, paper-only, broker-disabled, and matches the recommendation ticker, instrument, and strategy version. Backtest evidence IDs remain unresolved until a backtest-run resolver is implemented.
+Decision: Add a DB recommendation evidence resolver and `/paper-trading/mock-evidence-detail-dry-run` so stored recommendations can expose citations, freshness, resolved paper-trade evidence, reason codes, and audit events. Paper-trade evidence is verified only when the referenced trade is closed, paper-only, broker-disabled, and matches the recommendation ticker, instrument, and strategy version. Backtest evidence IDs were initially unresolved until M7-002 added durable stock backtest-run persistence and resolver support.
 
 Reason: Recommendation and strategy promotion workflows must not trust caller-provided evidence IDs or isolated paper-trade metrics. The operator and future backtesting consumers need an auditable evidence-detail read model before any paper-trade outcome can influence promotion decisions.
 
@@ -305,3 +305,9 @@ Reason: Backtest evidence should not be reviewable when sample rows fall outside
 Decision: Compute returned stock backtest metrics and trade rows from eligible unique in-period observations only, and block freshness timestamps that predate the declared backtest period end.
 
 Reason: Blocked backtest runs should not return inflated evidence metrics from rows that the evaluator already rejected for sample-integrity reasons. Freshness must also cover the full declared run window before evidence can be reviewed.
+
+## 2026-05-29: Durable Stock Backtest Evidence
+
+Decision: Add `backtest_runs` and `backtest_run_trades` persistence plus recommendation evidence resolver support for stock-only backtest IDs. Persisted runs must remain `notRecommendation`, stock-only, non-options-proxy, and validation-only; resolver verification requires `ready_for_review`, matching strategy/instrument cohort, and at least one persisted trade for the recommendation ticker.
+
+Reason: Strategy evidence needs a durable, auditable record before recommendation detail, UI inspection, or later promotion workflows can trust backtest IDs. The resolver should conservatively downgrade missing, unsafe, incomplete, or cohort-mismatched evidence instead of letting stored IDs imply a profitable or actionable strategy.
