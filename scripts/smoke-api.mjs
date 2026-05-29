@@ -108,6 +108,28 @@ try {
     throw new Error(`Unexpected strategy policies response: ${strategyPoliciesResponse.body}`);
   }
 
+  const paperTradingResponse = await server.inject({
+    method: "GET",
+    url: "/paper-trading/mock-decision",
+  });
+
+  if (paperTradingResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /paper-trading/mock-decision to return 200, got ${paperTradingResponse.statusCode}`,
+    );
+  }
+
+  const paperTradingBody = paperTradingResponse.json();
+  if (
+    paperTradingBody.requiresEnv !== false ||
+    paperTradingBody.liveTradingEnabled !== false ||
+    paperTradingBody.persistence?.durable !== false ||
+    paperTradingBody.result?.status !== "accepted" ||
+    paperTradingBody.result?.trade?.brokerExecution !== false
+  ) {
+    throw new Error(`Unexpected mock paper-trading response: ${paperTradingResponse.body}`);
+  }
+
   console.log("API smoke ok");
 } finally {
   await server.close();

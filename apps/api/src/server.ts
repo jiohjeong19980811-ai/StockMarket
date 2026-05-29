@@ -13,7 +13,9 @@ import {
   type IngestionClock,
 } from "@stockmarket/data";
 import { createLocalClient, persistIngestionBatch, runMigrations } from "@stockmarket/db";
+import { createPaperTrade, type PaperTradeRequest } from "@stockmarket/paper-trading";
 import { listStrategyPolicies, scoreOpportunity, type ScoringInput } from "@stockmarket/scoring";
+import type { Recommendation } from "@stockmarket/core";
 import type { ApiEnv } from "./env.js";
 
 type DryRunTableName =
@@ -82,6 +84,79 @@ const mockScoringInput: ScoringInput = {
   },
 };
 
+const mockPaperTradeRecommendation: Recommendation = {
+  id: "rec-MSFT-paper-mock-1",
+  ticker: "MSFT",
+  thesis: "Mock stock-only paper trade candidate for contract evaluation.",
+  instrumentType: "stock",
+  strategyFamily: "momentum",
+  strategyVersion: "momentum-v0",
+  decision: "paper_trade",
+  evidenceStatus: "paper_trade_eligible",
+  sourceCitations: [
+    {
+      title: "Mock daily price history",
+      url: "https://example.test/mock/msft/prices",
+      source: "mock-provider",
+      publishedAt: "2026-05-28T14:00:00.000Z",
+      retrievedAt: "2026-05-28T14:30:00.000Z",
+    },
+  ],
+  dataFreshness: {
+    status: "fresh",
+    asOf: "2026-05-28T14:30:00.000Z",
+    notes: [],
+  },
+  scores: {
+    risk: 86,
+    confidence: 78,
+    liquidity: 86,
+  },
+  bullCase: "Mock trend evidence and liquidity support a paper-only entry test.",
+  bearCase: "Trend may reverse before a paper entry can validate the thesis.",
+  downsideScenario: "Shares close below the mock breakout level.",
+  invalidationConditions: ["Close below mock breakout level"],
+  whySystemMightBeWrong: "Mock data may not represent real market behavior.",
+  operatorDecision: {
+    actor: "operator",
+    decidedBy: "operator:mock",
+    decidedAt: "2026-05-28T14:45:00.000Z",
+    auditLogId: "audit_mock_rec_1",
+    notes: "Mock approval for simulated API contract only.",
+  },
+  backtestRunId: "bt_mock_momentum_1",
+  createdAt: "2026-05-28T14:40:00.000Z",
+  updatedAt: "2026-05-28T14:40:00.000Z",
+};
+
+const mockPaperTradeRequest: PaperTradeRequest = {
+  recommendation: mockPaperTradeRecommendation,
+  account: {
+    paperEquity: 100_000,
+    currentDailyLossPct: 0.1,
+    singleNameExposurePct: 2,
+    sectorExposurePct: 8,
+    correlatedExposurePct: 4,
+    aggregateOptionsPremiumPct: 0,
+  },
+  entry: {
+    requestedAt: "2026-05-28T15:00:00.000Z",
+    quantity: 10,
+    entryPrice: 100,
+    maxLoss: 300,
+    thesisSnapshot: mockPaperTradeRecommendation.thesis,
+    stopRule: "Exit on close below the mock breakout level.",
+    targetRule: "Review after a 5% paper gain or thesis invalidation.",
+    timeStop: "Exit after 10 trading days if the thesis does not develop.",
+  },
+  operatorApproval: {
+    approvedBy: "operator:mock",
+    approvedAt: "2026-05-28T14:58:00.000Z",
+    auditLogId: "audit_mock_paper_open_1",
+    notes: "Mock paper-only approval.",
+  },
+};
+
 async function countRows(
   client: Awaited<ReturnType<typeof createLocalClient>>,
   tableName: DryRunTableName,
@@ -140,6 +215,20 @@ export function buildServer(env: ApiEnv) {
     providerKeysRequired: [],
     paperTradeFirst: true,
     policies: listStrategyPolicies(),
+  }));
+
+  server.get("/paper-trading/mock-decision", async () => ({
+    mode: "mock",
+    requiresEnv: false,
+    liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+    providerKeysRequired: [],
+    notRecommendation: true,
+    persistence: {
+      scope: "in_memory",
+      durable: false,
+      note: "Mock paper-trade decisions are contract evaluations and are not persisted.",
+    },
+    result: createPaperTrade(mockPaperTradeRequest),
   }));
 
   server.post("/ingestion/mock-dry-run", async () => {

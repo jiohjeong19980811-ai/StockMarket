@@ -12,6 +12,7 @@
   "references": [
     { "path": "../../packages/data" },
     { "path": "../../packages/db" },
+    { "path": "../../packages/paper-trading" },
     { "path": "../../packages/scoring" }
   ]
 }

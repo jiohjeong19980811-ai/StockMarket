@@ -179,3 +179,9 @@ Reason: Strategy categories from the quant research phase need to become auditab
 Decision: Start paper trading with a pure simulated contract in `@stockmarket/paper-trading`. It accepts only core paper-trade eligible stock recommendations with operator approval, explicit stop/target/time-stop rules, audit references, and conservative paper exposure limits. It rejects broker-shaped fields and options paper trades until options policy is explicitly promoted.
 
 Reason: Paper trading should create auditable learning evidence without introducing live broker execution, false options confidence, or ambiguous order semantics.
+
+## 2026-05-28: Paper-Trading Mock API
+
+Decision: Expose `/paper-trading/mock-decision` as a non-durable API contract check for simulated paper entries.
+
+Reason: The operator UI and future workflows need to inspect paper-trading decisions before DB persistence exists, while keeping provider keys, broker execution, and durable trade records out of the mock endpoint.

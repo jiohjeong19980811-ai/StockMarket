@@ -186,6 +186,8 @@ The paper-trading package starts as a pure simulated ledger contract. It accepts
 
 Milestone 6 begins with stock-only paper positions. Options paper trading remains blocked until a future options policy review promotes the strategy family and historical options chain validation is available.
 
+The API exposes `/paper-trading/mock-decision` as a non-durable contract demonstration. It does not persist records, require provider keys, or execute broker actions.
+
 ### Project Status And Roadmap Visibility
 
 Until the application has a database-backed admin UI, lightweight project status lives under `docs/status/`. The future operator UI should include a Project Status / Roadmap dashboard that can surface:

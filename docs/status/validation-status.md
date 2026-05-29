@@ -1,25 +1,31 @@
 # Validation Status
 
-Last updated: 2026-05-28T22:59:37-04:00
+Last updated: 2026-05-28T23:03:19-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 6 paper trading validation |
-| Current task | Simulated paper-trading contract skeleton |
+| Current task | Mock paper-trading API decision endpoint |
 | Owner/agent | Codex founding CTO / lead architect / risk reviewer / quantitative research lead |
 | Status | Completed |
 | Priority | High |
 | Category | Paper trading and auditability |
 | Blockers | None |
-| Next step | Commit the paper-trading contract slice, then continue with paper-trade persistence or API visibility |
-| Related docs/files | `packages/paper-trading/src/index.ts`, `packages/paper-trading/test/paper-trading.test.ts`, `docs/status/` |
+| Next step | Commit the mock paper-trading API slice, then continue with paper-trade persistence or UI visibility |
+| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/paper-trading.test.ts`, `scripts/smoke-api.mjs`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 6 paper-trading API aggregate CI | Completed | Typecheck, lint, format, 95 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed; smoke now checks `/paper-trading/mock-decision` | `npm.cmd run ci` |
+| Milestone 6 paper-trading API status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after mock paper-trading API status updates | `python -m json.tool docs/status/work-items.json` |
+| Milestone 6 paper-trading API whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |
+| Milestone 6 paper-trading API secret-pattern scan | Completed | No secret-shaped tokens found in changed API, docs, smoke, or package-lock files | `rg` secret-pattern scan |
+| Milestone 6 paper-trading API live-trading surface scan | Completed | Matches are documented prohibitions or explicit broker-execution negative assertions; no live order implementation was introduced | `rg` live-trading/order-surface scan |
+| Milestone 6 paper-trading API focused test | Completed | Red-green API test passed for `/paper-trading/mock-decision`, returning no provider keys, live trading disabled, non-durable persistence, and a simulated paper entry | `npm.cmd run test --workspace @stockmarket/api -- paper-trading` |
 | Milestone 6 paper-trading aggregate CI | Completed | Typecheck, lint, format, 94 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed | `npm.cmd run ci` |
 | Milestone 6 paper-trading status JSON parse | Completed | `docs/status/work-items.json` parsed successfully after paper-trading status updates | `python -m json.tool docs/status/work-items.json` |
 | Milestone 6 paper-trading whitespace check | Completed | No whitespace errors; Windows line-ending warnings reviewed for changed Markdown/status files | `git diff --check` |

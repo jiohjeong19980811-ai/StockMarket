@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T22:59:37-04:00",
+  "lastUpdated": "2026-05-28T23:03:19-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,7 +11,7 @@
   ],
   "currentFocus": {
     "phase": "Milestone 6: Paper trading",
-    "task": "Simulated paper-trading contract skeleton",
+    "task": "Mock paper-trading API decision endpoint",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
     "status": "Completed",
     "priority": "High",
@@ -690,6 +690,35 @@
       "validationRequired": [
         "Paper-trading package tests",
         "Root CI",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
+      ]
+    },
+    {
+      "id": "M6-002",
+      "title": "Expose mock paper-trading decision through the API",
+      "phase": "Milestone 6",
+      "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Paper trading and auditability",
+      "blockers": [],
+      "nextStep": "Commit the mock paper-trading API slice, then continue with paper-trade persistence or UI visibility.",
+      "relatedDocs": [
+        "apps/api/src/server.ts",
+        "apps/api/test/paper-trading.test.ts",
+        "scripts/smoke-api.mjs",
+        "apps/api/package.json",
+        "apps/api/tsconfig.json",
+        "docs/architecture.md",
+        "docs/decision-log.md"
+      ],
+      "validationRequired": [
+        "API paper-trading test",
+        "Root CI",
+        "API smoke",
         "Status JSON parse",
         "Whitespace check",
         "Secret-pattern scan",
