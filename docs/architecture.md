@@ -204,7 +204,7 @@ The API close dry run, `/paper-trading/mock-close-dry-run`, opens and closes one
 
 The API evidence summary route, `/paper-trading/mock-evidence-summary`, creates mock open and closed paper trades in memory and returns the paper-trading package evidence summary. It is non-durable, requires no provider keys, and exists to give the API/UI/backtesting layers a safe validation contract before durable read models exist.
 
-The operator console can display the mock paper-trading contract state beside scoring gates so the operator sees paper-only status, max loss, and risk percent without turning the mock result into a recommendation. It also displays the mock close dry-run outcome with simulated P/L, return percent, exit price, lessons learned, and close audit linkage so performance visibility stays tied to paper-only evidence.
+The operator console can display the mock paper-trading contract state beside scoring gates so the operator sees paper-only status, max loss, and risk percent without turning the mock result into a recommendation. It also displays the mock close dry-run outcome with simulated P/L, return percent, exit price, lessons learned, and close audit linkage so performance visibility stays tied to paper-only evidence. The console now also shows the mock paper-trade evidence summary with closed/open counts, win rate, realized P/L, average return, average risk, review status, and explicit non-recommendation wording.
 
 ### Project Status And Roadmap Visibility
 

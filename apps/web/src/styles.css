@@ -166,7 +166,8 @@ h2 {
 
 .policy-strip,
 .trade-strip,
-.outcome-strip {
+.outcome-strip,
+.evidence-strip {
   border: 1px solid #d8e0e4;
   border-radius: 8px;
   display: grid;
@@ -178,7 +179,8 @@ h2 {
 
 .policy-strip div,
 .trade-strip div,
-.outcome-strip div {
+.outcome-strip div,
+.evidence-strip div {
   border-right: 1px solid #d8e0e4;
   min-width: 0;
   padding: 12px;
@@ -186,13 +188,15 @@ h2 {
 
 .policy-strip div:last-child,
 .trade-strip div:last-child,
-.outcome-strip div:last-child {
+.outcome-strip div:last-child,
+.evidence-strip div:last-child {
   border-right: 0;
 }
 
 .policy-strip span,
 .trade-strip span,
-.outcome-strip span {
+.outcome-strip span,
+.evidence-strip span {
   color: #53616b;
   display: block;
   font-size: 0.76rem;
@@ -203,11 +207,16 @@ h2 {
 
 .policy-strip strong,
 .trade-strip strong,
-.outcome-strip strong {
+.outcome-strip strong,
+.evidence-strip strong {
   color: #172026;
   display: block;
   font-size: 0.94rem;
   line-height: 1.25;
+}
+
+.evidence-strip-secondary {
+  margin-top: 10px;
 }
 
 .score-meter {
@@ -293,7 +302,8 @@ h2 {
   .kpi-row,
   .policy-strip,
   .trade-strip,
-  .outcome-strip {
+  .outcome-strip,
+  .evidence-strip {
     grid-template-columns: 1fr;
   }
 
@@ -302,19 +312,23 @@ h2 {
   .trade-strip div,
   .trade-strip div:last-child,
   .outcome-strip div,
-  .outcome-strip div:last-child {
+  .outcome-strip div:last-child,
+  .evidence-strip div,
+  .evidence-strip div:last-child {
     border-right: 0;
   }
 
   .policy-strip div,
   .trade-strip div,
-  .outcome-strip div {
+  .outcome-strip div,
+  .evidence-strip div {
     border-bottom: 1px solid #d8e0e4;
   }
 
   .policy-strip div:last-child,
   .trade-strip div:last-child,
-  .outcome-strip div:last-child {
+  .outcome-strip div:last-child,
+  .evidence-strip div:last-child {
     border-bottom: 0;
   }
 

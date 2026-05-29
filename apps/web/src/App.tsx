@@ -128,11 +128,47 @@ interface PaperTradeCloseResponse {
   };
 }
 
+interface PaperTradeEvidenceSummaryResponse {
+  mode: "mock";
+  requiresEnv: boolean;
+  liveTradingEnabled: boolean;
+  providerKeysRequired: string[];
+  notRecommendation: boolean;
+  persistence: {
+    scope: string;
+    durable: boolean;
+    note: string;
+  };
+  summary: {
+    mode: "paper";
+    liveTradingEnabled: false;
+    brokerExecution: false;
+    notRecommendation: true;
+    status: "accepted" | "blocked";
+    reviewStatus: "needs_more_data" | "ready_for_review" | "blocked";
+    reasonCodes: string[];
+    totalTrades: number;
+    openTrades: number;
+    closedTrades: number;
+    winningTrades: number;
+    losingTrades: number;
+    winRatePct: number;
+    realizedPnl: number;
+    averageReturnPct: number;
+    averageRiskPctOfEquity: number;
+    largestWin: number;
+    largestLoss: number;
+    closedTradeAuditLogIds: string[];
+    notes: string[];
+  };
+}
+
 type ApiState = "loading" | "online" | "offline";
 
 const scoringEndpoint = "http://127.0.0.1:4000/scoring/mock-evaluation";
 const paperTradingEndpoint = "http://127.0.0.1:4000/paper-trading/mock-decision";
 const paperTradeCloseEndpoint = "http://127.0.0.1:4000/paper-trading/mock-close-dry-run";
+const paperTradeEvidenceEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidence-summary";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",
@@ -263,6 +299,43 @@ const fallbackPaperClose: PaperTradeCloseResponse = {
   },
 };
 
+const fallbackPaperEvidence: PaperTradeEvidenceSummaryResponse = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Mock paper-trade evidence summary data is generated in memory.",
+  },
+  summary: {
+    mode: "paper",
+    liveTradingEnabled: false,
+    brokerExecution: false,
+    notRecommendation: true,
+    status: "accepted",
+    reviewStatus: "ready_for_review",
+    reasonCodes: ["requires_backtest_and_operator_review"],
+    totalTrades: 3,
+    openTrades: 1,
+    closedTrades: 2,
+    winningTrades: 1,
+    losingTrades: 1,
+    winRatePct: 50,
+    realizedPnl: 10,
+    averageReturnPct: 0.5,
+    averageRiskPctOfEquity: 0.3,
+    largestWin: 60,
+    largestLoss: -50,
+    closedTradeAuditLogIds: ["audit_mock_paper_close_1", "audit_mock_paper_close_loss_1"],
+    notes: [
+      "Paper-trade evidence is a validation input, not a recommendation or performance promise.",
+    ],
+  },
+};
+
 const decisionLabels: Record<Decision, string> = {
   watchlist: "Watchlist",
   paper_trade: "Paper Trade",
@@ -288,6 +361,15 @@ const paperTradeCloseStatusLabels: Record<
 > = {
   accepted: "Simulated Closed",
   rejected: "Close Blocked",
+};
+
+const paperEvidenceReviewLabels: Record<
+  PaperTradeEvidenceSummaryResponse["summary"]["reviewStatus"],
+  string
+> = {
+  needs_more_data: "Needs More Data",
+  ready_for_review: "Ready for Review",
+  blocked: "Blocked",
 };
 
 function formatCurrency(value: number): string {
@@ -317,17 +399,21 @@ export function App() {
   const [scoring, setScoring] = useState<MockScoringResponse>(fallbackScoring);
   const [paperTrading, setPaperTrading] = useState<PaperTradeResponse>(fallbackPaperTrading);
   const [paperClose, setPaperClose] = useState<PaperTradeCloseResponse>(fallbackPaperClose);
+  const [paperEvidence, setPaperEvidence] =
+    useState<PaperTradeEvidenceSummaryResponse>(fallbackPaperEvidence);
 
   useEffect(() => {
     let active = true;
 
     async function loadDashboardData() {
       try {
-        const [scoringResponse, paperTradingResponse, paperCloseResponse] = await Promise.all([
-          fetch(scoringEndpoint),
-          fetch(paperTradingEndpoint),
-          fetch(paperTradeCloseEndpoint, { method: "POST" }),
-        ]);
+        const [scoringResponse, paperTradingResponse, paperCloseResponse, paperEvidenceResponse] =
+          await Promise.all([
+            fetch(scoringEndpoint),
+            fetch(paperTradingEndpoint),
+            fetch(paperTradeCloseEndpoint, { method: "POST" }),
+            fetch(paperTradeEvidenceEndpoint),
+          ]);
         if (!scoringResponse.ok) {
           throw new Error(`Scoring API returned ${scoringResponse.status}`);
         }
@@ -337,13 +423,19 @@ export function App() {
         if (!paperCloseResponse.ok) {
           throw new Error(`Paper-trade close API returned ${paperCloseResponse.status}`);
         }
+        if (!paperEvidenceResponse.ok) {
+          throw new Error(`Paper-trade evidence API returned ${paperEvidenceResponse.status}`);
+        }
         const scoringBody = (await scoringResponse.json()) as MockScoringResponse;
         const paperTradingBody = (await paperTradingResponse.json()) as PaperTradeResponse;
         const paperCloseBody = (await paperCloseResponse.json()) as PaperTradeCloseResponse;
+        const paperEvidenceBody =
+          (await paperEvidenceResponse.json()) as PaperTradeEvidenceSummaryResponse;
         if (active) {
           setScoring(scoringBody);
           setPaperTrading(paperTradingBody);
           setPaperClose(paperCloseBody);
+          setPaperEvidence(paperEvidenceBody);
           setApiState("online");
         }
       } catch {
@@ -351,6 +443,7 @@ export function App() {
           setScoring(fallbackScoring);
           setPaperTrading(fallbackPaperTrading);
           setPaperClose(fallbackPaperClose);
+          setPaperEvidence(fallbackPaperEvidence);
           setApiState("offline");
         }
       }
@@ -368,6 +461,10 @@ export function App() {
   const paperCloseTrade = paperClose.closeResult.trade;
   const closeLesson =
     paperCloseTrade?.lessons[0] ?? paperClose.ledger?.lessonsLearned ?? "Close review is blocked.";
+  const paperEvidenceSummary = paperEvidence.summary;
+  const evidenceNote =
+    paperEvidenceSummary.notes[0] ??
+    "Paper-trade evidence remains a validation input, not a recommendation.";
 
   return (
     <main className="app-shell">
@@ -530,6 +627,53 @@ export function App() {
             {paperCloseTrade?.brokerExecution === false
               ? "Close audit is linked to the in-memory ledger; no broker execution occurred."
               : "Paper-trade close review is blocked."}
+          </p>
+        </article>
+
+        <article className="panel">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Paper Trade Evidence</p>
+              <h2>{paperEvidenceReviewLabels[paperEvidenceSummary.reviewStatus]}</h2>
+            </div>
+            <span className="status-pill subtle">
+              {apiState === "offline" ? "Evidence fallback snapshot" : "Evidence API snapshot"}
+            </span>
+          </div>
+          <div className="evidence-strip" aria-label="Paper trade evidence summary">
+            <div>
+              <span>Closed</span>
+              <strong>{paperEvidenceSummary.closedTrades}</strong>
+            </div>
+            <div>
+              <span>Open</span>
+              <strong>{paperEvidenceSummary.openTrades}</strong>
+            </div>
+            <div>
+              <span>Win Rate</span>
+              <strong>{formatPercent(paperEvidenceSummary.winRatePct)}</strong>
+            </div>
+          </div>
+          <div
+            className="evidence-strip evidence-strip-secondary"
+            aria-label="Paper trade evidence performance"
+          >
+            <div>
+              <span>Realized</span>
+              <strong>{formatCurrency(paperEvidenceSummary.realizedPnl)}</strong>
+            </div>
+            <div>
+              <span>Avg Return</span>
+              <strong>{formatPercent(paperEvidenceSummary.averageReturnPct)}</strong>
+            </div>
+            <div>
+              <span>Avg Risk</span>
+              <strong>{formatPercent(paperEvidenceSummary.averageRiskPctOfEquity)}</strong>
+            </div>
+          </div>
+          <p className="panel-copy">{evidenceNote}</p>
+          <p className="panel-copy">
+            Backtest and operator review remain required before strategy promotion.
           </p>
         </article>
       </section>

@@ -133,6 +133,43 @@ const mockPaperCloseBody = {
   },
 };
 
+const mockPaperEvidenceSummaryBody = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Mock paper-trade evidence summary data is generated in memory.",
+  },
+  summary: {
+    mode: "paper",
+    liveTradingEnabled: false,
+    brokerExecution: false,
+    notRecommendation: true,
+    status: "accepted",
+    reviewStatus: "ready_for_review",
+    reasonCodes: ["requires_backtest_and_operator_review"],
+    totalTrades: 3,
+    openTrades: 1,
+    closedTrades: 2,
+    winningTrades: 1,
+    losingTrades: 1,
+    winRatePct: 50,
+    realizedPnl: 10,
+    averageReturnPct: 0.5,
+    averageRiskPctOfEquity: 0.3,
+    largestWin: 60,
+    largestLoss: -50,
+    closedTradeAuditLogIds: ["audit_mock_paper_close_1", "audit_mock_paper_close_loss_1"],
+    notes: [
+      "Paper-trade evidence is a validation input, not a recommendation or performance promise.",
+    ],
+  },
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -144,11 +181,13 @@ describe("operator console shell", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = input.toString();
-        const body = url.includes("mock-close-dry-run")
-          ? mockPaperCloseBody
-          : url.includes("paper-trading")
-            ? mockPaperTradingBody
-            : mockScoringBody;
+        const body = url.includes("mock-evidence-summary")
+          ? mockPaperEvidenceSummaryBody
+          : url.includes("mock-close-dry-run")
+            ? mockPaperCloseBody
+            : url.includes("paper-trading")
+              ? mockPaperTradingBody
+              : mockScoringBody;
         return new Response(JSON.stringify(body));
       }),
     );
@@ -183,6 +222,21 @@ describe("operator console shell", () => {
     expect(
       screen.getByText("Mock paper trade followed through before the time stop."),
     ).toBeInTheDocument();
+    expect(screen.getByText("Paper Trade Evidence")).toBeInTheDocument();
+    expect(screen.getByText("Ready for Review")).toBeInTheDocument();
+    expect(screen.getByText("Closed")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("Open")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("Win Rate")).toBeInTheDocument();
+    expect(screen.getByText("50%")).toBeInTheDocument();
+    expect(screen.getByText("Realized")).toBeInTheDocument();
+    expect(screen.getByText("$10")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Paper-trade evidence is a validation input, not a recommendation or performance promise.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Risk Controls")).toBeInTheDocument();
     expect(screen.getByText("83")).toBeInTheDocument();
   });
@@ -201,6 +255,7 @@ describe("operator console shell", () => {
     expect(screen.getByText("Fallback mock snapshot")).toBeInTheDocument();
     expect(screen.getByText("Paper fallback snapshot")).toBeInTheDocument();
     expect(screen.getByText("Paper close fallback snapshot")).toBeInTheDocument();
+    expect(screen.getByText("Evidence fallback snapshot")).toBeInTheDocument();
     expect(screen.getAllByText("Watchlist").length).toBeGreaterThan(0);
   });
 });

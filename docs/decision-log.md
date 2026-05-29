@@ -245,3 +245,9 @@ Reason: Paper-trading outcomes need a deterministic bridge into validation. The 
 Decision: Expose `/paper-trading/mock-evidence-summary` as a non-durable API contract that creates mock open/closed paper trades in memory and returns `summarizePaperTradeEvidence`.
 
 Reason: The API, UI, and future backtesting views need a stable paper-trade evidence summary shape before durable read APIs exist. Keeping the route mock-only preserves the no-provider-key, no-broker-execution, and no-recommendation boundaries.
+
+## 2026-05-29: Paper-Trade Evidence Summary UI
+
+Decision: Show `/paper-trading/mock-evidence-summary` in the operator console as a validation-only evidence panel with review status, closed/open counts, win rate, realized P/L, average return, average risk, and non-recommendation wording.
+
+Reason: Operators need to see whether paper-trade outcomes are accumulating enough evidence for review without treating the sample as a profitable strategy claim. The UI should reinforce that backtesting and operator review remain required before any strategy promotion.
