@@ -145,6 +145,9 @@ Backtest evidence controls:
 - Missing citations, missing freshness, no trades, or insufficient trade count keep the run at `needs_more_data`.
 - Non-stock or options-proxy runs are blocked until historical options chain validation exists.
 - Cost sensitivity must show baseline, 2x, and 3x fee/spread/slippage assumptions before review.
+- Stock backtest trades must pass the configured average daily dollar-volume floor.
+- Options-family strategies cannot use stock-only backtests as options evidence.
+- Heavy parameter searches downgrade evidence until overfitting risk is reviewed.
 
 ## Promotion Gates
 

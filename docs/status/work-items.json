@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T13:17:17-04:00",
+  "lastUpdated": "2026-05-29T13:26:13-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -1196,7 +1196,7 @@
       "priority": "High",
       "category": "Backtesting validation evidence",
       "blockers": [],
-      "nextStep": "Commit the package-level stock-only backtest evaluator, then continue M7 with durable backtest-run persistence.",
+      "nextStep": "Commit the package-level stock-only backtest evaluator review hardening, then continue M7 with durable backtest-run persistence.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",

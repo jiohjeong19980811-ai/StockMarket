@@ -32,6 +32,7 @@ const baseBacktestInput: StockBacktestInput = {
     spreadBps: 10,
     feePerTrade: 1,
     minTradesForReview: 4,
+    minAverageDailyDollarVolume: 20_000_000,
     pointInTimeData: true,
     survivorshipBiasControl: true,
     lookaheadBiasControl: true,
@@ -49,6 +50,7 @@ const baseBacktestInput: StockBacktestInput = {
       entryPrice: 100,
       exitPrice: 110,
       quantity: 10,
+      averageDailyDollarVolume: 80_000_000,
     },
     {
       id: "trade-2",
@@ -59,6 +61,7 @@ const baseBacktestInput: StockBacktestInput = {
       entryPrice: 100,
       exitPrice: 94,
       quantity: 10,
+      averageDailyDollarVolume: 60_000_000,
     },
     {
       id: "trade-3",
@@ -69,6 +72,7 @@ const baseBacktestInput: StockBacktestInput = {
       entryPrice: 50,
       exitPrice: 55,
       quantity: 20,
+      averageDailyDollarVolume: 30_000_000,
     },
     {
       id: "trade-4",
@@ -79,6 +83,7 @@ const baseBacktestInput: StockBacktestInput = {
       entryPrice: 80,
       exitPrice: 84,
       quantity: 12,
+      averageDailyDollarVolume: 100_000_000,
     },
   ],
 };
@@ -112,6 +117,11 @@ describe("evaluateStockBacktest", () => {
     });
     expect(result.metrics.tradeCount).toBe(4);
     expect(result.metrics.winRatePct).toBe(75);
+    expect(result.metrics.averageReturnPct).toBe(4.499);
+    expect(result.metrics.medianReturnPct).toBe(7.2479);
+    expect(result.metrics.maxDrawdownPct).toBe(6.25);
+    expect(result.metrics.netReturnPct).toBe(18.2815);
+    expect(result.metrics.benchmarkRelativeReturnPct).toBe(14.2815);
     expect(result.metrics.averageReturnPct).toBeGreaterThan(4);
     expect(result.metrics.medianReturnPct).toBeGreaterThan(6);
     expect(result.metrics.bestTradeReturnPct).toBeGreaterThan(9);
@@ -190,6 +200,115 @@ describe("evaluateStockBacktest", () => {
     expect(result.reasonCodes).toEqual(
       expect.arrayContaining(["non_stock_instrument", "options_backtest_not_supported"]),
     );
+  });
+
+  it("blocks options-family stock proxy runs", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        strategyFamily: "options",
+        instrumentType: "stock",
+        optionsProxy: false,
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toContain("options_backtest_not_supported");
+  });
+
+  it("blocks invalid source, freshness, and backtest period timestamps", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        period: {
+          start: "not-a-date",
+          end: "2026-05-28T20:00:00.000Z",
+        },
+        dataFreshness: {
+          status: "fresh",
+          asOf: "",
+          notes: [],
+        },
+        sourceCitations: [
+          {
+            title: "Missing timestamps",
+            url: "https://example.test/mock/prices",
+            source: "mock-provider",
+            publishedAt: "",
+            retrievedAt: "not-a-date",
+          },
+        ],
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toEqual(
+      expect.arrayContaining([
+        "invalid_backtest_period",
+        "invalid_source_timestamps",
+        "invalid_freshness_timestamp",
+      ]),
+    );
+  });
+
+  it("blocks invalid cost assumptions and missing required stress multipliers", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        assumptions: {
+          slippageBps: -1,
+          spreadBps: 0,
+          feePerTrade: -1,
+          costStressMultipliers: [1],
+        },
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toEqual(
+      expect.arrayContaining(["invalid_cost_assumptions", "missing_cost_stress_scenarios"]),
+    );
+  });
+
+  it("downgrades heavily tuned parameter searches", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        assumptions: {
+          rejectedParameterSets: 100,
+        },
+      }),
+    );
+
+    expect(result.promotionGate).toBe("needs_more_data");
+    expect(result.reasonCodes).toContain("excessive_parameter_search");
+  });
+
+  it("blocks illiquid stock samples", () => {
+    const result = evaluateStockBacktest(
+      inputWith({
+        trades: baseBacktestInput.trades.map((trade) => ({
+          ...trade,
+          averageDailyDollarVolume: 1_000_000,
+        })),
+      }),
+    );
+
+    expect(result.promotionGate).toBe("blocked");
+    expect(result.reasonCodes).toContain("liquidity_filter_failed");
+  });
+
+  it("sorts trades chronologically before computing drawdown", () => {
+    const chronological = evaluateStockBacktest(baseBacktestInput);
+    const reversed = evaluateStockBacktest(
+      inputWith({
+        trades: [...baseBacktestInput.trades].reverse(),
+      }),
+    );
+
+    expect(reversed.metrics.maxDrawdownPct).toBe(chronological.metrics.maxDrawdownPct);
+    expect(reversed.trades.map((trade) => trade.id)).toEqual([
+      "trade-1",
+      "trade-2",
+      "trade-3",
+      "trade-4",
+    ]);
   });
 
   it("keeps empty trade runs at needs_more_data", () => {

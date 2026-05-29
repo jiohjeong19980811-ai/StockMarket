@@ -287,3 +287,9 @@ Reason: Evidence inspection should be conservative by default. Mixed evidence mu
 Decision: Start Milestone 7 with a pure package-level stock backtest evaluator in `@stockmarket/backtesting`. The evaluator computes validation metrics from caller-provided closed long-stock trades, citations, freshness, costs, and anti-bias assumptions while returning `notRecommendation` plus conservative promotion gates.
 
 Reason: The platform needs reproducible backtest evidence before strategy promotion, but DB persistence, API/UI surfaces, options backtests, and parameter optimization should wait until the first deterministic stock-only contract is proven.
+
+## 2026-05-29: Stock Backtest Review Hardening
+
+Decision: Harden the first stock backtest evaluator by blocking options-family stock proxies, invalid source/freshness/period timestamps, invalid cost assumptions, missing 1x/2x/3x stress scenarios, failed liquidity floors, and invalid trade rows. Compute drawdown from chronologically sorted compounded equity returns, compare the benchmark against period-level net return, and downgrade excessive parameter searches to `needs_more_data`.
+
+Reason: Backtest evidence can become misleading if weak source timing, optimistic costs, illiquid samples, options proxies, or over-tuned parameter searches reach `ready_for_review`. The first backtesting contract should be conservative even before persistence and UI layers exist.

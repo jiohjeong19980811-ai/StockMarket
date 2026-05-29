@@ -171,4 +171,6 @@ The first backtesting package slice returns `notRecommendation: true` and one of
 - `needs_more_data` when the run is missing citations, freshness, trades, or minimum sample size.
 - `blocked` when the run is non-stock, options proxy, missing point-in-time controls, missing survivorship-bias controls, missing lookahead-bias controls, or has invalid trade records.
 
-The evaluator reports trade count, win rate, average return, median return, max drawdown, profit factor, best/worst trade, average holding period, benchmark-relative return, and cost sensitivity at 1x/2x/3x assumptions. These metrics are validation evidence only and do not override scoring, risk, or operator review gates.
+The evaluator reports trade count, win rate, average return, median return, equity-curve max drawdown from chronologically sorted exits, profit factor, best/worst trade, average holding period, period-level net return, benchmark-relative return, and cost sensitivity at required 1x/2x/3x assumptions. These metrics are validation evidence only and do not override scoring, risk, or operator review gates.
+
+Review hardening blocks options-family stock proxies, invalid source/freshness/period timestamps, invalid cost assumptions, missing required stress scenarios, failed stock liquidity floors, invalid trade rows, and missing anti-bias controls. Heavy parameter searches downgrade to `needs_more_data` until the search process is reviewed.
