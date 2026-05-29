@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { evaluateStockBacktest, type StockBacktestInput } from "@stockmarket/backtesting";
 import {
   closePersistedPaperTrade,
   createLocalClient,
   getRecommendationEvidenceDetail,
+  persistStockBacktestRun,
   persistPaperTrade,
   runMigrations,
 } from "../src/index.js";
@@ -83,7 +85,7 @@ async function seedAuditLog(
 async function seedRecommendation(
   id: string,
   ticker: string,
-  paperTradeEvidenceId?: string,
+  paperTradeEvidenceId?: string | null,
   backtestRunId?: string,
 ) {
   await seedAuditLog(
@@ -135,7 +137,7 @@ async function seedRecommendation(
       "pass",
       "pass",
       backtestRunId ?? null,
-      paperTradeEvidenceId ?? "paper_trade_evidence_1",
+      paperTradeEvidenceId ?? null,
       `audit_${id}`,
       now,
       now,
@@ -156,6 +158,104 @@ async function seedRecommendation(
       "2026-05-29T11:06:00Z",
     ],
   );
+}
+
+function stockBacktestInput(
+  overrides: Partial<Omit<StockBacktestInput, "assumptions" | "trades">> & {
+    assumptions?: Partial<StockBacktestInput["assumptions"]>;
+    trades?: StockBacktestInput["trades"];
+  } = {},
+): StockBacktestInput {
+  const { assumptions, trades, ...inputOverrides } = overrides;
+  return {
+    id: "backtest_run_1",
+    strategyFamily: "momentum",
+    strategyVersionId: "momentum-v0",
+    instrumentType: "stock",
+    universe: "mock-liquid-large-cap",
+    period: {
+      start: "2026-01-02T14:30:00.000Z",
+      end: "2026-05-28T20:00:00.000Z",
+    },
+    benchmarkReturnPct: 4,
+    dataFreshness: {
+      status: "fresh",
+      asOf: "2026-05-28T20:00:00.000Z",
+      notes: [],
+    },
+    sourceCitations: [
+      {
+        title: "Mock adjusted OHLCV history",
+        url: "https://example.test/mock/prices",
+        source: "mock-provider",
+        publishedAt: "2026-05-28T19:55:00.000Z",
+        retrievedAt: "2026-05-28T20:00:00.000Z",
+      },
+    ],
+    assumptions: {
+      slippageBps: 5,
+      spreadBps: 10,
+      feePerTrade: 1,
+      minTradesForReview: 4,
+      minAverageDailyDollarVolume: 20_000_000,
+      pointInTimeData: true,
+      survivorshipBiasControl: true,
+      lookaheadBiasControl: true,
+      rejectedParameterSets: 2,
+      costStressMultipliers: [1, 2, 3],
+      notes: ["Mock run uses adjusted close values and conservative cost stress."],
+      ...assumptions,
+    },
+    trades: trades ?? [
+      {
+        id: "trade-1",
+        ticker: "MSFT",
+        entryAt: "2026-01-05T14:30:00.000Z",
+        exitAt: "2026-01-12T20:00:00.000Z",
+        entryPrice: 100,
+        exitPrice: 110,
+        quantity: 10,
+        averageDailyDollarVolume: 80_000_000,
+      },
+      {
+        id: "trade-2",
+        ticker: "MSFT",
+        entryAt: "2026-02-03T14:30:00.000Z",
+        exitAt: "2026-02-07T20:00:00.000Z",
+        entryPrice: 100,
+        exitPrice: 94,
+        quantity: 10,
+        averageDailyDollarVolume: 60_000_000,
+      },
+      {
+        id: "trade-3",
+        ticker: "MSFT",
+        entryAt: "2026-03-10T14:30:00.000Z",
+        exitAt: "2026-03-20T20:00:00.000Z",
+        entryPrice: 50,
+        exitPrice: 55,
+        quantity: 20,
+        averageDailyDollarVolume: 30_000_000,
+      },
+      {
+        id: "trade-4",
+        ticker: "MSFT",
+        entryAt: "2026-04-02T14:30:00.000Z",
+        exitAt: "2026-04-09T20:00:00.000Z",
+        entryPrice: 80,
+        exitPrice: 84,
+        quantity: 12,
+        averageDailyDollarVolume: 100_000_000,
+      },
+    ],
+    ...inputOverrides,
+  };
+}
+
+async function persistBacktestEvidence(input = stockBacktestInput()) {
+  const result = evaluateStockBacktest(input);
+  await persistStockBacktestRun(client, input, result, now);
+  return result;
 }
 
 async function seedClosedEvidencePaperTrade() {
@@ -309,6 +409,68 @@ describe("recommendation evidence resolver", () => {
     ]);
   });
 
+  it("verifies persisted ready backtest evidence for a matching recommendation cohort", async () => {
+    const result = await persistBacktestEvidence();
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id);
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("verified");
+    expect(detail.reasonCodes).toEqual([]);
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "backtest_run",
+      id: result.id,
+      status: "verified",
+      reasonCodes: [],
+      ticker: "MSFT",
+      instrumentType: "stock",
+      strategyVersionId: "momentum-v0",
+      promotionGate: "ready_for_review",
+      tradeCount: 4,
+      netReturnPct: 18.2815,
+      maxDrawdownPct: 6.25,
+      benchmarkRelativeReturnPct: 14.2815,
+    });
+  });
+
+  it("blocks persisted backtest evidence from a different ticker cohort", async () => {
+    const result = await persistBacktestEvidence();
+    await seedRecommendation("rec_candidate_1", "AAPL", null, result.id);
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("backtest_evidence_cohort_mismatch");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "backtest_run",
+      id: result.id,
+      status: "blocked",
+      reasonCodes: ["backtest_evidence_cohort_mismatch"],
+    });
+  });
+
+  it("keeps needs-more-data backtest evidence unresolved", async () => {
+    const input = stockBacktestInput({
+      assumptions: {
+        minTradesForReview: 5,
+      },
+    });
+    const result = await persistBacktestEvidence(input);
+    await seedRecommendation("rec_candidate_1", "MSFT", null, result.id);
+
+    const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
+
+    expect(detail.evidenceGate).toBe("needs_more_data");
+    expect(detail.reasonCodes).toContain("backtest_evidence_needs_more_data");
+    expect(detail.evidence[0]).toMatchObject({
+      kind: "backtest_run",
+      id: result.id,
+      status: "unresolved",
+      reasonCodes: ["backtest_evidence_needs_more_data"],
+      promotionGate: "needs_more_data",
+    });
+  });
+
   it("blocks paper-trade evidence from a different ticker cohort", async () => {
     await seedClosedEvidencePaperTrade();
     await seedRecommendation("rec_candidate_1", "AAPL", "paper_trade_evidence_1");
@@ -325,21 +487,21 @@ describe("recommendation evidence resolver", () => {
     });
   });
 
-  it("keeps the evidence gate at needs_more_data when any referenced evidence is unresolved", async () => {
+  it("blocks missing backtest evidence while preserving verified paper evidence", async () => {
     await seedClosedEvidencePaperTrade();
     await seedRecommendation("rec_candidate_1", "MSFT", "paper_trade_evidence_1", "backtest_run_1");
 
     const detail = await getRecommendationEvidenceDetail(client, "rec_candidate_1");
 
-    expect(detail.evidenceGate).toBe("needs_more_data");
-    expect(detail.reasonCodes).toContain("backtest_resolver_not_available");
+    expect(detail.evidenceGate).toBe("blocked");
+    expect(detail.reasonCodes).toContain("backtest_evidence_missing");
     expect(detail.evidence).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           kind: "backtest_run",
           id: "backtest_run_1",
-          status: "unresolved",
-          reasonCodes: ["backtest_resolver_not_available"],
+          status: "blocked",
+          reasonCodes: ["backtest_evidence_missing"],
         }),
         expect.objectContaining({
           kind: "paper_trade",

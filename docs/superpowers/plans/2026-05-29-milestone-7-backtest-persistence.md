@@ -272,7 +272,7 @@ Expected: persistence helper tests pass.
 - Modify: `packages/db/src/evidence-resolver.ts`
 - Modify: `packages/db/test/evidence-resolver.test.ts`
 
-- [ ] **Step 1: Add failing resolver tests**
+- [x] **Step 1: Add failing resolver tests**
 
 In `packages/db/test/evidence-resolver.test.ts`, persist a ready stock backtest run and create a recommendation whose `backtest_run_id` points at it. Assert:
 
@@ -301,7 +301,7 @@ expect(detail.reasonCodes).toContain("backtest_evidence_needs_more_data");
 expect(detail.reasonCodes).toContain("backtest_evidence_cohort_mismatch");
 ```
 
-- [ ] **Step 2: Run resolver tests and confirm failure**
+- [x] **Step 2: Run resolver tests and confirm failure**
 
 Run:
 
@@ -311,7 +311,7 @@ npm.cmd run test --workspace @stockmarket/db -- evidence-resolver
 
 Expected: failure because backtest IDs are still returned as `backtest_resolver_not_available`.
 
-- [ ] **Step 3: Extend reason codes and item fields**
+- [x] **Step 3: Extend reason codes and item fields**
 
 Replace the backtest placeholder reason with:
 
@@ -333,7 +333,7 @@ maxDrawdownPct?: number;
 benchmarkRelativeReturnPct?: number;
 ```
 
-- [ ] **Step 4: Implement backtest resolution**
+- [x] **Step 4: Implement backtest resolution**
 
 Add `resolveBacktestEvidence(client, evidenceId, recommendation)` that loads `backtest_runs`, checks:
 
@@ -347,7 +347,7 @@ options_proxy === 0
 
 Then return a verified item with metrics, or blocked/unresolved item with stable reason codes. Until per-ticker backtest membership is modeled, require at least one `backtest_run_trades.ticker` row matching the recommendation ticker.
 
-- [ ] **Step 5: Verify resolver tests pass**
+- [x] **Step 5: Verify resolver tests pass**
 
 Run:
 

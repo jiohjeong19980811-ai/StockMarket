@@ -4,7 +4,11 @@ export type RecommendationEvidenceGate = "verified" | "needs_more_data" | "block
 export type RecommendationEvidenceItemStatus = "verified" | "unresolved" | "blocked";
 export type RecommendationEvidenceReason =
   | "no_evidence_ids"
-  | "backtest_resolver_not_available"
+  | "backtest_evidence_missing"
+  | "backtest_evidence_not_ready"
+  | "backtest_evidence_needs_more_data"
+  | "backtest_evidence_cohort_mismatch"
+  | "backtest_evidence_unsafe"
   | "paper_trade_evidence_missing"
   | "paper_trade_evidence_not_closed"
   | "paper_trade_evidence_unsafe"
@@ -39,6 +43,11 @@ export interface RecommendationEvidenceItem {
   ticker?: string;
   instrumentType?: string;
   strategyVersionId?: string;
+  promotionGate?: string;
+  tradeCount?: number;
+  netReturnPct?: number;
+  maxDrawdownPct?: number;
+  benchmarkRelativeReturnPct?: number;
   closedAt?: string;
   liveTradingEnabled?: false;
   brokerExecution?: false;
@@ -309,6 +318,96 @@ async function resolvePaperTradeEvidence(
   };
 }
 
+async function resolveBacktestEvidence(
+  client: Client,
+  evidenceId: string,
+  recommendation: {
+    ticker: string;
+    instrumentType: string;
+    strategyVersionId: string;
+  },
+): Promise<RecommendationEvidenceItem> {
+  const result = await client.execute({
+    sql: `SELECT id, strategy_version_id, instrument_type, promotion_gate,
+        trade_count, net_return_pct, max_drawdown_pct, benchmark_relative_return_pct,
+        options_proxy, not_recommendation
+      FROM backtest_runs
+      WHERE id = ?
+      LIMIT 1`,
+    args: [evidenceId],
+  });
+  const row = result.rows[0] as Record<string, unknown> | undefined;
+  if (row === undefined) {
+    return {
+      kind: "backtest_run",
+      id: evidenceId,
+      status: "blocked",
+      reasonCodes: ["backtest_evidence_missing"],
+    };
+  }
+
+  const strategyVersionId = readString(row, "strategy_version_id");
+  const instrumentType = readString(row, "instrument_type");
+  const promotionGate = readString(row, "promotion_gate");
+  const tradeCount = readNumber(row, "trade_count");
+  const netReturnPct = readNumber(row, "net_return_pct");
+  const maxDrawdownPct = readNumber(row, "max_drawdown_pct");
+  const benchmarkRelativeReturnPct = readNumber(row, "benchmark_relative_return_pct");
+  const optionsProxyRaw = readNumber(row, "options_proxy");
+  const notRecommendationRaw = readNumber(row, "not_recommendation");
+  const reasonCodes: RecommendationEvidenceReason[] = [];
+
+  if (notRecommendationRaw !== 1 || optionsProxyRaw !== 0) {
+    reasonCodes.push("backtest_evidence_unsafe");
+  }
+  if (
+    instrumentType !== recommendation.instrumentType ||
+    strategyVersionId !== recommendation.strategyVersionId
+  ) {
+    reasonCodes.push("backtest_evidence_cohort_mismatch");
+  }
+
+  const tickerMembership = await client.execute({
+    sql: `SELECT 1
+      FROM backtest_run_trades
+      WHERE backtest_run_id = ? AND ticker = ?
+      LIMIT 1`,
+    args: [evidenceId, recommendation.ticker],
+  });
+  if (tickerMembership.rows.length === 0) {
+    reasonCodes.push("backtest_evidence_cohort_mismatch");
+  }
+
+  if (promotionGate === "needs_more_data") {
+    reasonCodes.push("backtest_evidence_needs_more_data");
+  } else if (promotionGate !== "ready_for_review") {
+    reasonCodes.push("backtest_evidence_not_ready");
+  }
+
+  const unique = uniqueReasons(reasonCodes);
+  const status: RecommendationEvidenceItemStatus =
+    unique.length === 0
+      ? "verified"
+      : unique.every((reason) => reason === "backtest_evidence_needs_more_data")
+        ? "unresolved"
+        : "blocked";
+
+  return {
+    kind: "backtest_run",
+    id: evidenceId,
+    status,
+    reasonCodes: unique,
+    ticker: recommendation.ticker,
+    instrumentType,
+    strategyVersionId,
+    promotionGate,
+    tradeCount,
+    netReturnPct,
+    maxDrawdownPct,
+    benchmarkRelativeReturnPct,
+  };
+}
+
 export async function getRecommendationEvidenceDetail(
   client: Client,
   recommendationId: string,
@@ -362,12 +461,13 @@ export async function getRecommendationEvidenceDetail(
   const auditIds = [readString(row, "operator_audit_log_id")];
 
   if (recommendation.evidenceIds.backtestRunId !== null) {
-    evidence.push({
-      kind: "backtest_run",
-      id: recommendation.evidenceIds.backtestRunId,
-      status: "unresolved",
-      reasonCodes: ["backtest_resolver_not_available"],
-    });
+    evidence.push(
+      await resolveBacktestEvidence(
+        client,
+        recommendation.evidenceIds.backtestRunId,
+        recommendation,
+      ),
+    );
   }
 
   if (recommendation.evidenceIds.paperTradeEvidenceId !== null) {
