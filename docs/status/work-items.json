@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-28T20:51:14-04:00",
+  "lastUpdated": "2026-05-28T20:58:02-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,7 +11,7 @@
   ],
   "currentFocus": {
     "phase": "Milestone 3: Provider interfaces and mock ingestion",
-    "task": "Provider environment requirements clarified; local .env remains optional while mocks and deferred adapter stubs are active",
+    "task": "Mock ingestion dry-run API endpoint added; it uses in-memory persistence and requires no .env or provider keys",
     "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
     "status": "Completed",
     "priority": "High",
@@ -399,6 +399,36 @@
         "Secret-pattern scan",
         "Live-trading surface scan",
         "Root CI"
+      ]
+    },
+    {
+      "id": "M3-005",
+      "title": "Add mock ingestion dry-run API endpoint",
+      "phase": "Milestone 3",
+      "owner": "Codex founding CTO / lead architect / principal engineer / data quality reviewer",
+      "status": "Completed",
+      "priority": "High",
+      "category": "Provider ingestion and data quality",
+      "blockers": [],
+      "nextStep": "Continue Milestone 3 with provider selection scoring, fixture expansion, or a UI/API ingestion status surface.",
+      "relatedDocs": [
+        "apps/api/src/server.ts",
+        "apps/api/test/mock-ingestion.test.ts",
+        "apps/api/package.json",
+        "apps/api/tsconfig.json",
+        "scripts/smoke-api.mjs",
+        "package-lock.json"
+      ],
+      "validationRequired": [
+        "Focused API mock ingestion test",
+        "Type check",
+        "Lint",
+        "Format check",
+        "Root CI",
+        "Source artifact cleanup check",
+        "Status JSON parse",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
       ]
     }
   ]

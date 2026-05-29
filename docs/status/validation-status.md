@@ -1,25 +1,28 @@
 # Validation Status
 
-Last updated: 2026-05-28T20:51:14-04:00
+Last updated: 2026-05-28T20:58:02-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 3 provider ingestion validation |
-| Current task | Provider environment requirements clarified; local `.env` remains optional while mocks and deferred adapter stubs are active |
+| Current task | Mock ingestion dry-run API endpoint added with no `.env` or provider-key requirement |
 | Owner/agent | Codex founding CTO / lead architect / security reviewer / data quality reviewer |
 | Status | Completed |
 | Priority | High |
-| Category | Provider ingestion and security |
+| Category | Provider ingestion and data quality |
 | Blockers | None |
-| Next step | Commit the provider environment clarification, then continue with a mock ingestion API endpoint or CLI dry run |
-| Related docs/files | `.env.example`, `docs/provider-configuration.md`, `docs/data-sources.md`, `docs/security.md`, `docs/decision-log.md`, `docs/open-questions.md`, `docs/status/` |
+| Next step | Commit the mock ingestion dry-run endpoint, then continue with provider selection scoring, fixture expansion, or a UI/API ingestion status surface |
+| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/mock-ingestion.test.ts`, `apps/api/package.json`, `apps/api/tsconfig.json`, `scripts/smoke-api.mjs`, `package-lock.json`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 3 mock ingestion API dry run | Completed | Focused API test passed; route persists 4 mock ingestion runs and 5 normalized provider records to an in-memory DB while reporting `requiresEnv: false` and no provider keys | `npm.cmd run test --workspace @stockmarket/api -- mock-ingestion` |
+| Milestone 3 mock ingestion aggregate CI | Completed | Typecheck, lint, format, 61 unit tests, 16 hook tests, dependency audit, production build, and API smoke passed; API smoke now exercises `/ingestion/mock-dry-run` | `npm.cmd run ci` |
+| Milestone 3 source artifact cleanup check | Completed | Removed untracked generated `.js`, `.d.ts`, and `.d.ts.map` artifacts from `packages/data/src` and `packages/db/src`; root typecheck/build did not recreate them | `npm.cmd run typecheck`; post-build source artifact scan |
 | Milestone 3 provider environment clarification | Completed | Confirmed local `.env` is not required; provider-specific optional placeholders documented; generic provider keys removed from `.env.example`; root CI passed with 60 unit tests and 16 hook tests | Status JSON parse, whitespace check, provider-key naming scan, secret scan, live-trading scan, `npm.cmd run ci` |
 | Milestone 3 provider adapter tests | Completed | 3 tests passed for provider metadata, absence of broker execution methods, missing-key rejection, and configured HTTP deferral until terms review | `npm.cmd run test --workspace @stockmarket/data -- provider-adapters` |
 | Milestone 3 data package tests | Completed | 10 tests passed across provider adapter and mock ingestion suites | `npm.cmd run test --workspace @stockmarket/data` |

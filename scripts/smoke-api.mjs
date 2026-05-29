@@ -21,6 +21,26 @@ try {
     throw new Error(`Unexpected /health response: ${response.body}`);
   }
 
+  const dryRunResponse = await server.inject({
+    method: "POST",
+    url: "/ingestion/mock-dry-run",
+  });
+
+  if (dryRunResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /ingestion/mock-dry-run to return 200, got ${dryRunResponse.statusCode}`,
+    );
+  }
+
+  const dryRunBody = dryRunResponse.json();
+  if (
+    dryRunBody.requiresEnv !== false ||
+    dryRunBody.liveTradingEnabled !== false ||
+    dryRunBody.persisted?.ingestionRuns !== 4
+  ) {
+    throw new Error(`Unexpected mock dry-run response: ${dryRunResponse.body}`);
+  }
+
   console.log("API smoke ok");
 } finally {
   await server.close();
