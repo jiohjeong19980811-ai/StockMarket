@@ -8,7 +8,7 @@ Backtesting exists to prevent attractive narratives from becoming recommendation
 
 The MVP should start with a small, custom, auditable backtesting harness. Mature frameworks such as QuantConnect LEAN, vectorbt, Qlib, Backtrader, Zipline Reloaded, and QuantStats should be used as references or later comparison tools, not as the MVP's core dependency. This keeps evidence gates, assumptions, and audit records aligned with the product domain from day one.
 
-Milestone 7 starts with a pure package-level stock backtest evaluator in `@stockmarket/backtesting`. It consumes closed long-stock trade observations, source citations, freshness state, and explicit assumptions, then returns metrics and conservative evidence gates. M7-002 adds durable DB persistence for stock-only backtest runs, snapshot-coherence checks against a fresh evaluator run, and conservative recommendation evidence resolution for stored backtest IDs. The milestone still does not fetch provider data, expose API routes, optimize parameters, evaluate options, automate strategy promotion, or make performance claims.
+Milestone 7 starts with a pure package-level stock backtest evaluator in `@stockmarket/backtesting`. It consumes closed long-stock trade observations, source citations, freshness state, and explicit assumptions, then returns metrics and conservative evidence gates. M7-002 adds durable DB persistence for stock-only backtest runs, snapshot-coherence checks against a fresh evaluator run, and conservative recommendation evidence resolution for stored backtest IDs. M7-003 adds an in-memory mock API dry run that persists a stock backtest and reads it back through a validation-only DB read model. The milestone still does not fetch provider data, optimize parameters, evaluate options, automate strategy promotion, or make performance claims.
 
 ## Strategy Types
 
@@ -187,9 +187,12 @@ Persistence remains stock-only for MVP. The helper rejects non-stock inputs, opt
 
 Paper-trade eligibility now requires a resolved evidence gate of `verified`; a raw `backtestRunId` or `paperTradeEvidenceId` is not enough. In the core contract, the recommendation must carry a resolver-backed evidence review whose evidence IDs exactly match the referenced backtest or paper-trade evidence. In the DB, paper-trade recommendations and persisted paper-trade rows are blocked unless `evidence_gate = verified` and every referenced evidence row is coherent, fresh, reviewable, cohort-compatible, source-verified, and non-circular, so a valid backtest cannot mask a missing or unsafe paper-trade evidence reference.
 
+## Milestone 7 Backtest API Read Model
+
+M7-003 exposes a mock `/backtesting/mock-read-model-dry-run` API route that creates an in-memory database, runs migrations, persists the stock-only mock backtest, and reads it back through `listPersistedStockBacktestRuns`. The response remains `notRecommendation: true`, declares `durable: false`, requires no provider keys, keeps live trading disabled, and returns parsed metrics, assumptions, citations, freshness, and ordered trade rows without broker or order fields.
+
 Deferred follow-up work:
 
-- API/read endpoints for durable backtest runs.
 - Operator UI surfaces for backtest evidence detail.
 - Strategy promotion automation.
 - Options backtests with contract-level historical chain data.
