@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T19:23:42-04:00",
+  "lastUpdated": "2026-06-05T19:29:54-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -13,7 +13,7 @@
     "phase": "Milestone 8: Daily Opportunity Generation",
     "task": "Show daily opportunities and no-good-trades state in the operator console",
     "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead",
-    "status": "Planned",
+    "status": "Needs Review",
     "priority": "High",
     "category": "Daily opportunity UI"
   },
@@ -1349,11 +1349,11 @@
       "title": "Show daily opportunities and no-good-trades state in the operator console",
       "phase": "Milestone 8",
       "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead",
-      "status": "Planned",
+      "status": "Needs Review",
       "priority": "High",
       "category": "Daily opportunity UI",
       "blockers": [],
-      "nextStep": "Write failing operator-console tests for the daily opportunity API panel, then render ranked opportunities and the no_good_trades fallback without exposing stale metrics while loading/offline.",
+      "nextStep": "Commit the M8-002 daily opportunities UI slice, push the feature branch, create a PR, wait for checks, and merge after the branch is clean.",
       "relatedDocs": [
         "apps/web/src/App.tsx",
         "apps/web/test/App.test.tsx",
