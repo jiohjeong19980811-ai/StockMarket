@@ -1,6 +1,6 @@
 # Current Work Status
 
-Last updated: 2026-06-05T19:34:19-04:00
+Last updated: 2026-06-05T19:43:13-04:00
 
 ## Current Focus
 
@@ -11,11 +11,11 @@ Last updated: 2026-06-05T19:34:19-04:00
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / product manager / risk reviewer / quantitative research lead |
 | Priority | High |
 | Category | Recommendation history |
-| Status | Planned |
+| Status | Needs Review |
 | Blockers | None |
-| Next step | Design and test a mock-only recommendation-history ledger/read model for generated daily reports, preserving citations, timestamps, risk fields, and no-good-trades outcomes without live-trading fields. |
-| Related docs/files | `packages/db`, `packages/scoring`, `apps/api`, `docs/product-roadmap.md`, `docs/risk-and-compliance.md`, `docs/status/work-items.json` |
-| Validation required | Required after implementation: recommendation history contract tests, API mock dry-run tests, root CI, status JSON parse, whitespace check, secret scan, and live-trading/order-surface scan. |
+| Next step | Commit the M8-003 daily recommendation history slice, push the feature branch, create a PR, wait for checks, and merge after the branch is clean. |
+| Related docs/files | `packages/db`, `apps/api`, `scripts/smoke-api.mjs`, `docs/product-roadmap.md`, `docs/risk-and-compliance.md`, `docs/status/work-items.json` |
+| Validation required | Completed locally: recommendation history contract tests, API mock dry-run tests, migration test, root CI, status JSON parse, whitespace check, secret scan, and live-trading/order-surface scan. Remaining before merge: PR checks. |
 
 ## Status Vocabulary
 
