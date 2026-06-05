@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T16:20:00-04:00",
+  "lastUpdated": "2026-06-05T16:36:00-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -13,7 +13,7 @@
     "phase": "Milestone 7: Backtesting",
     "task": "Add mock API read model for durable stock backtest runs",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
-    "status": "Needs Review",
+    "status": "Completed",
     "priority": "High",
     "category": "Backtesting API visibility"
   },
@@ -1255,13 +1255,11 @@
       "title": "Expose durable stock backtest read model through mock API dry run",
       "phase": "Milestone 7",
       "owner": "Codex founding CTO / lead architect / principal engineer / quantitative research lead / risk reviewer",
-      "status": "Needs Review",
+      "status": "Completed",
       "priority": "High",
       "category": "Backtesting API visibility",
-      "blockers": [
-        "Root CI dependency audit stops on an existing vitest@3.2.4 dev-tooling advisory; npm install --save-dev vitest@^4.1.8 was blocked by the current permission policy; runtime dependency audit with --omit=dev is clean."
-      ],
-      "nextStep": "Run an approved Vitest upgrade to a non-vulnerable release, then rerun root CI before PR merge.",
+      "blockers": [],
+      "nextStep": "Push feature/m7-backtest-read-api, create a PR, wait for checks, and merge to main if publication permissions allow; after merge, select the next highest-priority roadmap item.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",
@@ -1270,7 +1268,9 @@
         "packages/db/test/backtest-run-ledger.test.ts",
         "apps/api/src/server.ts",
         "apps/api/test/backtesting.test.ts",
-        "scripts/smoke-api.mjs"
+        "scripts/smoke-api.mjs",
+        "package.json",
+        "package-lock.json"
       ],
       "validationRequired": [
         "DB backtest-run ledger tests",
