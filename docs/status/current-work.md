@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-06-05T19:06:07-04:00
+Last updated: 2026-06-05T19:10:43-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
-| Current phase | Milestone 7: Backtesting |
-| Current task | Show stock backtest read model in the operator console |
-| Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / UI reviewer / risk reviewer / quantitative research lead |
+| Current phase | Milestone 8: Daily Opportunity Generation |
+| Current task | Add daily opportunity generation contract and no-good-trades outcome |
+| Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / product manager / risk reviewer / quantitative research lead |
 | Priority | High |
-| Category | Backtesting UI visibility |
-| Status | Needs Review |
+| Category | Daily research opportunities |
+| Status | Planned |
 | Blockers | None |
-| Next step | Commit the M7-004 UI slice, push the feature branch, create a PR, wait for checks, and merge after the branch is clean. |
-| Related docs/files | `apps/web/src/App.tsx`, `apps/web/src/styles.css`, `apps/web/test/App.test.tsx`, `apps/api/src/server.ts`, `apps/api/test/backtesting.test.ts`, `docs/product-roadmap.md`, `docs/backtesting-and-validation.md`, `docs/risk-and-compliance.md`, `docs/status/work-items.json` |
-| Validation required | Completed locally: focused web dashboard test, root CI, and local web/API smoke. Remaining before merge: status JSON parse, whitespace check, secret scan, live-trading/order-surface scan, and PR checks. |
+| Next step | Design the M8-001 contract, write failing tests, then implement a mock daily opportunity dry run that can return ranked research signals or `no_good_trades`. |
+| Related docs/files | `docs/product-roadmap.md`, `docs/risk-and-compliance.md`, `docs/backtesting-and-validation.md`, `packages/core`, `packages/scoring`, `apps/api`, `apps/web`, `docs/status/work-items.json` |
+| Validation required | Required after implementation: focused opportunity-generation tests, API dry-run tests, web dashboard tests if UI changes, root CI, status JSON parse, whitespace check, secret scan, and live-trading/order-surface scan. |
 
 ## Status Vocabulary
 
