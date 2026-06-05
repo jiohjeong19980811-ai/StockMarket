@@ -341,3 +341,9 @@ Reason: SQLite and JavaScript can coerce numeric strings, non-string citation va
 Decision: Require stored stock backtest cost sensitivity evidence to contain exactly one valid 1x, 2x, and 3x stress row, with no duplicate, extra, malformed, or non-finite stress entries. Stored assumption multipliers must match the same exact set.
 
 Reason: A backtest can otherwise carry valid required stress rows plus ambiguous duplicate or malformed extras while still verifying. Cost-stress evidence used for paper-trade eligibility must be unambiguous before it can support a simulated trade decision.
+
+## 2026-06-05: Autonomous PR And Merge Policy
+
+Decision: The lead Codex operator should continue autonomous development through feature branches, PR-tracked handoffs, and merges only after the full local validation gate passes, GitHub checks pass when configured, and status docs are updated. Clear `Blocked` or `Needs Review` roadmap items before starting later milestone work. Keep remote publication and dependency changes behind the current permission boundary until the operator explicitly approves a narrower auto-allow policy.
+
+Reason: The project benefits from continuous CTO/operator execution, but finance, security, dependency, and remote-publication controls should remain auditable. `main` currently has no GitHub branch protection, so the repo's local gate must remain the stricter merge boundary until branch protection and required checks are configured.
