@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T18:50:44-04:00",
+  "lastUpdated": "2026-06-05T19:06:07-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,9 +11,9 @@
   ],
   "currentFocus": {
     "phase": "Milestone 7: Backtesting",
-    "task": "Design operator-console visibility for stock backtest read models",
+    "task": "Show stock backtest read model in the operator console",
     "owner": "Codex founding CTO / lead architect / principal engineer / UI reviewer / risk reviewer / quantitative research lead",
-    "status": "Planned",
+    "status": "Needs Review",
     "priority": "High",
     "category": "Backtesting UI visibility"
   },
@@ -1289,13 +1289,11 @@
       "title": "Show stock backtest read model in the operator console",
       "phase": "Milestone 7",
       "owner": "Codex founding CTO / lead architect / principal engineer / UI reviewer / risk reviewer / quantitative research lead",
-      "status": "Planned",
+      "status": "Needs Review",
       "priority": "High",
       "category": "Backtesting UI visibility",
-      "blockers": [
-        "Awaiting design approval before UI implementation."
-      ],
-      "nextStep": "Present and approve the M7-004 UI design, then create an implementation plan and build with TDD.",
+      "blockers": [],
+      "nextStep": "Commit the M7-004 UI slice, push the feature branch, create a PR, wait for checks, and merge after the branch is clean.",
       "relatedDocs": [
         "apps/web/src/App.tsx",
         "apps/web/src/styles.css",

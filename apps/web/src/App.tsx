@@ -311,6 +311,84 @@ interface EvidenceDetailResponse {
   };
 }
 
+interface StockBacktestReadModelResponse {
+  mode: "mock";
+  requiresEnv: boolean;
+  liveTradingEnabled: boolean;
+  providerKeysRequired: string[];
+  notRecommendation: boolean;
+  persistence: {
+    scope: string;
+    durable: boolean;
+    note: string;
+  };
+  persistedInMemory: {
+    backtestRuns: number;
+    backtestRunTrades: number;
+  };
+  runs: Array<{
+    id: string;
+    strategyFamily: string;
+    strategyVersionId: string;
+    strategyVersionLabel: string;
+    instrumentType: "stock";
+    universe: string;
+    period: {
+      start: string;
+      end: string;
+    };
+    benchmarkReturnPct: number;
+    promotionGate: "ready_for_review" | "needs_more_data" | "blocked";
+    reasonCodes: string[];
+    metrics: {
+      tradeCount: number;
+      winRatePct: number;
+      maxDrawdownPct: number;
+      netReturnPct: number;
+      benchmarkRelativeReturnPct: number;
+    };
+    assumptions: {
+      slippageBps: number;
+      spreadBps: number;
+      feePerTrade: number;
+      minTradesForReview: number;
+      minAverageDailyDollarVolume: number;
+      pointInTimeData: boolean;
+      survivorshipBiasControl: boolean;
+      lookaheadBiasControl: boolean;
+      rejectedParameterSets: number;
+      costStressMultipliers: number[];
+      notes: string[];
+    };
+    sourceCitations: Array<{
+      title: string;
+      url: string;
+      source: string;
+      publishedAt: string;
+      retrievedAt: string;
+    }>;
+    dataFreshness: {
+      status: "fresh" | "stale" | "partial" | "missing";
+      asOf: string;
+      notes: string[];
+    };
+    optionsProxy: false;
+    notRecommendation: true;
+    trades: Array<{
+      id: string;
+      sourceTradeId: string;
+      ticker: string;
+      netReturnPct: number;
+      grossReturnPct: number;
+      holdingDays: number;
+      exitOrder: number;
+      createdAt: string;
+    }>;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}
+
 type ApiState = "loading" | "online" | "offline";
 
 const scoringEndpoint = "http://127.0.0.1:4000/scoring/mock-evaluation";
@@ -319,6 +397,7 @@ const paperTradeCloseEndpoint = "http://127.0.0.1:4000/paper-trading/mock-close-
 const paperTradeEvidenceEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidence-summary";
 const paperTradeReadModelEndpoint = "http://127.0.0.1:4000/paper-trading/mock-read-model-dry-run";
 const evidenceDetailEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidence-detail-dry-run";
+const backtestReadModelEndpoint = "http://127.0.0.1:4000/backtesting/mock-read-model-dry-run";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",
@@ -658,6 +737,90 @@ const fallbackEvidenceDetail: EvidenceDetailResponse = {
   },
 };
 
+const fallbackBacktestReadModel: StockBacktestReadModelResponse = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Dry-run stock backtest read-model data is discarded after the response.",
+  },
+  persistedInMemory: {
+    backtestRuns: 1,
+    backtestRunTrades: 4,
+  },
+  runs: [
+    {
+      id: "bt_mock_momentum_1",
+      strategyFamily: "momentum",
+      strategyVersionId: "momentum-v0",
+      strategyVersionLabel: "v0",
+      instrumentType: "stock",
+      universe: "mock-liquid-large-cap",
+      period: {
+        start: "2026-01-02T14:30:00.000Z",
+        end: "2026-05-28T20:00:00.000Z",
+      },
+      benchmarkReturnPct: 4,
+      promotionGate: "ready_for_review",
+      reasonCodes: [],
+      metrics: {
+        tradeCount: 4,
+        winRatePct: 75,
+        maxDrawdownPct: -6,
+        netReturnPct: 18.2815,
+        benchmarkRelativeReturnPct: 14.2815,
+      },
+      assumptions: {
+        slippageBps: 5,
+        spreadBps: 10,
+        feePerTrade: 1,
+        minTradesForReview: 4,
+        minAverageDailyDollarVolume: 20_000_000,
+        pointInTimeData: true,
+        survivorshipBiasControl: true,
+        lookaheadBiasControl: true,
+        rejectedParameterSets: 2,
+        costStressMultipliers: [1, 2, 3],
+        notes: ["Mock run uses adjusted close values and conservative cost stress."],
+      },
+      sourceCitations: [
+        {
+          title: "Mock adjusted OHLCV history",
+          url: "https://example.test/mock/prices",
+          source: "mock-provider",
+          publishedAt: "2026-05-28T19:55:00.000Z",
+          retrievedAt: "2026-05-28T20:00:00.000Z",
+        },
+      ],
+      dataFreshness: {
+        status: "fresh",
+        asOf: "2026-05-28T20:00:00.000Z",
+        notes: [],
+      },
+      optionsProxy: false,
+      notRecommendation: true,
+      trades: [
+        {
+          id: "bt_trade_1",
+          sourceTradeId: "trade-1",
+          ticker: "MSFT",
+          netReturnPct: 9.75,
+          grossReturnPct: 10,
+          holdingDays: 7,
+          exitOrder: 0,
+          createdAt: "2026-05-29T18:00:00.000Z",
+        },
+      ],
+      createdAt: "2026-05-29T18:00:00.000Z",
+      updatedAt: "2026-05-29T18:00:00.000Z",
+    },
+  ],
+};
+
 const decisionLabels: Record<Decision, string> = {
   watchlist: "Watchlist",
   paper_trade: "Paper Trade",
@@ -710,12 +873,25 @@ const evidenceGateLabels: Record<EvidenceDetailResponse["evidenceDetail"]["evide
     blocked: "Evidence Blocked",
   };
 
+const backtestPromotionGateLabels: Record<
+  StockBacktestReadModelResponse["runs"][number]["promotionGate"],
+  string
+> = {
+  ready_for_review: "Ready for Review",
+  needs_more_data: "Needs More Data",
+  blocked: "Blocked",
+};
+
 function formatCurrency(value: number): string {
   return `$${Math.round(value).toLocaleString("en-US")}`;
 }
 
 function formatPercent(value: number): string {
   return `${value.toFixed(2).replace(/\.?0+$/, "")}%`;
+}
+
+function formatDays(value: number): string {
+  return value.toFixed(2).replace(/\.?0+$/, "");
 }
 
 function ScoreMeter({ label, value }: { label: string; value: number }) {
@@ -743,6 +919,8 @@ export function App() {
     useState<PaperTradeReadModelResponse>(fallbackPaperReadModel);
   const [evidenceDetail, setEvidenceDetail] =
     useState<EvidenceDetailResponse>(fallbackEvidenceDetail);
+  const [backtestReadModel, setBacktestReadModel] =
+    useState<StockBacktestReadModelResponse>(fallbackBacktestReadModel);
 
   useEffect(() => {
     let active = true;
@@ -756,6 +934,7 @@ export function App() {
           paperEvidenceResponse,
           paperReadModelResponse,
           evidenceDetailResponse,
+          backtestReadModelResponse,
         ] = await Promise.all([
           fetch(scoringEndpoint),
           fetch(paperTradingEndpoint),
@@ -763,6 +942,7 @@ export function App() {
           fetch(paperTradeEvidenceEndpoint),
           fetch(paperTradeReadModelEndpoint, { method: "POST" }),
           fetch(evidenceDetailEndpoint),
+          fetch(backtestReadModelEndpoint, { method: "POST" }),
         ]);
         if (!scoringResponse.ok) {
           throw new Error(`Scoring API returned ${scoringResponse.status}`);
@@ -782,6 +962,9 @@ export function App() {
         if (!evidenceDetailResponse.ok) {
           throw new Error(`Evidence detail API returned ${evidenceDetailResponse.status}`);
         }
+        if (!backtestReadModelResponse.ok) {
+          throw new Error(`Backtest read model API returned ${backtestReadModelResponse.status}`);
+        }
         const scoringBody = (await scoringResponse.json()) as MockScoringResponse;
         const paperTradingBody = (await paperTradingResponse.json()) as PaperTradeResponse;
         const paperCloseBody = (await paperCloseResponse.json()) as PaperTradeCloseResponse;
@@ -790,6 +973,8 @@ export function App() {
         const paperReadModelBody =
           (await paperReadModelResponse.json()) as PaperTradeReadModelResponse;
         const evidenceDetailBody = (await evidenceDetailResponse.json()) as EvidenceDetailResponse;
+        const backtestReadModelBody =
+          (await backtestReadModelResponse.json()) as StockBacktestReadModelResponse;
         if (active) {
           setScoring(scoringBody);
           setPaperTrading(paperTradingBody);
@@ -797,6 +982,7 @@ export function App() {
           setPaperEvidence(paperEvidenceBody);
           setPaperReadModel(paperReadModelBody);
           setEvidenceDetail(evidenceDetailBody);
+          setBacktestReadModel(backtestReadModelBody);
           setApiState("online");
         }
       } catch {
@@ -807,6 +993,7 @@ export function App() {
           setPaperEvidence(fallbackPaperEvidence);
           setPaperReadModel(fallbackPaperReadModel);
           setEvidenceDetail(fallbackEvidenceDetail);
+          setBacktestReadModel(fallbackBacktestReadModel);
           setApiState("offline");
         }
       }
@@ -852,6 +1039,20 @@ export function App() {
     paperEvidenceItem?.status === "verified" && paperEvidenceItem.realizedPnl !== undefined
       ? formatCurrency(paperEvidenceItem.realizedPnl)
       : "Unavailable";
+  const fallbackBacktestRun = fallbackBacktestReadModel.runs[0];
+  if (fallbackBacktestRun === undefined) {
+    throw new Error("Fallback stock backtest read model requires one run.");
+  }
+  const backtestRun = backtestReadModel.runs[0] ?? fallbackBacktestRun;
+  const backtestCitation = backtestRun.sourceCitations[0];
+  const backtestCostStress = backtestRun.assumptions.costStressMultipliers
+    .map((multiplier) => `${multiplier}x`)
+    .join(" / ");
+  const backtestControls = [
+    backtestRun.assumptions.pointInTimeData ? "Point-in-time data" : "Point-in-time gap",
+    backtestRun.assumptions.survivorshipBiasControl ? "Survivorship control" : "Survivorship gap",
+    backtestRun.assumptions.lookaheadBiasControl ? "Lookahead control" : "Lookahead gap",
+  ];
   const paperTradeGateLabel =
     failedGates.length > 0
       ? "Blocked pending evidence"
@@ -863,7 +1064,7 @@ export function App() {
     <main className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Milestone 6</p>
+          <p className="eyebrow">Milestone 7</p>
           <h1>StockMarket Operator Console</h1>
         </div>
         <span className="status-pill">Mock Only</span>
@@ -1133,6 +1334,100 @@ export function App() {
               {ledgerTrade.brokerExecution === false
                 ? "Read model preserves paper-only ledger state; no broker execution occurred."
                 : "Paper-trade read model review is blocked."}
+            </p>
+          </article>
+
+          <article className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Stock Backtest Evidence</p>
+                <h2>{backtestPromotionGateLabels[backtestRun.promotionGate]}</h2>
+              </div>
+              <span className="status-pill subtle">Backtest API snapshot</span>
+            </div>
+            <div className="evidence-strip" aria-label="Stock backtest metrics">
+              <div>
+                <span>Run ID</span>
+                <strong>{backtestRun.id}</strong>
+              </div>
+              <div>
+                <span>Trade Count</span>
+                <strong>{backtestRun.metrics.tradeCount}</strong>
+              </div>
+              <div>
+                <span>Net Return</span>
+                <strong>{formatPercent(backtestRun.metrics.netReturnPct)}</strong>
+              </div>
+            </div>
+            <div
+              className="evidence-strip evidence-strip-secondary"
+              aria-label="Stock backtest review metrics"
+            >
+              <div>
+                <span>Win Rate</span>
+                <strong>{formatPercent(backtestRun.metrics.winRatePct)}</strong>
+              </div>
+              <div>
+                <span>Relative</span>
+                <strong>{formatPercent(backtestRun.metrics.benchmarkRelativeReturnPct)}</strong>
+              </div>
+              <div>
+                <span>Fresh As Of</span>
+                <strong>{backtestRun.dataFreshness.asOf}</strong>
+              </div>
+            </div>
+            <div
+              className="evidence-strip evidence-strip-secondary"
+              aria-label="Stock backtest citation timing"
+            >
+              <div>
+                <span>Source</span>
+                <strong>{backtestCitation?.title ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Published</span>
+                <strong>{backtestCitation?.publishedAt ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Retrieved</span>
+                <strong>{backtestCitation?.retrievedAt ?? "missing"}</strong>
+              </div>
+            </div>
+            <div
+              className="evidence-strip evidence-strip-secondary"
+              aria-label="Stock backtest controls"
+            >
+              <div>
+                <span>Instrument</span>
+                <strong>{backtestRun.instrumentType}</strong>
+              </div>
+              <div>
+                <span>{backtestControls[0]}</span>
+                <strong>{backtestControls.slice(1).join(" / ")}</strong>
+              </div>
+              <div>
+                <span>Cost Stress</span>
+                <strong>{backtestCostStress}</strong>
+              </div>
+            </div>
+            <ul className="gate-list" aria-label="Stock backtest trades">
+              {backtestRun.trades.slice(0, 3).map((trade) => (
+                <li key={trade.id} className="gate-pass">
+                  <span>{trade.ticker}</span>
+                  <p>
+                    {trade.sourceTradeId} - {formatPercent(trade.netReturnPct)} over{" "}
+                    {formatDays(trade.holdingDays)} days
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <p className="panel-copy">
+              {backtestRun.notRecommendation
+                ? "Backtest readback is validation evidence only, not a recommendation."
+                : "Backtest readback requires review before display."}
+            </p>
+            <p className="panel-copy">
+              No broker or live-trading fields are exposed in this validation read model.
             </p>
           </article>
 
