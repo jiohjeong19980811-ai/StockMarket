@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { evaluateStockBacktest, type StockBacktestInput } from "@stockmarket/backtesting";
-import { createLocalClient, persistStockBacktestRun, runMigrations } from "../src/index.js";
+import {
+  createLocalClient,
+  listPersistedStockBacktestRuns,
+  persistStockBacktestRun,
+  runMigrations,
+} from "../src/index.js";
 import type { Client } from "@libsql/client";
 
 const now = "2026-05-29T18:00:00.000Z";
@@ -175,6 +180,64 @@ describe("backtest run ledger", () => {
       "trade-3",
       "trade-4",
     ]);
+  });
+
+  it("reads persisted stock backtest runs as validation-only read models", async () => {
+    const result = evaluateStockBacktest(backtestInput);
+    await persistStockBacktestRun(client, backtestInput, result, now);
+
+    const runs = await listPersistedStockBacktestRuns(client, { limit: 5 });
+
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      id: "backtest-momentum-v0-2026-05-29",
+      strategyFamily: "momentum",
+      strategyVersionId: "momentum-v0",
+      instrumentType: "stock",
+      universe: "mock-liquid-large-cap",
+      promotionGate: "ready_for_review",
+      reasonCodes: [],
+      notRecommendation: true,
+      optionsProxy: false,
+      dataFreshness: {
+        status: "fresh",
+        asOf: "2026-05-28T20:00:00.000Z",
+        notes: [],
+      },
+      metrics: {
+        tradeCount: 4,
+        netReturnPct: 18.2815,
+        benchmarkRelativeReturnPct: 14.2815,
+      },
+      assumptions: {
+        pointInTimeData: true,
+        survivorshipBiasControl: true,
+        lookaheadBiasControl: true,
+        costStressMultipliers: [1, 2, 3],
+      },
+      sourceCitations: [
+        {
+          title: "Mock adjusted OHLCV history",
+          source: "mock-provider",
+          publishedAt: "2026-05-28T19:55:00.000Z",
+          retrievedAt: "2026-05-28T20:00:00.000Z",
+        },
+      ],
+    });
+    expect(runs[0]?.trades[0]).toMatchObject({
+      sourceTradeId: "trade-1",
+      ticker: "MSFT",
+      netReturnPct: 9.75,
+      exitOrder: 0,
+    });
+    expect(runs[0]?.trades.map((trade) => trade.sourceTradeId)).toEqual([
+      "trade-1",
+      "trade-2",
+      "trade-3",
+      "trade-4",
+    ]);
+    expect("brokerExecution" in (runs[0] as Record<string, unknown>)).toBe(false);
+    expect("liveTradingEnabled" in (runs[0] as Record<string, unknown>)).toBe(false);
   });
 
   it("rejects non-stock, options-proxy, or recommendation-shaped results", async () => {

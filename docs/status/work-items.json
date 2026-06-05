@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-29T16:31:12-04:00",
+  "lastUpdated": "2026-06-05T18:48:24-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,11 +11,11 @@
   ],
   "currentFocus": {
     "phase": "Milestone 7: Backtesting",
-    "task": "Validate and review durable stock backtest run persistence evidence gates",
+    "task": "Publish and merge the M7-003 backtest read API branch",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
-    "status": "Completed",
+    "status": "Needs Review",
     "priority": "High",
-    "category": "Backtesting validation evidence"
+    "category": "Release publication"
   },
   "items": [
     {
@@ -1224,7 +1224,7 @@
       "priority": "High",
       "category": "Backtesting validation evidence",
       "blockers": [],
-      "nextStep": "Merged to main after focused review and merged-main CI; choose the next Milestone 7 backtesting follow-up.",
+      "nextStep": "Continue with M7-003 mock API read model for durable stock backtest runs.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",
@@ -1248,6 +1248,40 @@
         "Secret-pattern scan",
         "Live-trading surface scan",
         "Focused review"
+      ]
+    },
+    {
+      "id": "M7-003",
+      "title": "Expose durable stock backtest read model through mock API dry run",
+      "phase": "Milestone 7",
+      "owner": "Codex founding CTO / lead architect / principal engineer / quantitative research lead / risk reviewer",
+      "status": "Needs Review",
+      "priority": "High",
+      "category": "Backtesting API visibility",
+      "blockers": [],
+      "nextStep": "Wait for PR #1 checks at https://github.com/jiohjeong19980811-ai/StockMarket/pull/1, review any failures, and merge to main after checks pass.",
+      "relatedDocs": [
+        "docs/backtesting-and-validation.md",
+        "docs/risk-and-compliance.md",
+        "docs/product-roadmap.md",
+        "packages/db/src/backtest-run-ledger.ts",
+        "packages/db/test/backtest-run-ledger.test.ts",
+        "apps/api/src/server.ts",
+        "apps/api/test/backtesting.test.ts",
+        "scripts/smoke-api.mjs",
+        "package.json",
+        "package-lock.json"
+      ],
+      "validationRequired": [
+        "DB backtest-run ledger tests",
+        "API backtesting route test",
+        "Root CI",
+        "API smoke",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan",
+        "Dependency audit resolution"
       ]
     }
   ]

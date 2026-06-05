@@ -262,6 +262,36 @@ try {
     );
   }
 
+  const backtestReadModelResponse = await server.inject({
+    method: "POST",
+    url: "/backtesting/mock-read-model-dry-run",
+  });
+
+  if (backtestReadModelResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /backtesting/mock-read-model-dry-run to return 200, got ${backtestReadModelResponse.statusCode}`,
+    );
+  }
+
+  const backtestReadModelBody = backtestReadModelResponse.json();
+  if (
+    backtestReadModelBody.requiresEnv !== false ||
+    backtestReadModelBody.liveTradingEnabled !== false ||
+    backtestReadModelBody.persistence?.durable !== false ||
+    backtestReadModelBody.notRecommendation !== true ||
+    backtestReadModelBody.persistedInMemory?.backtestRuns !== 1 ||
+    backtestReadModelBody.persistedInMemory?.backtestRunTrades !== 4 ||
+    backtestReadModelBody.runs?.[0]?.notRecommendation !== true ||
+    backtestReadModelBody.runs?.[0]?.optionsProxy !== false ||
+    backtestReadModelBody.runs?.[0]?.promotionGate !== "ready_for_review" ||
+    backtestReadModelBody.runs?.[0]?.metrics?.tradeCount !== 4 ||
+    backtestReadModelBody.runs?.[0]?.trades?.[0]?.ticker !== "MSFT"
+  ) {
+    throw new Error(
+      `Unexpected mock stock backtest read-model response: ${backtestReadModelResponse.body}`,
+    );
+  }
+
   console.log("API smoke ok");
 } finally {
   await server.close();

@@ -1,4 +1,5 @@
 import fastify, { type FastifyReply } from "fastify";
+import { evaluateStockBacktest, type StockBacktestInput } from "@stockmarket/backtesting";
 import {
   createMockEarningsProvider,
   createMockMarketDataProvider,
@@ -16,9 +17,11 @@ import {
   closePersistedPaperTrade,
   createLocalClient,
   getRecommendationEvidenceDetail,
+  listPersistedStockBacktestRuns,
   listPersistedPaperTrades,
   persistIngestionBatch,
   persistPaperTrade,
+  persistStockBacktestRun,
   runMigrations,
 } from "@stockmarket/db";
 import {
@@ -42,7 +45,9 @@ type DryRunTableName =
   | "data_quality_events"
   | "recommendations"
   | "audit_logs"
-  | "paper_trades";
+  | "paper_trades"
+  | "backtest_runs"
+  | "backtest_run_trades";
 
 type LocalClient = Awaited<ReturnType<typeof createLocalClient>>;
 
@@ -119,6 +124,88 @@ const mockScoringInput: ScoringInput = {
     dailyLossPct: 0.4,
     aggregateOptionsPremiumPct: 0,
   },
+};
+
+const mockStockBacktestInput: StockBacktestInput = {
+  id: "bt_mock_momentum_1",
+  strategyFamily: "momentum",
+  strategyVersionId: "momentum-v0",
+  instrumentType: "stock",
+  universe: "mock-liquid-large-cap",
+  period: {
+    start: "2026-01-02T14:30:00.000Z",
+    end: "2026-05-28T20:00:00.000Z",
+  },
+  benchmarkReturnPct: 4,
+  dataFreshness: {
+    status: "fresh",
+    asOf: "2026-05-28T20:00:00.000Z",
+    notes: [],
+  },
+  sourceCitations: [
+    {
+      title: "Mock adjusted OHLCV history",
+      url: "https://example.test/mock/prices",
+      source: "mock-provider",
+      publishedAt: "2026-05-28T19:55:00.000Z",
+      retrievedAt: "2026-05-28T20:00:00.000Z",
+    },
+  ],
+  assumptions: {
+    slippageBps: 5,
+    spreadBps: 10,
+    feePerTrade: 1,
+    minTradesForReview: 4,
+    minAverageDailyDollarVolume: 20_000_000,
+    pointInTimeData: true,
+    survivorshipBiasControl: true,
+    lookaheadBiasControl: true,
+    rejectedParameterSets: 2,
+    costStressMultipliers: [1, 2, 3],
+    notes: ["Mock run uses adjusted close values and conservative cost stress."],
+  },
+  trades: [
+    {
+      id: "trade-1",
+      ticker: "MSFT",
+      entryAt: "2026-01-05T14:30:00.000Z",
+      exitAt: "2026-01-12T20:00:00.000Z",
+      entryPrice: 100,
+      exitPrice: 110,
+      quantity: 10,
+      averageDailyDollarVolume: 80_000_000,
+    },
+    {
+      id: "trade-2",
+      ticker: "MSFT",
+      entryAt: "2026-02-03T14:30:00.000Z",
+      exitAt: "2026-02-07T20:00:00.000Z",
+      entryPrice: 100,
+      exitPrice: 94,
+      quantity: 10,
+      averageDailyDollarVolume: 60_000_000,
+    },
+    {
+      id: "trade-3",
+      ticker: "MSFT",
+      entryAt: "2026-03-10T14:30:00.000Z",
+      exitAt: "2026-03-20T20:00:00.000Z",
+      entryPrice: 50,
+      exitPrice: 55,
+      quantity: 20,
+      averageDailyDollarVolume: 30_000_000,
+    },
+    {
+      id: "trade-4",
+      ticker: "MSFT",
+      entryAt: "2026-04-02T14:30:00.000Z",
+      exitAt: "2026-04-09T20:00:00.000Z",
+      entryPrice: 80,
+      exitPrice: 84,
+      quantity: 12,
+      averageDailyDollarVolume: 100_000_000,
+    },
+  ],
 };
 
 const mockPaperTradeRecommendation: Recommendation = {
@@ -260,6 +347,43 @@ function mockPaperTradePrimaryCitation() {
     throw new Error("Mock paper-trade recommendation requires a primary citation.");
   }
   return citation;
+}
+
+async function seedMockBacktestStrategy(client: LocalClient) {
+  await client.batch(
+    [
+      {
+        sql: `INSERT INTO strategy_definitions
+          (id, family, name, description, allowed_instrument_types_json, created_at)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [
+          "strategy_mock_momentum",
+          mockStockBacktestInput.strategyFamily,
+          "Mock momentum stock backtest strategy",
+          "Mock strategy definition for stock backtest API read-model dry runs.",
+          '["stock"]',
+          "2026-05-28T14:40:00.000Z",
+        ],
+      },
+      {
+        sql: `INSERT INTO strategy_versions
+          (id, strategy_definition_id, version, validation_status, promotion_state,
+           required_data_json, risk_policy_version, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          mockStockBacktestInput.strategyVersionId,
+          "strategy_mock_momentum",
+          "v0",
+          "paper_trade_eligible",
+          "paper_trade_eligible",
+          '["prices","backtests","audit"]',
+          "risk-v0",
+          "2026-05-28T14:40:00.000Z",
+        ],
+      },
+    ],
+    "write",
+  );
 }
 
 async function seedMockPaperTradeLedgerDependencies(client: LocalClient, paperTradeId: string) {
@@ -673,6 +797,45 @@ export function buildServer(env: ApiEnv) {
     paperTradeFirst: true,
     policies: listStrategyPolicies(),
   }));
+
+  server.post("/backtesting/mock-read-model-dry-run", async () => {
+    const client = await createLocalClient();
+    const result = evaluateStockBacktest(mockStockBacktestInput);
+
+    try {
+      await runMigrations(client);
+      await seedMockBacktestStrategy(client);
+      await persistStockBacktestRun(
+        client,
+        mockStockBacktestInput,
+        result,
+        "2026-05-29T18:00:00.000Z",
+      );
+
+      return {
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+          note: "Dry-run stock backtest read-model data is discarded after the response.",
+        },
+        persistedInMemory: {
+          backtestRuns: await countRows(client, "backtest_runs"),
+          backtestRunTrades: await countRows(client, "backtest_run_trades"),
+        },
+        runs: await listPersistedStockBacktestRuns(client, {
+          strategyVersionId: mockStockBacktestInput.strategyVersionId,
+          limit: 5,
+        }),
+      };
+    } finally {
+      client.close();
+    }
+  });
 
   server.get("/paper-trading/mock-decision", async () => ({
     mode: "mock",

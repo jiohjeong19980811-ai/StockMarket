@@ -23,6 +23,8 @@
 
 ## Operations
 
+- Should `.codex/rules/stockmarket.rules` be narrowed to auto-allow `git push`, `gh pr create`, and `gh pr merge` for this repository after the local validation gate passes, or should those actions continue to require operator approval?
+- Should dependency security remediations, such as upgrading a vulnerable direct dev dependency to the npm audit fixed version, be auto-allowed after security review and successful validation?
 - Which GitHub issue workflow should be used once GitHub CLI or GitHub integration is authenticated?
 - Which CI provider and secret scanning tools should be configured first?
 - What exact operator approval process is required before any future paper broker integration?

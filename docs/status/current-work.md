@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-05-29T16:31:12-04:00
+Last updated: 2026-06-05T18:48:24-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 7: Backtesting |
-| Current task | Validate and review durable stock backtest run persistence evidence gates |
+| Current task | Publish and merge the M7-003 backtest read API branch |
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead |
-| Status | Completed |
 | Priority | High |
-| Category | Backtesting validation evidence |
-| Blockers | None |
-| Next step | Merged to main after focused review and merged-main CI; choose the next Milestone 7 backtesting follow-up. |
-| Related docs/files | `packages/scoring/src/index.ts`, `packages/db/migrations/0005_recommendation_evidence_gate.sql`, `packages/db/src/evidence-resolver.ts`, `packages/db/test`, `packages/scoring/test/scoring.test.ts`, `docs/backtesting-and-validation.md`, `docs/risk-and-compliance.md`, `docs/architecture.md`, `docs/product-roadmap.md` |
-| Validation required | Focused DB/scoring/API regressions and merged-main CI passed after all-referenced evidence gates, SQL/resolver type parity, non-finite JSON number rejection, strict calendar-valid UTC timestamp-shape, source-cohort and non-circular paper evidence, same-cohort source backing, and exact-set costSensitivity/costStressMultipliers hardening. Latest merged-main CI passed with 195 unit tests and 16 hook tests; status JSON parse, whitespace check, credential scan, and live-trading surface scan passed for the final status update. |
+| Category | Release publication |
+| Status | Needs Review |
+| Blockers | None. PR #1 is open: `https://github.com/jiohjeong19980811-ai/StockMarket/pull/1`. |
+| Next step | Wait for PR #1 checks, review any failures, and merge to `main` after checks pass. |
+| Related docs/files | `packages/db/src/backtest-run-ledger.ts`, `packages/db/test/backtest-run-ledger.test.ts`, `apps/api/src/server.ts`, `apps/api/test/backtesting.test.ts`, `package.json`, `package-lock.json`, `docs/backtesting-and-validation.md`, `docs/risk-and-compliance.md`, `docs/product-roadmap.md`, `docs/codex-setup.md`, `docs/decision-log.md`, `docs/open-questions.md` |
+| Validation required | Completed: root CI, status JSON parse, whitespace check, secret scan, and reviewed live-trading/order-surface scan. |
 
 ## Status Vocabulary
 
