@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T19:10:43-04:00",
+  "lastUpdated": "2026-06-05T19:21:03-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -13,7 +13,7 @@
     "phase": "Milestone 8: Daily Opportunity Generation",
     "task": "Add daily opportunity generation contract and no-good-trades outcome",
     "owner": "Codex founding CTO / lead architect / principal engineer / product manager / risk reviewer / quantitative research lead",
-    "status": "Planned",
+    "status": "Needs Review",
     "priority": "High",
     "category": "Daily research opportunities"
   },
@@ -1319,11 +1319,11 @@
       "title": "Add daily opportunity generation contract and no-good-trades outcome",
       "phase": "Milestone 8",
       "owner": "Codex founding CTO / lead architect / principal engineer / product manager / risk reviewer / quantitative research lead",
-      "status": "Planned",
+      "status": "Needs Review",
       "priority": "High",
       "category": "Daily research opportunities",
       "blockers": [],
-      "nextStep": "Design the contract, write failing tests, then implement a mock opportunity-generation dry run that can return ranked research signals or no_good_trades with citations, timestamps, risk, confidence, and safety framing.",
+      "nextStep": "Commit the M8-001 daily opportunity slice, push the feature branch, create a PR, wait for checks, and merge after the branch is clean.",
       "relatedDocs": [
         "docs/product-roadmap.md",
         "docs/risk-and-compliance.md",
