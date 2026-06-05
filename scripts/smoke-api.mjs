@@ -85,6 +85,33 @@ try {
     throw new Error(`Unexpected mock scoring response: ${scoringResponse.body}`);
   }
 
+  const dailyOpportunitiesResponse = await server.inject({
+    method: "POST",
+    url: "/opportunities/mock-daily-dry-run",
+  });
+
+  if (dailyOpportunitiesResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /opportunities/mock-daily-dry-run to return 200, got ${dailyOpportunitiesResponse.statusCode}`,
+    );
+  }
+
+  const dailyOpportunitiesBody = dailyOpportunitiesResponse.json();
+  if (
+    dailyOpportunitiesBody.requiresEnv !== false ||
+    dailyOpportunitiesBody.liveTradingEnabled !== false ||
+    dailyOpportunitiesBody.notRecommendation !== true ||
+    dailyOpportunitiesBody.report?.outcome !== "ranked_opportunities" ||
+    dailyOpportunitiesBody.report?.notRecommendation !== true ||
+    dailyOpportunitiesBody.report?.opportunities?.[0]?.ticker !== "MSFT" ||
+    dailyOpportunitiesBody.report?.opportunities?.[0]?.decision !== "paper_trade" ||
+    dailyOpportunitiesBody.report?.opportunities?.[0]?.evidence?.gate !== "verified"
+  ) {
+    throw new Error(
+      `Unexpected mock daily opportunities response: ${dailyOpportunitiesResponse.body}`,
+    );
+  }
+
   const strategyPoliciesResponse = await server.inject({
     method: "GET",
     url: "/strategies/policies",

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T19:06:07-04:00",
+  "lastUpdated": "2026-06-05T19:21:03-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -10,12 +10,12 @@
     "Deferred"
   ],
   "currentFocus": {
-    "phase": "Milestone 7: Backtesting",
-    "task": "Show stock backtest read model in the operator console",
-    "owner": "Codex founding CTO / lead architect / principal engineer / UI reviewer / risk reviewer / quantitative research lead",
+    "phase": "Milestone 8: Daily Opportunity Generation",
+    "task": "Add daily opportunity generation contract and no-good-trades outcome",
+    "owner": "Codex founding CTO / lead architect / principal engineer / product manager / risk reviewer / quantitative research lead",
     "status": "Needs Review",
     "priority": "High",
-    "category": "Backtesting UI visibility"
+    "category": "Daily research opportunities"
   },
   "items": [
     {
@@ -1289,11 +1289,11 @@
       "title": "Show stock backtest read model in the operator console",
       "phase": "Milestone 7",
       "owner": "Codex founding CTO / lead architect / principal engineer / UI reviewer / risk reviewer / quantitative research lead",
-      "status": "Needs Review",
+      "status": "Completed",
       "priority": "High",
       "category": "Backtesting UI visibility",
       "blockers": [],
-      "nextStep": "Commit the M7-004 UI slice, push the feature branch, create a PR, wait for checks, and merge after the branch is clean.",
+      "nextStep": "Merged to main in PR #2; continue with M8-001 daily opportunity generation and no-good-trades support.",
       "relatedDocs": [
         "apps/web/src/App.tsx",
         "apps/web/src/styles.css",
@@ -1312,6 +1312,36 @@
         "Secret-pattern scan",
         "Live-trading surface scan",
         "Local web smoke"
+      ]
+    },
+    {
+      "id": "M8-001",
+      "title": "Add daily opportunity generation contract and no-good-trades outcome",
+      "phase": "Milestone 8",
+      "owner": "Codex founding CTO / lead architect / principal engineer / product manager / risk reviewer / quantitative research lead",
+      "status": "Needs Review",
+      "priority": "High",
+      "category": "Daily research opportunities",
+      "blockers": [],
+      "nextStep": "Commit the M8-001 daily opportunity slice, push the feature branch, create a PR, wait for checks, and merge after the branch is clean.",
+      "relatedDocs": [
+        "docs/product-roadmap.md",
+        "docs/risk-and-compliance.md",
+        "docs/backtesting-and-validation.md",
+        "packages/core",
+        "packages/scoring",
+        "apps/api",
+        "apps/web"
+      ],
+      "validationRequired": [
+        "Daily opportunity contract tests",
+        "API mock dry-run tests",
+        "Web dashboard tests if UI changes",
+        "Root CI",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan"
       ]
     }
   ]

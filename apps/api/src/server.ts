@@ -31,7 +31,13 @@ import {
   type PaperTradeExitRequest,
   type PaperTradeRequest,
 } from "@stockmarket/paper-trading";
-import { listStrategyPolicies, scoreOpportunity, type ScoringInput } from "@stockmarket/scoring";
+import {
+  generateDailyOpportunityReport,
+  listStrategyPolicies,
+  scoreOpportunity,
+  type DailyOpportunityCandidate,
+  type ScoringInput,
+} from "@stockmarket/scoring";
 import type { Recommendation } from "@stockmarket/core";
 import type { ApiEnv } from "./env.js";
 
@@ -319,6 +325,49 @@ const mockPaperTradeExitRequest: PaperTradeExitRequest = {
   lessonsLearned: "Mock paper trade followed through before the time stop.",
   auditLogId: "audit_mock_paper_close_1",
 };
+
+const mockDailyOpportunityCandidates: DailyOpportunityCandidate[] = [
+  {
+    ...mockScoringInput,
+    id: "candidate-MSFT-momentum-daily-1",
+    evidenceStatus: "paper_trade_eligible",
+    evidenceGate: "verified",
+    evidenceIds: ["bt_mock_momentum_1"],
+    evidenceReview: {
+      resolver: "db_recommendation_evidence_resolver",
+      recommendationId: "candidate-MSFT-momentum-daily-1",
+      evidenceGate: "verified",
+      evidenceIds: ["bt_mock_momentum_1"],
+      reasonCodes: [],
+      resolvedAt: "2026-05-28T14:50:00.000Z",
+    },
+    thesis: mockPaperTradeRecommendation.thesis,
+    bullCase: mockPaperTradeRecommendation.bullCase,
+    bearCase: mockPaperTradeRecommendation.bearCase,
+    downsideScenario: mockPaperTradeRecommendation.downsideScenario,
+    invalidationConditions: mockPaperTradeRecommendation.invalidationConditions,
+    whySystemMightBeWrong: mockPaperTradeRecommendation.whySystemMightBeWrong,
+  },
+  {
+    ...mockScoringInput,
+    id: "candidate-AAPL-stale-daily-1",
+    ticker: "AAPL",
+    evidenceStatus: "research_only",
+    evidenceGate: "needs_more_data",
+    evidenceIds: [],
+    dataFreshness: {
+      status: "stale",
+      asOf: "2026-05-20T20:00:00.000Z",
+      notes: ["Mock daily price history is stale."],
+    },
+    thesis: "Mock stale-data candidate retained for daily review auditability.",
+    bullCase: "Fresh data could later support a watchlist review.",
+    bearCase: "Current data is stale and cannot support an operator action.",
+    downsideScenario: "Shares reverse while stale data hides current weakness.",
+    invalidationConditions: ["Refresh market data before any review"],
+    whySystemMightBeWrong: "The stale snapshot may omit new market or company information.",
+  },
+];
 
 function acceptedPaperTradeOrThrow(result: ReturnType<typeof createPaperTrade>) {
   if (result.status !== "accepted") {
@@ -787,6 +836,19 @@ export function buildServer(env: ApiEnv) {
     providerKeysRequired: [],
     notRecommendation: true,
     result: scoreOpportunity(mockScoringInput),
+  }));
+
+  server.post("/opportunities/mock-daily-dry-run", async () => ({
+    mode: "mock",
+    requiresEnv: false,
+    liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+    providerKeysRequired: [],
+    notRecommendation: true,
+    report: generateDailyOpportunityReport({
+      id: "daily_mock_20260528",
+      generatedAt: "2026-05-28T15:05:00.000Z",
+      candidates: mockDailyOpportunityCandidates,
+    }),
   }));
 
   server.get("/strategies/policies", async () => ({

@@ -613,3 +613,192 @@ export function scoreOpportunity(input: ScoringInput): ScoringResult {
     },
   };
 }
+
+export type DailyOpportunityOutcome = "ranked_opportunities" | "no_good_trades";
+
+export interface DailyOpportunityCandidate extends ScoringInput {
+  thesis: string;
+  bullCase: string;
+  bearCase: string;
+  downsideScenario: string;
+  invalidationConditions: string[];
+  whySystemMightBeWrong: string;
+}
+
+export interface DailyOpportunityReview {
+  id: string;
+  ticker: string;
+  instrumentType: InstrumentType;
+  strategyFamily: StrategyFamily;
+  decision: OpportunityDecision;
+  scores: ScoreSet;
+  reasonCodes: string[];
+  failedGates: RiskGateResult[];
+}
+
+export interface DailyOpportunity {
+  rank: number;
+  id: string;
+  ticker: string;
+  instrumentType: InstrumentType;
+  strategyFamily: StrategyFamily;
+  strategyPolicy: StrategyPolicy;
+  decision: Extract<OpportunityDecision, "paper_trade" | "watchlist">;
+  scores: ScoreSet;
+  thesis: string;
+  bullCase: string;
+  bearCase: string;
+  downsideScenario: string;
+  invalidationConditions: string[];
+  whySystemMightBeWrong: string;
+  sourceCitations: SourceCitation[];
+  dataFreshness: DataFreshness;
+  liquidity: LiquidityContext;
+  evidence: {
+    status: EvidenceStatus;
+    gate: EvidenceGate;
+    ids: string[];
+  };
+  gateSummary: RiskGateResult[];
+  notRecommendation: true;
+}
+
+export interface DailyOpportunityReport {
+  id: string;
+  mode: "mock";
+  generatedAt: string;
+  outcome: DailyOpportunityOutcome;
+  notRecommendation: true;
+  liveTradingEnabled: false;
+  providerKeysRequired: string[];
+  disclaimer: string;
+  reviewedCount: number;
+  opportunityCount: number;
+  opportunities: DailyOpportunity[];
+  reviewedCandidates: DailyOpportunityReview[];
+  noGoodTrades: {
+    message: "No good trades today.";
+    reasonCodes: string[];
+  } | null;
+}
+
+export interface DailyOpportunityReportInput {
+  id: string;
+  generatedAt: string;
+  candidates: DailyOpportunityCandidate[];
+}
+
+const opportunityDecisionRank: Record<OpportunityDecision, number> = {
+  paper_trade: 3,
+  watchlist: 2,
+  needs_more_data: 1,
+  avoid: 0,
+};
+
+function failedGateIds(gates: RiskGateResult[]): string[] {
+  return gates.filter((gate) => !gate.passed).map((gate) => gate.id);
+}
+
+function isRankedOpportunity(
+  review: DailyOpportunityReview,
+): review is DailyOpportunityReview & { decision: "paper_trade" | "watchlist" } {
+  return review.decision === "paper_trade" || review.decision === "watchlist";
+}
+
+function uniqueReasonCodes(reviews: DailyOpportunityReview[]): string[] {
+  const reasonCodes = reviews.flatMap((review) => review.reasonCodes);
+  return reasonCodes.length > 0 ? Array.from(new Set(reasonCodes)) : ["no_candidates"];
+}
+
+export function generateDailyOpportunityReport(
+  input: DailyOpportunityReportInput,
+): DailyOpportunityReport {
+  const scoredCandidates = input.candidates.map((candidate) => {
+    const result = scoreOpportunity(candidate);
+    const failedGates = result.gates.filter((gate) => !gate.passed);
+    const review: DailyOpportunityReview = {
+      id: candidate.id,
+      ticker: candidate.ticker,
+      instrumentType: candidate.instrumentType,
+      strategyFamily: candidate.strategyFamily,
+      decision: result.decision,
+      scores: result.scores,
+      reasonCodes: failedGateIds(result.gates),
+      failedGates,
+    };
+
+    return {
+      candidate,
+      result,
+      review,
+    };
+  });
+
+  const opportunities = scoredCandidates
+    .filter(({ review }) => isRankedOpportunity(review))
+    .sort((left, right) => {
+      const decisionDelta =
+        opportunityDecisionRank[right.review.decision] -
+        opportunityDecisionRank[left.review.decision];
+      if (decisionDelta !== 0) {
+        return decisionDelta;
+      }
+      const confidenceDelta = right.review.scores.confidence - left.review.scores.confidence;
+      if (confidenceDelta !== 0) {
+        return confidenceDelta;
+      }
+      return right.review.scores.liquidity - left.review.scores.liquidity;
+    })
+    .map<DailyOpportunity>(({ candidate, result, review }, index) => ({
+      rank: index + 1,
+      id: candidate.id,
+      ticker: candidate.ticker,
+      instrumentType: candidate.instrumentType,
+      strategyFamily: candidate.strategyFamily,
+      strategyPolicy: result.strategyPolicy,
+      decision: review.decision as "paper_trade" | "watchlist",
+      scores: review.scores,
+      thesis: candidate.thesis,
+      bullCase: candidate.bullCase,
+      bearCase: candidate.bearCase,
+      downsideScenario: candidate.downsideScenario,
+      invalidationConditions: candidate.invalidationConditions,
+      whySystemMightBeWrong: candidate.whySystemMightBeWrong,
+      sourceCitations: candidate.sourceCitations,
+      dataFreshness: candidate.dataFreshness,
+      liquidity: candidate.liquidity,
+      evidence: {
+        status: candidate.evidenceStatus,
+        gate: candidate.evidenceGate,
+        ids: candidate.evidenceIds,
+      },
+      gateSummary: result.gates,
+      notRecommendation: true,
+    }));
+
+  const reviewedCandidates = scoredCandidates.map(({ review }) => review);
+  const outcome: DailyOpportunityOutcome =
+    opportunities.length > 0 ? "ranked_opportunities" : "no_good_trades";
+
+  return {
+    id: input.id,
+    mode: "mock",
+    generatedAt: input.generatedAt,
+    outcome,
+    notRecommendation: true,
+    liveTradingEnabled: false,
+    providerKeysRequired: [],
+    disclaimer: "Research signals only; not financial advice or a performance promise.",
+    reviewedCount: reviewedCandidates.length,
+    opportunityCount: opportunities.length,
+    opportunities,
+    reviewedCandidates,
+    noGoodTrades:
+      outcome === "no_good_trades"
+        ? {
+            message: "No good trades today.",
+            reasonCodes: uniqueReasonCodes(reviewedCandidates),
+          }
+        : null,
+  };
+}
