@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-06-05T19:21:03-04:00
+Last updated: 2026-06-05T19:23:42-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 8: Daily Opportunity Generation |
-| Current task | Add daily opportunity generation contract and no-good-trades outcome |
-| Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / product manager / risk reviewer / quantitative research lead |
+| Current task | Show daily opportunities and no-good-trades state in the operator console |
+| Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead |
 | Priority | High |
-| Category | Daily research opportunities |
-| Status | Needs Review |
+| Category | Daily opportunity UI |
+| Status | Planned |
 | Blockers | None |
-| Next step | Commit the M8-001 daily opportunity slice, push the feature branch, create a PR, wait for checks, and merge after the branch is clean. |
-| Related docs/files | `docs/product-roadmap.md`, `docs/risk-and-compliance.md`, `docs/backtesting-and-validation.md`, `packages/core`, `packages/scoring`, `apps/api`, `apps/web`, `docs/status/work-items.json` |
-| Validation required | Completed locally: focused opportunity-generation tests, API dry-run tests, root CI, API smoke, status JSON parse, whitespace check, secret scan, and live-trading/order-surface scan. Remaining before merge: PR checks. |
+| Next step | Write failing operator-console tests for the daily opportunity API panel, then render ranked opportunities and the `no_good_trades` fallback without exposing stale metrics while loading/offline. |
+| Related docs/files | `apps/web/src/App.tsx`, `apps/web/test/App.test.tsx`, `apps/api/src/server.ts`, `packages/scoring/src/index.ts`, `docs/product-roadmap.md`, `docs/risk-and-compliance.md`, `docs/status/work-items.json` |
+| Validation required | Required after implementation: focused web dashboard tests, root CI, status JSON parse, whitespace check, secret scan, live-trading/order-surface scan, and local web/API smoke if UI changes. |
 
 ## Status Vocabulary
 
