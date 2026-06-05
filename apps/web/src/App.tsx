@@ -463,6 +463,78 @@ interface DailyOpportunitiesResponse {
   };
 }
 
+interface DailyOpportunityHistoryResponse {
+  mode: "mock";
+  requiresEnv: boolean;
+  liveTradingEnabled: boolean;
+  providerKeysRequired: string[];
+  notRecommendation: boolean;
+  persistence: {
+    scope: string;
+    durable: boolean;
+    note: string;
+  };
+  persistedInMemory: {
+    dailyOpportunityReports: number;
+    dailyOpportunityReportRecommendations: number;
+    recommendations: number;
+    recommendationCitations: number;
+    auditLogs: number;
+  };
+  reports: Array<{
+    id: string;
+    generatedAt: string;
+    outcome: "ranked_opportunities" | "no_good_trades";
+    reviewedCount: number;
+    opportunityCount: number;
+    providerKeysRequired: string[];
+    disclaimer: string;
+    noGoodTrades: {
+      message: "No good trades today.";
+      reasonCodes: string[];
+    } | null;
+    liveTradingEnabled: false;
+    notRecommendation: true;
+    recommendations: Array<{
+      reportRank: number;
+      id: string;
+      ticker: string;
+      instrumentType: "stock";
+      strategyVersionId: string;
+      decision: "paper_trade" | "watchlist";
+      evidenceStatus: string;
+      evidenceGate: "verified" | "needs_more_data" | "blocked";
+      thesis: string;
+      bullCase: string;
+      bearCase: string;
+      downsideScenario: string;
+      invalidationConditions: string[];
+      whySystemMightBeWrong: string;
+      sourceCitations: Array<{
+        title: string;
+        url: string;
+        source: string;
+        publishedAt: string;
+        retrievedAt: string;
+      }>;
+      dataFreshness: {
+        status: "fresh" | "stale" | "partial" | "missing";
+        asOf: string;
+        notes: string[];
+      };
+      scores: ScoreSet;
+      evidenceIds: {
+        backtestRunId: string | null;
+        paperTradeEvidenceId: string | null;
+      };
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}
+
 type ApiState = "loading" | "online" | "offline";
 
 const scoringEndpoint = "http://127.0.0.1:4000/scoring/mock-evaluation";
@@ -473,6 +545,7 @@ const paperTradeReadModelEndpoint = "http://127.0.0.1:4000/paper-trading/mock-re
 const evidenceDetailEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidence-detail-dry-run";
 const backtestReadModelEndpoint = "http://127.0.0.1:4000/backtesting/mock-read-model-dry-run";
 const dailyOpportunitiesEndpoint = "http://127.0.0.1:4000/opportunities/mock-daily-dry-run";
+const dailyOpportunityHistoryEndpoint = "http://127.0.0.1:4000/opportunities/mock-history-dry-run";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",
@@ -984,6 +1057,85 @@ const fallbackDailyOpportunities: DailyOpportunitiesResponse = {
   },
 };
 
+const fallbackDailyOpportunityHistory: DailyOpportunityHistoryResponse = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Dry-run daily opportunity history data is discarded after the response.",
+  },
+  persistedInMemory: {
+    dailyOpportunityReports: 1,
+    dailyOpportunityReportRecommendations: 1,
+    recommendations: 1,
+    recommendationCitations: 0,
+    auditLogs: 1,
+  },
+  reports: [
+    {
+      id: "daily_mock_20260528",
+      generatedAt: "2026-05-28T15:05:00.000Z",
+      outcome: "ranked_opportunities",
+      reviewedCount: 2,
+      opportunityCount: 1,
+      providerKeysRequired: [],
+      disclaimer: "Research signals only; not financial advice or a performance promise.",
+      noGoodTrades: null,
+      liveTradingEnabled: false,
+      notRecommendation: true,
+      recommendations: [
+        {
+          reportRank: 1,
+          id: "candidate-MSFT-momentum-daily-1",
+          ticker: "MSFT",
+          instrumentType: "stock",
+          strategyVersionId: "momentum-v0",
+          decision: "paper_trade",
+          evidenceStatus: "paper_trade_eligible",
+          evidenceGate: "verified",
+          thesis: "Mock stock-only paper trade candidate for contract evaluation.",
+          bullCase: "Mock trend evidence and liquidity support a paper-only entry test.",
+          bearCase: "Trend may reverse before a paper entry can validate the thesis.",
+          downsideScenario: "Shares close below the mock breakout level.",
+          invalidationConditions: ["Close below mock breakout level"],
+          whySystemMightBeWrong: "Mock data may not represent real market behavior.",
+          sourceCitations: [
+            {
+              title: "Mock daily price history",
+              url: "https://example.test/mock/msft/prices",
+              source: "mock-provider",
+              publishedAt: "2026-05-28T14:00:00.000Z",
+              retrievedAt: "2026-05-28T14:30:00.000Z",
+            },
+          ],
+          dataFreshness: {
+            status: "fresh",
+            asOf: "2026-05-28T14:30:00.000Z",
+            notes: [],
+          },
+          scores: {
+            risk: 100,
+            confidence: 82,
+            liquidity: 86,
+          },
+          evidenceIds: {
+            backtestRunId: "bt_mock_momentum_1",
+            paperTradeEvidenceId: null,
+          },
+          createdAt: "2026-05-29T18:05:00.000Z",
+          updatedAt: "2026-05-29T18:05:00.000Z",
+        },
+      ],
+      createdAt: "2026-05-29T18:05:00.000Z",
+      updatedAt: "2026-05-29T18:05:00.000Z",
+    },
+  ],
+};
+
 const decisionLabels: Record<Decision, string> = {
   watchlist: "Watchlist",
   paper_trade: "Paper Trade",
@@ -1095,6 +1247,8 @@ export function App() {
   const [dailyOpportunities, setDailyOpportunities] = useState<DailyOpportunitiesResponse>(
     fallbackDailyOpportunities,
   );
+  const [dailyOpportunityHistory, setDailyOpportunityHistory] =
+    useState<DailyOpportunityHistoryResponse>(fallbackDailyOpportunityHistory);
 
   useEffect(() => {
     let active = true;
@@ -1110,6 +1264,7 @@ export function App() {
           evidenceDetailResponse,
           backtestReadModelResponse,
           dailyOpportunitiesResponse,
+          dailyOpportunityHistoryResponse,
         ] = await Promise.all([
           fetch(scoringEndpoint),
           fetch(paperTradingEndpoint),
@@ -1119,6 +1274,7 @@ export function App() {
           fetch(evidenceDetailEndpoint),
           fetch(backtestReadModelEndpoint, { method: "POST" }),
           fetch(dailyOpportunitiesEndpoint, { method: "POST" }),
+          fetch(dailyOpportunityHistoryEndpoint, { method: "POST" }),
         ]);
         if (!scoringResponse.ok) {
           throw new Error(`Scoring API returned ${scoringResponse.status}`);
@@ -1144,6 +1300,11 @@ export function App() {
         if (!dailyOpportunitiesResponse.ok) {
           throw new Error(`Daily opportunities API returned ${dailyOpportunitiesResponse.status}`);
         }
+        if (!dailyOpportunityHistoryResponse.ok) {
+          throw new Error(
+            `Daily opportunity history API returned ${dailyOpportunityHistoryResponse.status}`,
+          );
+        }
         const scoringBody = (await scoringResponse.json()) as MockScoringResponse;
         const paperTradingBody = (await paperTradingResponse.json()) as PaperTradeResponse;
         const paperCloseBody = (await paperCloseResponse.json()) as PaperTradeCloseResponse;
@@ -1156,6 +1317,8 @@ export function App() {
           (await backtestReadModelResponse.json()) as StockBacktestReadModelResponse;
         const dailyOpportunitiesBody =
           (await dailyOpportunitiesResponse.json()) as DailyOpportunitiesResponse;
+        const dailyOpportunityHistoryBody =
+          (await dailyOpportunityHistoryResponse.json()) as DailyOpportunityHistoryResponse;
         if (active) {
           setScoring(scoringBody);
           setPaperTrading(paperTradingBody);
@@ -1165,6 +1328,7 @@ export function App() {
           setEvidenceDetail(evidenceDetailBody);
           setBacktestReadModel(backtestReadModelBody);
           setDailyOpportunities(dailyOpportunitiesBody);
+          setDailyOpportunityHistory(dailyOpportunityHistoryBody);
           setApiState("online");
         }
       } catch {
@@ -1177,6 +1341,7 @@ export function App() {
           setEvidenceDetail(fallbackEvidenceDetail);
           setBacktestReadModel(fallbackBacktestReadModel);
           setDailyOpportunities(fallbackDailyOpportunities);
+          setDailyOpportunityHistory(fallbackDailyOpportunityHistory);
           setApiState("offline");
         }
       }
@@ -1242,6 +1407,18 @@ export function App() {
   const noGoodReasonCodes =
     dailyReport.noGoodTrades?.reasonCodes.length && dailyReport.noGoodTrades.reasonCodes.length > 0
       ? dailyReport.noGoodTrades.reasonCodes.join(", ")
+      : "No blocker reason codes";
+  const dailyHistoryReport =
+    dailyOpportunityHistory.reports[0] ?? fallbackDailyOpportunityHistory.reports[0];
+  if (dailyHistoryReport === undefined) {
+    throw new Error("Fallback daily opportunity history requires one report.");
+  }
+  const topHistoryRecommendation = dailyHistoryReport.recommendations[0];
+  const topHistoryCitation = topHistoryRecommendation?.sourceCitations[0];
+  const historyNoGoodReasonCodes =
+    dailyHistoryReport.noGoodTrades?.reasonCodes.length &&
+    dailyHistoryReport.noGoodTrades.reasonCodes.length > 0
+      ? dailyHistoryReport.noGoodTrades.reasonCodes.join(", ")
       : "No blocker reason codes";
   const paperTradeGateLabel =
     failedGates.length > 0
@@ -1439,6 +1616,94 @@ export function App() {
             <p className="panel-copy">{dailyReport.disclaimer}</p>
             <p className="panel-copy">
               No good trades today remains valid when every reviewed candidate is blocked.
+            </p>
+          </article>
+
+          <article className="panel panel-large">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Daily Recommendation History</p>
+                <h2>{dailyOpportunityOutcomeLabels[dailyHistoryReport.outcome]}</h2>
+              </div>
+              <span className="status-pill subtle">History API snapshot</span>
+            </div>
+            <div className="evidence-strip" aria-label="Daily recommendation history summary">
+              <div>
+                <span>Report</span>
+                <strong>{dailyHistoryReport.id}</strong>
+              </div>
+              <div>
+                <span>Stored Candidates</span>
+                <strong>{dailyHistoryReport.recommendations.length}</strong>
+              </div>
+              <div>
+                <span>Generated</span>
+                <strong>{dailyHistoryReport.generatedAt}</strong>
+              </div>
+            </div>
+            {topHistoryRecommendation ? (
+              <>
+                <div
+                  className="evidence-strip evidence-strip-secondary"
+                  aria-label="Stored daily recommendation scores"
+                >
+                  <div>
+                    <span>Candidate</span>
+                    <strong>{topHistoryRecommendation.id}</strong>
+                  </div>
+                  <div>
+                    <span>Rank</span>
+                    <strong>{topHistoryRecommendation.reportRank}</strong>
+                  </div>
+                  <div>
+                    <span>Evidence</span>
+                    <strong>{topHistoryRecommendation.evidenceGate}</strong>
+                  </div>
+                </div>
+                <div
+                  className="evidence-strip evidence-strip-secondary"
+                  aria-label="Stored daily recommendation evidence"
+                >
+                  <div>
+                    <span>Source</span>
+                    <strong>{topHistoryCitation?.title ?? "missing"}</strong>
+                  </div>
+                  <div>
+                    <span>Fresh As Of</span>
+                    <strong>{topHistoryRecommendation.dataFreshness.asOf}</strong>
+                  </div>
+                  <div>
+                    <span>Backtest</span>
+                    <strong>{topHistoryRecommendation.evidenceIds.backtestRunId ?? "none"}</strong>
+                  </div>
+                </div>
+                <p className="panel-copy">{topHistoryRecommendation.thesis}</p>
+                <p className="panel-copy">{topHistoryRecommendation.downsideScenario}</p>
+                <ul className="gate-list" aria-label="Stored daily recommendation invalidation">
+                  {topHistoryRecommendation.invalidationConditions.map((condition) => (
+                    <li key={condition} className="gate-pass">
+                      <span>{topHistoryRecommendation.ticker}</span>
+                      <p>{condition}</p>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <>
+                <p className="panel-copy">
+                  {dailyHistoryReport.noGoodTrades?.message ?? "No good trades today."}
+                </p>
+                <div className="evidence-strip" aria-label="Stored no-good trades reason codes">
+                  <div>
+                    <span>Reason Codes</span>
+                    <strong>{historyNoGoodReasonCodes}</strong>
+                  </div>
+                </div>
+              </>
+            )}
+            <p className="panel-copy">{dailyHistoryReport.disclaimer}</p>
+            <p className="panel-copy">
+              No broker or live-trading fields are exposed in daily recommendation history.
             </p>
           </article>
 
