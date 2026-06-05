@@ -548,6 +548,107 @@ const mockNoGoodDailyOpportunityBody = {
   },
 };
 
+const mockDailyHistoryBody = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Dry-run daily opportunity history data is discarded after the response.",
+  },
+  persistedInMemory: {
+    dailyOpportunityReports: 1,
+    dailyOpportunityReportRecommendations: 1,
+    recommendations: 1,
+    recommendationCitations: 0,
+    auditLogs: 1,
+  },
+  reports: [
+    {
+      id: "daily_mock_20260528",
+      generatedAt: "2026-05-28T15:05:00.000Z",
+      outcome: "ranked_opportunities",
+      reviewedCount: 2,
+      opportunityCount: 1,
+      providerKeysRequired: [],
+      disclaimer: "Research signals only; not financial advice or a performance promise.",
+      noGoodTrades: null,
+      liveTradingEnabled: false,
+      notRecommendation: true,
+      recommendations: [
+        {
+          reportRank: 1,
+          id: "candidate-MSFT-momentum-daily-1",
+          ticker: "MSFT",
+          instrumentType: "stock",
+          strategyVersionId: "momentum-v0",
+          decision: "paper_trade",
+          evidenceStatus: "paper_trade_eligible",
+          evidenceGate: "verified",
+          thesis: "Mock stock-only paper trade candidate for contract evaluation.",
+          bullCase: "Mock trend evidence and liquidity support a paper-only entry test.",
+          bearCase: "Trend may reverse before a paper entry can validate the thesis.",
+          downsideScenario: "Shares close below the mock breakout level.",
+          invalidationConditions: ["Close below mock breakout level"],
+          whySystemMightBeWrong: "Mock data may not represent real market behavior.",
+          sourceCitations: [
+            {
+              title: "Mock daily price history",
+              url: "https://example.test/mock/msft/prices",
+              source: "mock-provider",
+              publishedAt: "2026-05-28T14:00:00.000Z",
+              retrievedAt: "2026-05-28T14:30:00.000Z",
+            },
+          ],
+          dataFreshness: {
+            status: "fresh",
+            asOf: "2026-05-28T14:30:00.000Z",
+            notes: [],
+          },
+          scores: {
+            risk: 100,
+            confidence: 82,
+            liquidity: 86,
+          },
+          evidenceIds: {
+            backtestRunId: "bt_mock_momentum_1",
+            paperTradeEvidenceId: null,
+          },
+          createdAt: "2026-05-29T18:05:00.000Z",
+          updatedAt: "2026-05-29T18:05:00.000Z",
+        },
+      ],
+      createdAt: "2026-05-29T18:05:00.000Z",
+      updatedAt: "2026-05-29T18:05:00.000Z",
+    },
+  ],
+};
+
+const mockNoGoodDailyHistoryBody = {
+  ...mockDailyHistoryBody,
+  persistedInMemory: {
+    ...mockDailyHistoryBody.persistedInMemory,
+    dailyOpportunityReportRecommendations: 0,
+    recommendations: 0,
+  },
+  reports: [
+    {
+      ...mockDailyHistoryBody.reports[0],
+      id: "daily_mock_no_good",
+      outcome: "no_good_trades",
+      opportunityCount: 0,
+      noGoodTrades: {
+        message: "No good trades today.",
+        reasonCodes: ["fresh_data", "paper_trade_evidence"],
+      },
+      recommendations: [],
+    },
+  ],
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -559,21 +660,23 @@ describe("operator console shell", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = input.toString();
-        const body = url.includes("opportunities/mock-daily-dry-run")
-          ? mockDailyOpportunityBody
-          : url.includes("backtesting/mock-read-model-dry-run")
-            ? mockBacktestReadModelBody
-            : url.includes("mock-read-model-dry-run")
-              ? mockPaperReadModelBody
-              : url.includes("mock-evidence-detail-dry-run")
-                ? mockEvidenceDetailBody
-                : url.includes("mock-evidence-summary")
-                  ? mockPaperEvidenceSummaryBody
-                  : url.includes("mock-close-dry-run")
-                    ? mockPaperCloseBody
-                    : url.includes("paper-trading")
-                      ? mockPaperTradingBody
-                      : mockScoringBody;
+        const body = url.includes("opportunities/mock-history-dry-run")
+          ? mockDailyHistoryBody
+          : url.includes("opportunities/mock-daily-dry-run")
+            ? mockDailyOpportunityBody
+            : url.includes("backtesting/mock-read-model-dry-run")
+              ? mockBacktestReadModelBody
+              : url.includes("mock-read-model-dry-run")
+                ? mockPaperReadModelBody
+                : url.includes("mock-evidence-detail-dry-run")
+                  ? mockEvidenceDetailBody
+                  : url.includes("mock-evidence-summary")
+                    ? mockPaperEvidenceSummaryBody
+                    : url.includes("mock-close-dry-run")
+                      ? mockPaperCloseBody
+                      : url.includes("paper-trading")
+                        ? mockPaperTradingBody
+                        : mockScoringBody;
         return new Response(JSON.stringify(body));
       }),
     );
@@ -589,18 +692,31 @@ describe("operator console shell", () => {
     expect(screen.getByText("No good trades today is a valid outcome.")).toBeInTheDocument();
     expect((await screen.findAllByText("Watchlist")).length).toBeGreaterThan(0);
     expect(screen.getByText("Daily Opportunities")).toBeInTheDocument();
-    expect(screen.getByText("Ranked Opportunities")).toBeInTheDocument();
+    expect(screen.getAllByText("Ranked Opportunities").length).toBeGreaterThan(0);
     expect(screen.getByText("Daily API snapshot")).toBeInTheDocument();
-    expect(screen.getByText("candidate-MSFT-momentum-daily-1")).toBeInTheDocument();
+    expect(screen.getByText("Daily Recommendation History")).toBeInTheDocument();
+    expect(screen.getByText("History API snapshot")).toBeInTheDocument();
+    expect(screen.getByText("Stored Candidates")).toBeInTheDocument();
+    expect(
+      screen.getByText("Mock stock-only paper trade candidate for contract evaluation."),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("bt_mock_momentum_1").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "No broker or live-trading fields are exposed in daily recommendation history.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("candidate-MSFT-momentum-daily-1").length).toBeGreaterThan(0);
     expect(
       screen.getByText("Mock momentum candidate with verified stock backtest evidence."),
     ).toBeInTheDocument();
-    expect(screen.getByText("Mock daily price history")).toBeInTheDocument();
+    expect(screen.getAllByText("Mock daily price history").length).toBeGreaterThan(0);
     expect(screen.getAllByText("2026-05-28T14:30:00.000Z").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Close below mock breakout level").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Research signals only; not financial advice or a performance promise."),
-    ).toBeInTheDocument();
+      screen.getAllByText("Research signals only; not financial advice or a performance promise.")
+        .length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByText(
         "No good trades today remains valid when every reviewed candidate is blocked.",
@@ -675,7 +791,7 @@ describe("operator console shell", () => {
     expect(screen.getByText("Stock Backtest Evidence")).toBeInTheDocument();
     expect(screen.getByText("Ready for Review")).toBeInTheDocument();
     expect(screen.getByText("Backtest API snapshot")).toBeInTheDocument();
-    expect(screen.getByText("bt_mock_momentum_1")).toBeInTheDocument();
+    expect(screen.getAllByText("bt_mock_momentum_1").length).toBeGreaterThan(0);
     expect(screen.getByText("Trade Count")).toBeInTheDocument();
     expect(screen.getAllByText("4").length).toBeGreaterThan(0);
     expect(screen.getByText("Net Return")).toBeInTheDocument();
@@ -725,6 +841,7 @@ describe("operator console shell", () => {
     expect(screen.queryByText("Evidence Detail")).not.toBeInTheDocument();
     expect(screen.queryByText("Stock Backtest Evidence")).not.toBeInTheDocument();
     expect(screen.queryByText("Daily Opportunities")).not.toBeInTheDocument();
+    expect(screen.queryByText("Daily Recommendation History")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Watchlist" })).not.toBeInTheDocument();
   });
 
@@ -749,6 +866,7 @@ describe("operator console shell", () => {
     expect(screen.queryByText("Evidence Detail")).not.toBeInTheDocument();
     expect(screen.queryByText("Stock Backtest Evidence")).not.toBeInTheDocument();
     expect(screen.queryByText("Daily Opportunities")).not.toBeInTheDocument();
+    expect(screen.queryByText("Daily Recommendation History")).not.toBeInTheDocument();
     expect(screen.queryByText("Watchlist")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Watchlist" })).not.toBeInTheDocument();
   });
@@ -758,21 +876,23 @@ describe("operator console shell", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = input.toString();
-        const body = url.includes("opportunities/mock-daily-dry-run")
-          ? mockNoGoodDailyOpportunityBody
-          : url.includes("backtesting/mock-read-model-dry-run")
-            ? mockBacktestReadModelBody
-            : url.includes("mock-read-model-dry-run")
-              ? mockPaperReadModelBody
-              : url.includes("mock-evidence-detail-dry-run")
-                ? mockEvidenceDetailBody
-                : url.includes("mock-evidence-summary")
-                  ? mockPaperEvidenceSummaryBody
-                  : url.includes("mock-close-dry-run")
-                    ? mockPaperCloseBody
-                    : url.includes("paper-trading")
-                      ? mockPaperTradingBody
-                      : mockScoringBody;
+        const body = url.includes("opportunities/mock-history-dry-run")
+          ? mockNoGoodDailyHistoryBody
+          : url.includes("opportunities/mock-daily-dry-run")
+            ? mockNoGoodDailyOpportunityBody
+            : url.includes("backtesting/mock-read-model-dry-run")
+              ? mockBacktestReadModelBody
+              : url.includes("mock-read-model-dry-run")
+                ? mockPaperReadModelBody
+                : url.includes("mock-evidence-detail-dry-run")
+                  ? mockEvidenceDetailBody
+                  : url.includes("mock-evidence-summary")
+                    ? mockPaperEvidenceSummaryBody
+                    : url.includes("mock-close-dry-run")
+                      ? mockPaperCloseBody
+                      : url.includes("paper-trading")
+                        ? mockPaperTradingBody
+                        : mockScoringBody;
         return new Response(JSON.stringify(body));
       }),
     );
@@ -780,11 +900,14 @@ describe("operator console shell", () => {
     render(<App />);
 
     expect(await screen.findByText("Daily Opportunities")).toBeInTheDocument();
-    expect(screen.getByText("No Good Trades Today")).toBeInTheDocument();
-    expect(screen.getByText("No good trades today.")).toBeInTheDocument();
+    expect(screen.getAllByText("No Good Trades Today").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("No good trades today.").length).toBeGreaterThan(0);
     expect(
       screen.getByText("liquidity, citations_present, paper_trade_evidence"),
     ).toBeInTheDocument();
+    expect(screen.getByText("Daily Recommendation History")).toBeInTheDocument();
+    expect(screen.getAllByText("No Good Trades Today").length).toBeGreaterThan(0);
+    expect(screen.getByText("fresh_data, paper_trade_evidence")).toBeInTheDocument();
     expect(screen.queryByText("candidate-MSFT-momentum-daily-1")).not.toBeInTheDocument();
   });
 });
