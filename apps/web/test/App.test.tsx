@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 
@@ -342,6 +342,90 @@ const mockEvidenceDetailBody = {
   },
 };
 
+const mockBacktestReadModelBody = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Dry-run stock backtest read-model data is discarded after the response.",
+  },
+  persistedInMemory: {
+    backtestRuns: 1,
+    backtestRunTrades: 4,
+  },
+  runs: [
+    {
+      id: "bt_mock_momentum_1",
+      strategyFamily: "momentum",
+      strategyVersionId: "momentum-v0",
+      strategyVersionLabel: "v0",
+      instrumentType: "stock",
+      universe: "mock-liquid-large-cap",
+      period: {
+        start: "2026-01-02T14:30:00.000Z",
+        end: "2026-05-28T20:00:00.000Z",
+      },
+      benchmarkReturnPct: 4,
+      promotionGate: "ready_for_review",
+      reasonCodes: [],
+      metrics: {
+        tradeCount: 4,
+        winRatePct: 75,
+        maxDrawdownPct: -6,
+        netReturnPct: 18.2815,
+        benchmarkRelativeReturnPct: 14.2815,
+      },
+      assumptions: {
+        slippageBps: 5,
+        spreadBps: 10,
+        feePerTrade: 1,
+        minTradesForReview: 4,
+        minAverageDailyDollarVolume: 20000000,
+        pointInTimeData: true,
+        survivorshipBiasControl: true,
+        lookaheadBiasControl: true,
+        rejectedParameterSets: 2,
+        costStressMultipliers: [1, 2, 3],
+        notes: ["Mock run uses adjusted close values and conservative cost stress."],
+      },
+      sourceCitations: [
+        {
+          title: "Mock adjusted OHLCV history",
+          url: "https://example.test/mock/prices",
+          source: "mock-provider",
+          publishedAt: "2026-05-28T19:55:00.000Z",
+          retrievedAt: "2026-05-28T20:00:00.000Z",
+        },
+      ],
+      dataFreshness: {
+        status: "fresh",
+        asOf: "2026-05-28T20:00:00.000Z",
+        notes: [],
+      },
+      optionsProxy: false,
+      notRecommendation: true,
+      trades: [
+        {
+          id: "bt_trade_1",
+          sourceTradeId: "trade-1",
+          ticker: "MSFT",
+          netReturnPct: 9.75,
+          grossReturnPct: 10,
+          holdingDays: 7,
+          exitOrder: 0,
+          createdAt: "2026-05-29T18:00:00.000Z",
+        },
+      ],
+      createdAt: "2026-05-29T18:00:00.000Z",
+      updatedAt: "2026-05-29T18:00:00.000Z",
+    },
+  ],
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -353,17 +437,19 @@ describe("operator console shell", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = input.toString();
-        const body = url.includes("mock-read-model-dry-run")
-          ? mockPaperReadModelBody
-          : url.includes("mock-evidence-detail-dry-run")
-            ? mockEvidenceDetailBody
-            : url.includes("mock-evidence-summary")
-              ? mockPaperEvidenceSummaryBody
-              : url.includes("mock-close-dry-run")
-                ? mockPaperCloseBody
-                : url.includes("paper-trading")
-                  ? mockPaperTradingBody
-                  : mockScoringBody;
+        const body = url.includes("backtesting/mock-read-model-dry-run")
+          ? mockBacktestReadModelBody
+          : url.includes("mock-read-model-dry-run")
+            ? mockPaperReadModelBody
+            : url.includes("mock-evidence-detail-dry-run")
+              ? mockEvidenceDetailBody
+              : url.includes("mock-evidence-summary")
+                ? mockPaperEvidenceSummaryBody
+                : url.includes("mock-close-dry-run")
+                  ? mockPaperCloseBody
+                  : url.includes("paper-trading")
+                    ? mockPaperTradingBody
+                    : mockScoringBody;
         return new Response(JSON.stringify(body));
       }),
     );
@@ -404,7 +490,9 @@ describe("operator console shell", () => {
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("Open")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
-    expect(screen.getByText("Win Rate")).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Paper trade evidence summary")).getByText("Win Rate"),
+    ).toBeInTheDocument();
     expect(screen.getByText("50%")).toBeInTheDocument();
     expect(screen.getByText("Realized")).toBeInTheDocument();
     expect(screen.getByText("$10")).toBeInTheDocument();
@@ -436,6 +524,33 @@ describe("operator console shell", () => {
     expect(screen.getByText("paper_trade_closed")).toBeInTheDocument();
     expect(screen.getByText("paper_trade")).toBeInTheDocument();
     expect(screen.getByText("No evidence reason codes")).toBeInTheDocument();
+    expect(screen.getByText("Stock Backtest Evidence")).toBeInTheDocument();
+    expect(screen.getByText("Ready for Review")).toBeInTheDocument();
+    expect(screen.getByText("Backtest API snapshot")).toBeInTheDocument();
+    expect(screen.getByText("bt_mock_momentum_1")).toBeInTheDocument();
+    expect(screen.getByText("Trade Count")).toBeInTheDocument();
+    expect(screen.getAllByText("4").length).toBeGreaterThan(0);
+    expect(screen.getByText("Net Return")).toBeInTheDocument();
+    expect(screen.getByText("18.28%")).toBeInTheDocument();
+    expect(screen.getByText("Relative")).toBeInTheDocument();
+    expect(screen.getByText("14.28%")).toBeInTheDocument();
+    expect(screen.getAllByText("MSFT").length).toBeGreaterThan(0);
+    expect(
+      within(screen.getByLabelText("Stock backtest trades")).getByText(
+        /trade-1 - 9\.75% over 7 days/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Mock adjusted OHLCV history")).toBeInTheDocument();
+    expect(screen.getByText("2026-05-28T19:55:00.000Z")).toBeInTheDocument();
+    expect(screen.getAllByText("2026-05-28T20:00:00.000Z").length).toBeGreaterThan(0);
+    expect(screen.getByText("Point-in-time data")).toBeInTheDocument();
+    expect(screen.getByText("Cost Stress")).toBeInTheDocument();
+    expect(screen.getByText("1x / 2x / 3x")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "No broker or live-trading fields are exposed in this validation read model.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Watchlist" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Paper Trade" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Avoid" })).toBeDisabled();
@@ -460,6 +575,7 @@ describe("operator console shell", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("Evidence Detail")).not.toBeInTheDocument();
+    expect(screen.queryByText("Stock Backtest Evidence")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Watchlist" })).not.toBeInTheDocument();
   });
 
@@ -482,6 +598,7 @@ describe("operator console shell", () => {
     expect(screen.queryByText("Simulated Closed")).not.toBeInTheDocument();
     expect(screen.queryByText("Ledger fallback snapshot")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Detail")).not.toBeInTheDocument();
+    expect(screen.queryByText("Stock Backtest Evidence")).not.toBeInTheDocument();
     expect(screen.queryByText("Watchlist")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Watchlist" })).not.toBeInTheDocument();
   });
