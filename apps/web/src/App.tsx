@@ -389,6 +389,80 @@ interface StockBacktestReadModelResponse {
   }>;
 }
 
+interface DailyOpportunitiesResponse {
+  mode: "mock";
+  requiresEnv: boolean;
+  liveTradingEnabled: boolean;
+  providerKeysRequired: string[];
+  notRecommendation: boolean;
+  report: {
+    id: string;
+    mode: "mock";
+    generatedAt: string;
+    outcome: "ranked_opportunities" | "no_good_trades";
+    notRecommendation: boolean;
+    liveTradingEnabled: false;
+    providerKeysRequired: string[];
+    disclaimer: string;
+    reviewedCount: number;
+    opportunityCount: number;
+    opportunities: Array<{
+      rank: number;
+      id: string;
+      ticker: string;
+      instrumentType: string;
+      strategyFamily: string;
+      strategyPolicy: Partial<StrategyPolicy> & {
+        label?: string;
+      };
+      decision: "paper_trade" | "watchlist";
+      scores: ScoreSet;
+      thesis: string;
+      bullCase: string;
+      bearCase: string;
+      downsideScenario: string;
+      invalidationConditions: string[];
+      whySystemMightBeWrong: string;
+      sourceCitations: Array<{
+        title: string;
+        url: string;
+        source: string;
+        publishedAt: string;
+        retrievedAt: string;
+      }>;
+      dataFreshness: {
+        status: "fresh" | "stale" | "partial" | "missing";
+        asOf: string;
+        notes: string[];
+      };
+      liquidity: {
+        score: number;
+        averageDailyDollarVolume?: number;
+        spreadPercentOfMid?: number;
+        passes: boolean;
+      };
+      evidence: {
+        status: string;
+        gate: "verified" | "needs_more_data" | "blocked";
+        ids: string[];
+      };
+      gateSummary: RiskGate[];
+      notRecommendation: true;
+    }>;
+    reviewedCandidates: Array<{
+      id: string;
+      ticker: string;
+      decision: Decision;
+      reasonCodes: string[];
+      scores: ScoreSet;
+    }>;
+    noGoodTrades: {
+      message: "No good trades today.";
+      reasonCodes: string[];
+    } | null;
+  };
+}
+
 type ApiState = "loading" | "online" | "offline";
 
 const scoringEndpoint = "http://127.0.0.1:4000/scoring/mock-evaluation";
@@ -398,6 +472,7 @@ const paperTradeEvidenceEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evi
 const paperTradeReadModelEndpoint = "http://127.0.0.1:4000/paper-trading/mock-read-model-dry-run";
 const evidenceDetailEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidence-detail-dry-run";
 const backtestReadModelEndpoint = "http://127.0.0.1:4000/backtesting/mock-read-model-dry-run";
+const dailyOpportunitiesEndpoint = "http://127.0.0.1:4000/opportunities/mock-daily-dry-run";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",
@@ -821,6 +896,94 @@ const fallbackBacktestReadModel: StockBacktestReadModelResponse = {
   ],
 };
 
+const fallbackDailyOpportunities: DailyOpportunitiesResponse = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  report: {
+    id: "daily_mock_20260528",
+    mode: "mock",
+    generatedAt: "2026-05-28T15:05:00.000Z",
+    outcome: "ranked_opportunities",
+    notRecommendation: true,
+    liveTradingEnabled: false,
+    providerKeysRequired: [],
+    disclaimer: "Research signals only; not financial advice or a performance promise.",
+    reviewedCount: 2,
+    opportunityCount: 1,
+    noGoodTrades: null,
+    opportunities: [
+      {
+        rank: 1,
+        id: "candidate-MSFT-momentum-daily-1",
+        ticker: "MSFT",
+        instrumentType: "stock",
+        strategyFamily: "momentum",
+        strategyPolicy: {
+          label: "Momentum",
+          family: "momentum",
+          mvpDecision: "test_now",
+          paperTradeAllowed: true,
+        },
+        decision: "paper_trade",
+        scores: {
+          risk: 86,
+          confidence: 81,
+          liquidity: 86,
+        },
+        thesis: "Mock momentum candidate with verified stock backtest evidence.",
+        bullCase: "Mock trend evidence and liquidity support a paper-only entry test.",
+        bearCase: "Trend may reverse before a paper entry can validate the thesis.",
+        downsideScenario: "Shares close below the mock breakout level.",
+        invalidationConditions: ["Close below mock breakout level"],
+        whySystemMightBeWrong: "Mock data may not represent current market behavior.",
+        sourceCitations: [
+          {
+            title: "Mock daily price history",
+            url: "https://example.test/mock/msft/prices",
+            source: "mock-provider",
+            publishedAt: "2026-05-28T14:00:00.000Z",
+            retrievedAt: "2026-05-28T14:30:00.000Z",
+          },
+        ],
+        dataFreshness: {
+          status: "fresh",
+          asOf: "2026-05-28T14:30:00.000Z",
+          notes: [],
+        },
+        liquidity: {
+          score: 86,
+          averageDailyDollarVolume: 60_000_000,
+          spreadPercentOfMid: 0.02,
+          passes: true,
+        },
+        evidence: {
+          status: "paper_trade_eligible",
+          gate: "verified",
+          ids: ["bt_mock_momentum_1"],
+        },
+        gateSummary: [],
+        notRecommendation: true,
+      },
+    ],
+    reviewedCandidates: [
+      {
+        id: "candidate-MSFT-momentum-daily-1",
+        ticker: "MSFT",
+        decision: "paper_trade",
+        reasonCodes: [],
+        scores: {
+          risk: 86,
+          confidence: 81,
+          liquidity: 86,
+        },
+      },
+    ],
+  },
+};
+
 const decisionLabels: Record<Decision, string> = {
   watchlist: "Watchlist",
   paper_trade: "Paper Trade",
@@ -882,6 +1045,14 @@ const backtestPromotionGateLabels: Record<
   blocked: "Blocked",
 };
 
+const dailyOpportunityOutcomeLabels: Record<
+  DailyOpportunitiesResponse["report"]["outcome"],
+  string
+> = {
+  ranked_opportunities: "Ranked Opportunities",
+  no_good_trades: "No Good Trades Today",
+};
+
 function formatCurrency(value: number): string {
   return `$${Math.round(value).toLocaleString("en-US")}`;
 }
@@ -921,6 +1092,9 @@ export function App() {
     useState<EvidenceDetailResponse>(fallbackEvidenceDetail);
   const [backtestReadModel, setBacktestReadModel] =
     useState<StockBacktestReadModelResponse>(fallbackBacktestReadModel);
+  const [dailyOpportunities, setDailyOpportunities] = useState<DailyOpportunitiesResponse>(
+    fallbackDailyOpportunities,
+  );
 
   useEffect(() => {
     let active = true;
@@ -935,6 +1109,7 @@ export function App() {
           paperReadModelResponse,
           evidenceDetailResponse,
           backtestReadModelResponse,
+          dailyOpportunitiesResponse,
         ] = await Promise.all([
           fetch(scoringEndpoint),
           fetch(paperTradingEndpoint),
@@ -943,6 +1118,7 @@ export function App() {
           fetch(paperTradeReadModelEndpoint, { method: "POST" }),
           fetch(evidenceDetailEndpoint),
           fetch(backtestReadModelEndpoint, { method: "POST" }),
+          fetch(dailyOpportunitiesEndpoint, { method: "POST" }),
         ]);
         if (!scoringResponse.ok) {
           throw new Error(`Scoring API returned ${scoringResponse.status}`);
@@ -965,6 +1141,9 @@ export function App() {
         if (!backtestReadModelResponse.ok) {
           throw new Error(`Backtest read model API returned ${backtestReadModelResponse.status}`);
         }
+        if (!dailyOpportunitiesResponse.ok) {
+          throw new Error(`Daily opportunities API returned ${dailyOpportunitiesResponse.status}`);
+        }
         const scoringBody = (await scoringResponse.json()) as MockScoringResponse;
         const paperTradingBody = (await paperTradingResponse.json()) as PaperTradeResponse;
         const paperCloseBody = (await paperCloseResponse.json()) as PaperTradeCloseResponse;
@@ -975,6 +1154,8 @@ export function App() {
         const evidenceDetailBody = (await evidenceDetailResponse.json()) as EvidenceDetailResponse;
         const backtestReadModelBody =
           (await backtestReadModelResponse.json()) as StockBacktestReadModelResponse;
+        const dailyOpportunitiesBody =
+          (await dailyOpportunitiesResponse.json()) as DailyOpportunitiesResponse;
         if (active) {
           setScoring(scoringBody);
           setPaperTrading(paperTradingBody);
@@ -983,6 +1164,7 @@ export function App() {
           setPaperReadModel(paperReadModelBody);
           setEvidenceDetail(evidenceDetailBody);
           setBacktestReadModel(backtestReadModelBody);
+          setDailyOpportunities(dailyOpportunitiesBody);
           setApiState("online");
         }
       } catch {
@@ -994,6 +1176,7 @@ export function App() {
           setPaperReadModel(fallbackPaperReadModel);
           setEvidenceDetail(fallbackEvidenceDetail);
           setBacktestReadModel(fallbackBacktestReadModel);
+          setDailyOpportunities(fallbackDailyOpportunities);
           setApiState("offline");
         }
       }
@@ -1053,6 +1236,13 @@ export function App() {
     backtestRun.assumptions.survivorshipBiasControl ? "Survivorship control" : "Survivorship gap",
     backtestRun.assumptions.lookaheadBiasControl ? "Lookahead control" : "Lookahead gap",
   ];
+  const dailyReport = dailyOpportunities.report;
+  const topDailyOpportunity = dailyReport.opportunities[0];
+  const topDailyCitation = topDailyOpportunity?.sourceCitations[0];
+  const noGoodReasonCodes =
+    dailyReport.noGoodTrades?.reasonCodes.length && dailyReport.noGoodTrades.reasonCodes.length > 0
+      ? dailyReport.noGoodTrades.reasonCodes.join(", ")
+      : "No blocker reason codes";
   const paperTradeGateLabel =
     failedGates.length > 0
       ? "Blocked pending evidence"
@@ -1064,7 +1254,7 @@ export function App() {
     <main className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Milestone 7</p>
+          <p className="eyebrow">Milestone 8</p>
           <h1>StockMarket Operator Console</h1>
         </div>
         <span className="status-pill">Mock Only</span>
@@ -1162,6 +1352,94 @@ export function App() {
               <ScoreMeter label="Confidence" value={scoring.result.scores.confidence} />
               <ScoreMeter label="Liquidity" value={scoring.result.scores.liquidity} />
             </div>
+          </article>
+
+          <article className="panel panel-large">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Daily Opportunities</p>
+                <h2>{dailyOpportunityOutcomeLabels[dailyReport.outcome]}</h2>
+              </div>
+              <span className="status-pill subtle">Daily API snapshot</span>
+            </div>
+            <div className="evidence-strip" aria-label="Daily opportunity report summary">
+              <div>
+                <span>Report</span>
+                <strong>{dailyReport.id}</strong>
+              </div>
+              <div>
+                <span>Opportunities</span>
+                <strong>{dailyReport.opportunityCount}</strong>
+              </div>
+              <div>
+                <span>Reviewed</span>
+                <strong>{dailyReport.reviewedCount}</strong>
+              </div>
+            </div>
+            {topDailyOpportunity ? (
+              <>
+                <div
+                  className="evidence-strip evidence-strip-secondary"
+                  aria-label="Top daily opportunity scores"
+                >
+                  <div>
+                    <span>Candidate</span>
+                    <strong>{topDailyOpportunity.id}</strong>
+                  </div>
+                  <div>
+                    <span>Decision</span>
+                    <strong>{decisionLabels[topDailyOpportunity.decision]}</strong>
+                  </div>
+                  <div>
+                    <span>Confidence</span>
+                    <strong>{topDailyOpportunity.scores.confidence}</strong>
+                  </div>
+                </div>
+                <div
+                  className="evidence-strip evidence-strip-secondary"
+                  aria-label="Top daily opportunity evidence"
+                >
+                  <div>
+                    <span>Source</span>
+                    <strong>{topDailyCitation?.title ?? "missing"}</strong>
+                  </div>
+                  <div>
+                    <span>Fresh As Of</span>
+                    <strong>{topDailyOpportunity.dataFreshness.asOf}</strong>
+                  </div>
+                  <div>
+                    <span>Evidence</span>
+                    <strong>{topDailyOpportunity.evidence.gate}</strong>
+                  </div>
+                </div>
+                <p className="panel-copy">{topDailyOpportunity.thesis}</p>
+                <p className="panel-copy">{topDailyOpportunity.downsideScenario}</p>
+                <ul className="gate-list" aria-label="Daily opportunity invalidation">
+                  {topDailyOpportunity.invalidationConditions.map((condition) => (
+                    <li key={condition} className="gate-pass">
+                      <span>{topDailyOpportunity.ticker}</span>
+                      <p>{condition}</p>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <>
+                <p className="panel-copy">
+                  {dailyReport.noGoodTrades?.message ?? "No good trades today."}
+                </p>
+                <div className="evidence-strip" aria-label="No good trades reason codes">
+                  <div>
+                    <span>Reason Codes</span>
+                    <strong>{noGoodReasonCodes}</strong>
+                  </div>
+                </div>
+              </>
+            )}
+            <p className="panel-copy">{dailyReport.disclaimer}</p>
+            <p className="panel-copy">
+              No good trades today remains valid when every reviewed candidate is blocked.
+            </p>
           </article>
 
           <article className="panel">
