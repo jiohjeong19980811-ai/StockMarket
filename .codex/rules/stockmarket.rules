@@ -3,8 +3,8 @@
 prefix_rule(
     pattern = ["git", "push"],
     decision = "prompt",
-    justification = "Publishing branches changes the remote repository and should be operator-approved.",
-    match = ["git push origin feature/codex-foundation-setup"],
+    justification = "Publishing changes remote repository state; prompt keeps force-push/history-rewrite variants outside autonomous approval.",
+    match = ["git push origin feature/m7-backtest-read-api"],
 )
 
 prefix_rule(
@@ -16,9 +16,30 @@ prefix_rule(
 
 prefix_rule(
     pattern = ["gh", "pr", "create"],
-    decision = "prompt",
-    justification = "Opening pull requests should be operator-approved.",
+    decision = "allow",
+    justification = "Operator approved creating pull requests for validated StockMarket feature branches.",
     match = ["gh pr create --fill"],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "view"],
+    decision = "allow",
+    justification = "Viewing pull request metadata is routine repository inspection.",
+    match = ["gh pr view"],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "checks"],
+    decision = "allow",
+    justification = "Watching pull request checks is required before merge.",
+    match = ["gh pr checks --watch"],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "merge"],
+    decision = "allow",
+    justification = "Operator approved merging validated StockMarket pull requests after checks pass; no force-push or history rewrite is allowed.",
+    match = ["gh pr merge --merge --delete-branch"],
 )
 
 prefix_rule(
