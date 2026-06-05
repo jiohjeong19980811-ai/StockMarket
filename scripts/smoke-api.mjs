@@ -112,6 +112,33 @@ try {
     );
   }
 
+  const dailyOpportunityHistoryResponse = await server.inject({
+    method: "POST",
+    url: "/opportunities/mock-history-dry-run",
+  });
+
+  if (dailyOpportunityHistoryResponse.statusCode !== 200) {
+    throw new Error(
+      `Expected /opportunities/mock-history-dry-run to return 200, got ${dailyOpportunityHistoryResponse.statusCode}`,
+    );
+  }
+
+  const dailyOpportunityHistoryBody = dailyOpportunityHistoryResponse.json();
+  if (
+    dailyOpportunityHistoryBody.requiresEnv !== false ||
+    dailyOpportunityHistoryBody.liveTradingEnabled !== false ||
+    dailyOpportunityHistoryBody.notRecommendation !== true ||
+    dailyOpportunityHistoryBody.persistedInMemory?.dailyOpportunityReports !== 1 ||
+    dailyOpportunityHistoryBody.persistedInMemory?.recommendations !== 1 ||
+    dailyOpportunityHistoryBody.reports?.[0]?.outcome !== "ranked_opportunities" ||
+    dailyOpportunityHistoryBody.reports?.[0]?.recommendations?.[0]?.ticker !== "MSFT" ||
+    dailyOpportunityHistoryBody.reports?.[0]?.recommendations?.[0]?.evidenceGate !== "verified"
+  ) {
+    throw new Error(
+      `Unexpected mock daily opportunity history response: ${dailyOpportunityHistoryResponse.body}`,
+    );
+  }
+
   const strategyPoliciesResponse = await server.inject({
     method: "GET",
     url: "/strategies/policies",

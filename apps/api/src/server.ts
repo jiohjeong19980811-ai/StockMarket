@@ -17,8 +17,10 @@ import {
   closePersistedPaperTrade,
   createLocalClient,
   getRecommendationEvidenceDetail,
+  listPersistedDailyOpportunityReports,
   listPersistedStockBacktestRuns,
   listPersistedPaperTrades,
+  persistDailyOpportunityReport,
   persistIngestionBatch,
   persistPaperTrade,
   persistStockBacktestRun,
@@ -50,10 +52,13 @@ type DryRunTableName =
   | "option_quotes"
   | "data_quality_events"
   | "recommendations"
+  | "recommendation_citations"
   | "audit_logs"
   | "paper_trades"
   | "backtest_runs"
-  | "backtest_run_trades";
+  | "backtest_run_trades"
+  | "daily_opportunity_reports"
+  | "daily_opportunity_report_recommendations";
 
 type LocalClient = Awaited<ReturnType<typeof createLocalClient>>;
 
@@ -850,6 +855,61 @@ export function buildServer(env: ApiEnv) {
       candidates: mockDailyOpportunityCandidates,
     }),
   }));
+
+  server.post("/opportunities/mock-history-dry-run", async () => {
+    const client = await createLocalClient();
+    const backtestResult = evaluateStockBacktest(mockStockBacktestInput);
+    const report = generateDailyOpportunityReport({
+      id: "daily_mock_20260528",
+      generatedAt: "2026-05-28T15:05:00.000Z",
+      candidates: mockDailyOpportunityCandidates,
+    });
+
+    try {
+      await runMigrations(client);
+      await seedMockBacktestStrategy(client);
+      await persistStockBacktestRun(
+        client,
+        mockStockBacktestInput,
+        backtestResult,
+        "2026-05-29T18:00:00.000Z",
+      );
+      await persistDailyOpportunityReport(client, report, {
+        persistedAt: "2026-05-29T18:05:00.000Z",
+        strategyVersionIds: {
+          momentum: mockStockBacktestInput.strategyVersionId,
+        },
+      });
+
+      return {
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: env.LIVE_TRADING_ENABLED,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+          note: "Dry-run daily opportunity history data is discarded after the response.",
+        },
+        persistedInMemory: {
+          dailyOpportunityReports: await countRows(client, "daily_opportunity_reports"),
+          dailyOpportunityReportRecommendations: await countRows(
+            client,
+            "daily_opportunity_report_recommendations",
+          ),
+          recommendations: await countRows(client, "recommendations"),
+          recommendationCitations: await countRows(client, "recommendation_citations"),
+          auditLogs: await countRows(client, "audit_logs"),
+        },
+        reports: await listPersistedDailyOpportunityReports(client, {
+          limit: 5,
+        }),
+      };
+    } finally {
+      client.close();
+    }
+  });
 
   server.get("/strategies/policies", async () => ({
     mode: "policy",

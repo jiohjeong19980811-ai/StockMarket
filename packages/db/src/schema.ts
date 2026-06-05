@@ -779,3 +779,95 @@ export const recommendationCitations = sqliteTable(
   },
   (table) => [index("recommendation_citations_recommendation_idx").on(table.recommendationId)],
 );
+
+export const dailyOpportunityReports = sqliteTable(
+  "daily_opportunity_reports",
+  {
+    id: text("id").primaryKey(),
+    generatedAt: text("generated_at").notNull(),
+    outcome: text("outcome", { enum: ["ranked_opportunities", "no_good_trades"] }).notNull(),
+    reviewedCount: integer("reviewed_count").notNull(),
+    opportunityCount: integer("opportunity_count").notNull(),
+    providerKeysRequiredJson: text("provider_keys_required_json").notNull(),
+    disclaimer: text("disclaimer").notNull(),
+    noGoodMessage: text("no_good_message"),
+    noGoodReasonCodesJson: text("no_good_reason_codes_json").notNull(),
+    liveTradingEnabled: integer("live_trading_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    notRecommendation: integer("not_recommendation", { mode: "boolean" }).notNull().default(true),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("daily_opportunity_reports_generated_idx").on(table.generatedAt),
+    check("daily_opportunity_reports_reviewed_nonnegative", sql`${table.reviewedCount} >= 0`),
+    check("daily_opportunity_reports_opportunity_nonnegative", sql`${table.opportunityCount} >= 0`),
+    check(
+      "daily_opportunity_reports_provider_keys_valid",
+      sql`
+        json_valid(${table.providerKeysRequiredJson})
+        AND json_type(${table.providerKeysRequiredJson}) = 'array'
+      `,
+    ),
+    check("daily_opportunity_reports_disclaimer_nonempty", sql`length(${table.disclaimer}) > 0`),
+    check(
+      "daily_opportunity_reports_no_good_codes_valid",
+      sql`
+        json_valid(${table.noGoodReasonCodesJson})
+        AND json_type(${table.noGoodReasonCodesJson}) = 'array'
+      `,
+    ),
+    check("daily_opportunity_reports_no_live_trading", sql`${table.liveTradingEnabled} = 0`),
+    check("daily_opportunity_reports_not_recommendation", sql`${table.notRecommendation} = 1`),
+    check(
+      "daily_opportunity_reports_outcome_consistent",
+      sql`
+        (
+          ${table.outcome} = 'ranked_opportunities'
+          AND ${table.opportunityCount} > 0
+          AND ${table.noGoodMessage} IS NULL
+        )
+        OR (
+          ${table.outcome} = 'no_good_trades'
+          AND ${table.opportunityCount} = 0
+          AND ${table.noGoodMessage} IS NOT NULL
+          AND length(${table.noGoodMessage}) > 0
+        )
+      `,
+    ),
+    check("daily_opportunity_reports_created_at_nonempty", sql`length(${table.createdAt}) > 0`),
+    check("daily_opportunity_reports_updated_at_nonempty", sql`length(${table.updatedAt}) > 0`),
+  ],
+);
+
+export const dailyOpportunityReportRecommendations = sqliteTable(
+  "daily_opportunity_report_recommendations",
+  {
+    id: text("id").primaryKey(),
+    dailyReportId: text("daily_report_id")
+      .notNull()
+      .references(() => dailyOpportunityReports.id, { onDelete: "cascade" }),
+    recommendationId: text("recommendation_id")
+      .notNull()
+      .references(() => recommendations.id, { onDelete: "cascade" }),
+    reportRank: integer("report_rank").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("daily_report_recommendations_report_rec_unique").on(
+      table.dailyReportId,
+      table.recommendationId,
+    ),
+    uniqueIndex("daily_report_recommendations_report_rank_unique").on(
+      table.dailyReportId,
+      table.reportRank,
+    ),
+    index("daily_opportunity_report_recommendations_report_idx").on(
+      table.dailyReportId,
+      table.reportRank,
+    ),
+    check("daily_report_recommendations_rank_positive", sql`${table.reportRank} > 0`),
+    check("daily_report_recommendations_created_at_nonempty", sql`length(${table.createdAt}) > 0`),
+  ],
+);
