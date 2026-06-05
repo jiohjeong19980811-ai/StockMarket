@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T16:36:00-04:00",
+  "lastUpdated": "2026-06-05T18:48:24-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -11,11 +11,11 @@
   ],
   "currentFocus": {
     "phase": "Milestone 7: Backtesting",
-    "task": "Add mock API read model for durable stock backtest runs",
+    "task": "Publish and merge the M7-003 backtest read API branch",
     "owner": "Codex founding CTO / lead architect / principal engineer / risk reviewer / quantitative research lead",
-    "status": "Completed",
+    "status": "Needs Review",
     "priority": "High",
-    "category": "Backtesting API visibility"
+    "category": "Release publication"
   },
   "items": [
     {
@@ -1255,11 +1255,11 @@
       "title": "Expose durable stock backtest read model through mock API dry run",
       "phase": "Milestone 7",
       "owner": "Codex founding CTO / lead architect / principal engineer / quantitative research lead / risk reviewer",
-      "status": "Completed",
+      "status": "Needs Review",
       "priority": "High",
       "category": "Backtesting API visibility",
       "blockers": [],
-      "nextStep": "Push feature/m7-backtest-read-api, create a PR, wait for checks, and merge to main if publication permissions allow; after merge, select the next highest-priority roadmap item.",
+      "nextStep": "Wait for PR #1 checks at https://github.com/jiohjeong19980811-ai/StockMarket/pull/1, review any failures, and merge to main after checks pass.",
       "relatedDocs": [
         "docs/backtesting-and-validation.md",
         "docs/risk-and-compliance.md",
