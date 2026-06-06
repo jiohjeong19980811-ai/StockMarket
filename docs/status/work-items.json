@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T19:54:02-04:00",
+  "lastUpdated": "2026-06-05T20:40:41-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -13,7 +13,7 @@
     "phase": "Milestone 9: Ticker and Opportunity Detail Pages",
     "task": "Add ticker detail page shell",
     "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead",
-    "status": "Planned",
+    "status": "Needs Review",
     "priority": "High",
     "category": "Ticker detail UI"
   },
@@ -1431,11 +1431,11 @@
       "title": "Add ticker detail page shell",
       "phase": "Milestone 9",
       "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead",
-      "status": "Planned",
+      "status": "Needs Review",
       "priority": "High",
       "category": "Ticker detail UI",
       "blockers": [],
-      "nextStep": "Write failing operator-console tests for a ticker detail shell that surfaces research context, citations, freshness, downside/invalidation, and paper-only/no-advice framing for the selected mock ticker.",
+      "nextStep": "Commit the validated ticker detail shell, push the feature branch, open a PR to main, wait for checks, and merge only after checks pass.",
       "relatedDocs": [
         "apps/web/src/App.tsx",
         "apps/web/test/App.test.tsx",

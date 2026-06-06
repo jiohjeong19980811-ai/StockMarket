@@ -1420,6 +1420,41 @@ export function App() {
     dailyHistoryReport.noGoodTrades.reasonCodes.length > 0
       ? dailyHistoryReport.noGoodTrades.reasonCodes.join(", ")
       : "No blocker reason codes";
+  const tickerDetail = {
+    id: topHistoryRecommendation?.id ?? evidence.recommendation.id,
+    ticker: topHistoryRecommendation?.ticker ?? evidence.recommendation.ticker,
+    instrumentType:
+      topHistoryRecommendation?.instrumentType ?? evidence.recommendation.instrumentType,
+    strategyVersionId:
+      topHistoryRecommendation?.strategyVersionId ?? evidence.recommendation.strategyVersionId,
+    decision: topHistoryRecommendation?.decision ?? evidence.recommendation.decision,
+    evidenceStatus:
+      topHistoryRecommendation?.evidenceStatus ?? evidence.recommendation.evidenceStatus,
+    evidenceGate: topHistoryRecommendation?.evidenceGate ?? evidence.evidenceGate,
+    thesis: topHistoryRecommendation?.thesis ?? evidence.recommendation.thesis,
+    downsideScenario:
+      topHistoryRecommendation?.downsideScenario ?? evidence.recommendation.downsideScenario,
+    invalidationConditions:
+      topHistoryRecommendation?.invalidationConditions ??
+      evidence.recommendation.invalidationConditions,
+    whySystemMightBeWrong:
+      topHistoryRecommendation?.whySystemMightBeWrong ??
+      evidence.recommendation.whySystemMightBeWrong,
+    sourceCitation: topHistoryCitation ?? firstCitation,
+    dataFreshness: topHistoryRecommendation?.dataFreshness ?? evidence.dataFreshness,
+    scores: topHistoryRecommendation?.scores ?? evidence.recommendation.scores,
+    backtestRunId:
+      topHistoryRecommendation?.evidenceIds.backtestRunId ??
+      evidence.recommendation.evidenceIds.backtestRunId,
+    paperTradeEvidenceId:
+      topHistoryRecommendation?.evidenceIds.paperTradeEvidenceId ??
+      evidence.recommendation.evidenceIds.paperTradeEvidenceId,
+  };
+  const tickerBacktestId =
+    tickerDetail.backtestRunId ??
+    (backtestRun.trades.some((trade) => trade.ticker === tickerDetail.ticker)
+      ? backtestRun.id
+      : "none");
   const paperTradeGateLabel =
     failedGates.length > 0
       ? "Blocked pending evidence"
@@ -1431,7 +1466,7 @@ export function App() {
     <main className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Milestone 8</p>
+          <p className="eyebrow">Milestone 9</p>
           <h1>StockMarket Operator Console</h1>
         </div>
         <span className="status-pill">Mock Only</span>
@@ -1704,6 +1739,108 @@ export function App() {
             <p className="panel-copy">{dailyHistoryReport.disclaimer}</p>
             <p className="panel-copy">
               No broker or live-trading fields are exposed in daily recommendation history.
+            </p>
+          </article>
+
+          <article className="panel panel-large" aria-label="Ticker detail research shell">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Ticker Detail</p>
+                <h2>
+                  {tickerDetail.ticker} {decisionLabels[tickerDetail.decision]}
+                </h2>
+              </div>
+              <span className="status-pill subtle">Ticker API snapshot</span>
+            </div>
+            <div className="evidence-strip" aria-label="Ticker identity summary">
+              <div>
+                <span>Ticker</span>
+                <strong>{tickerDetail.ticker}</strong>
+              </div>
+              <div>
+                <span>Instrument</span>
+                <strong>{tickerDetail.instrumentType}</strong>
+              </div>
+              <div>
+                <span>Strategy</span>
+                <strong>{tickerDetail.strategyVersionId}</strong>
+              </div>
+            </div>
+            <div
+              className="evidence-strip evidence-strip-secondary"
+              aria-label="Ticker citation and freshness"
+            >
+              <div>
+                <span>Source</span>
+                <strong>{tickerDetail.sourceCitation?.title ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Retrieved</span>
+                <strong>{tickerDetail.sourceCitation?.retrievedAt ?? "missing"}</strong>
+              </div>
+              <div>
+                <span>Fresh As Of</span>
+                <strong>{tickerDetail.dataFreshness.asOf}</strong>
+              </div>
+            </div>
+            <div className="score-grid" aria-label="Ticker risk score summary">
+              <ScoreMeter label="Risk Controls" value={tickerDetail.scores.risk} />
+              <ScoreMeter label="Confidence" value={tickerDetail.scores.confidence} />
+              <ScoreMeter label="Liquidity" value={tickerDetail.scores.liquidity} />
+            </div>
+            <p className="eyebrow">Research Context</p>
+            <p className="panel-copy">{tickerDetail.thesis}</p>
+            <div
+              className="evidence-strip evidence-strip-secondary"
+              aria-label="Ticker risk narrative"
+            >
+              <div>
+                <span>Downside</span>
+                <strong>{tickerDetail.downsideScenario}</strong>
+              </div>
+              <div>
+                <span>Invalidation</span>
+                <strong>{tickerDetail.invalidationConditions.join("; ")}</strong>
+              </div>
+              <div>
+                <span>Why It Might Be Wrong</span>
+                <strong>{tickerDetail.whySystemMightBeWrong}</strong>
+              </div>
+            </div>
+            <div
+              className="evidence-strip evidence-strip-secondary"
+              aria-label="Ticker evidence links"
+            >
+              <div>
+                <span>Evidence</span>
+                <strong>{tickerDetail.evidenceGate}</strong>
+              </div>
+              <div>
+                <span>Backtest</span>
+                <strong>{tickerBacktestId}</strong>
+              </div>
+              <div>
+                <span>Paper Evidence</span>
+                <strong>{tickerDetail.paperTradeEvidenceId ?? "none"}</strong>
+              </div>
+            </div>
+            <p className="panel-copy">
+              Ticker detail is a research workspace; not financial advice or a trade instruction.
+            </p>
+            <p className="eyebrow">Paper-only review actions</p>
+            <div className="decision-actions" aria-label="Ticker decision actions">
+              <button type="button" disabled>
+                Watch Ticker
+              </button>
+              <button type="button" disabled>
+                Reject Ticker
+              </button>
+              <button type="button" disabled>
+                Paper Trade Candidate
+              </button>
+            </div>
+            <p className="panel-copy">
+              Actions stay disabled until audit-backed ticker decisions are implemented.
             </p>
           </article>
 
