@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 
@@ -627,6 +627,71 @@ const mockDailyHistoryBody = {
   ],
 };
 
+const mockOpportunityDecisionBody = {
+  mode: "mock",
+  requiresEnv: false,
+  liveTradingEnabled: false,
+  providerKeysRequired: [],
+  notRecommendation: true,
+  persistence: {
+    scope: "in_memory",
+    durable: false,
+    note: "Dry-run opportunity decisions are audit-shaped and discarded after the response.",
+  },
+  persistedInMemory: {
+    dailyOpportunityReports: 1,
+    dailyOpportunityReportRecommendations: 1,
+    recommendations: 1,
+    auditLogs: 2,
+  },
+  decision: {
+    status: "accepted",
+    candidateId: "candidate-MSFT-momentum-daily-1",
+    ticker: "MSFT",
+    operatorDecision: "paper_trade",
+    mode: "paper",
+    notRecommendation: true,
+    liveTradingEnabled: false,
+    brokerExecution: false,
+    reasonCodes: [],
+    evidenceGate: "verified",
+    downsideScenario: "Shares close below the mock breakout level.",
+    invalidationConditions: ["Close below mock breakout level"],
+    scores: {
+      risk: 86,
+      confidence: 81,
+      liquidity: 86,
+    },
+    audit: {
+      auditLogId: "audit_mock_opportunity_decision_1",
+      eventType: "operator_decision",
+      actorType: "operator",
+      actorId: "operator:mock",
+      occurredAt: "2026-05-28T15:10:00.000Z",
+      subjectType: "recommendation",
+      subjectId: "candidate-MSFT-momentum-daily-1",
+      riskDecision: "pass",
+      operatorDecision: "paper_trade",
+      operatorNotes: "Mock operator accepted the paper-only opportunity candidate.",
+    },
+    sourceCitation: {
+      title: "Mock daily price history",
+      retrievedAt: "2026-05-28T14:30:00.000Z",
+    },
+    dataFreshness: {
+      status: "fresh",
+      asOf: "2026-05-28T14:30:00.000Z",
+      notes: [],
+    },
+  },
+  safety: {
+    paperOnly: true,
+    noBrokerExecution: true,
+    notFinancialAdvice: true,
+    liveTradingEnabled: false,
+  },
+};
+
 const mockNoGoodDailyHistoryBody = {
   ...mockDailyHistoryBody,
   persistedInMemory: {
@@ -660,23 +725,25 @@ describe("operator console shell", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = input.toString();
-        const body = url.includes("opportunities/mock-history-dry-run")
-          ? mockDailyHistoryBody
-          : url.includes("opportunities/mock-daily-dry-run")
-            ? mockDailyOpportunityBody
-            : url.includes("backtesting/mock-read-model-dry-run")
-              ? mockBacktestReadModelBody
-              : url.includes("mock-read-model-dry-run")
-                ? mockPaperReadModelBody
-                : url.includes("mock-evidence-detail-dry-run")
-                  ? mockEvidenceDetailBody
-                  : url.includes("mock-evidence-summary")
-                    ? mockPaperEvidenceSummaryBody
-                    : url.includes("mock-close-dry-run")
-                      ? mockPaperCloseBody
-                      : url.includes("paper-trading")
-                        ? mockPaperTradingBody
-                        : mockScoringBody;
+        const body = url.includes("opportunities/mock-decision-dry-run")
+          ? mockOpportunityDecisionBody
+          : url.includes("opportunities/mock-history-dry-run")
+            ? mockDailyHistoryBody
+            : url.includes("opportunities/mock-daily-dry-run")
+              ? mockDailyOpportunityBody
+              : url.includes("backtesting/mock-read-model-dry-run")
+                ? mockBacktestReadModelBody
+                : url.includes("mock-read-model-dry-run")
+                  ? mockPaperReadModelBody
+                  : url.includes("mock-evidence-detail-dry-run")
+                    ? mockEvidenceDetailBody
+                    : url.includes("mock-evidence-summary")
+                      ? mockPaperEvidenceSummaryBody
+                      : url.includes("mock-close-dry-run")
+                        ? mockPaperCloseBody
+                        : url.includes("paper-trading")
+                          ? mockPaperTradingBody
+                          : mockScoringBody;
         return new Response(JSON.stringify(body));
       }),
     );
@@ -811,13 +878,27 @@ describe("operator console shell", () => {
     ).toBeDisabled();
     expect(
       within(opportunityDetail).getByRole("button", { name: "Accept Paper Candidate" }),
-    ).toBeDisabled();
+    ).not.toBeDisabled();
     expect(
       within(opportunityDetail).getByRole("button", { name: "Needs More Data" }),
     ).toBeDisabled();
     expect(
       within(opportunityDetail).getByText(
-        "Opportunity detail is a research review workspace; paper-only actions stay disabled until audit-backed decision writes are implemented.",
+        "Opportunity detail is a research review workspace; paper-only actions use audit-backed mock decision writes.",
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(opportunityDetail).getByRole("button", { name: "Accept Paper Candidate" }),
+    );
+    expect(await within(opportunityDetail).findByText("Decision accepted")).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getByText("audit_mock_opportunity_decision_1"),
+    ).toBeInTheDocument();
+    expect(within(opportunityDetail).getByText("operator_decision")).toBeInTheDocument();
+    expect(within(opportunityDetail).getByText("2026-05-28T15:10:00.000Z")).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getByText(
+        "Paper-only decision recorded; no broker execution occurred.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("No provider keys required")).toBeInTheDocument();
@@ -864,7 +945,7 @@ describe("operator console shell", () => {
     expect(screen.getByText("Paper Trade Ledger")).toBeInTheDocument();
     expect(screen.getByText("Persisted Closed")).toBeInTheDocument();
     expect(screen.getByText("Ledger API snapshot")).toBeInTheDocument();
-    expect(screen.getByText("Audit")).toBeInTheDocument();
+    expect(screen.getAllByText("Audit").length).toBeGreaterThan(0);
     expect(screen.getByText("audit_mock_paper_close_1")).toBeInTheDocument();
     expect(screen.getByText("Entry")).toBeInTheDocument();
     expect(screen.getAllByText("$100").length).toBeGreaterThan(0);
@@ -882,7 +963,7 @@ describe("operator console shell", () => {
       screen.getAllByText("Shares close below the mock breakout level.").length,
     ).toBeGreaterThan(0);
     expect(screen.getAllByText("Close below mock breakout level").length).toBeGreaterThan(0);
-    expect(screen.getByText("operator_decision")).toBeInTheDocument();
+    expect(screen.getAllByText("operator_decision").length).toBeGreaterThan(0);
     expect(screen.getByText("paper_trade_closed")).toBeInTheDocument();
     expect(screen.getByText("paper_trade")).toBeInTheDocument();
     expect(screen.getByText("No evidence reason codes")).toBeInTheDocument();
