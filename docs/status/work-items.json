@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T20:43:37-04:00",
+  "lastUpdated": "2026-06-05T20:48:07-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -13,7 +13,7 @@
     "phase": "Milestone 9: Ticker and Opportunity Detail Pages",
     "task": "Add opportunity detail page shell",
     "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead",
-    "status": "Planned",
+    "status": "Needs Review",
     "priority": "High",
     "category": "Opportunity detail UI"
   },
@@ -1457,11 +1457,11 @@
       "title": "Add opportunity detail page shell",
       "phase": "Milestone 9",
       "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead",
-      "status": "Planned",
+      "status": "Needs Review",
       "priority": "High",
       "category": "Opportunity detail UI",
       "blockers": [],
-      "nextStep": "Write failing operator-console tests for an opportunity detail shell that surfaces rank, thesis, citations, freshness, downside/invalidation, risk, evidence, and paper-only review actions for the selected mock opportunity.",
+      "nextStep": "Commit the validated opportunity detail shell, push the feature branch, open a PR to main, wait for checks, and merge only after checks pass.",
       "relatedDocs": [
         "apps/web/src/App.tsx",
         "apps/web/test/App.test.tsx",

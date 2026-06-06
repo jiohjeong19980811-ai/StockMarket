@@ -1,6 +1,6 @@
 # Current Work Status
 
-Last updated: 2026-06-05T20:43:37-04:00
+Last updated: 2026-06-05T20:48:07-04:00
 
 ## Current Focus
 
@@ -11,11 +11,11 @@ Last updated: 2026-06-05T20:43:37-04:00
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead |
 | Priority | High |
 | Category | Opportunity detail UI |
-| Status | Planned |
+| Status | Needs Review |
 | Blockers | None |
-| Next step | Write failing operator-console tests for an opportunity detail shell that surfaces rank, thesis, citations, freshness, downside/invalidation, risk, evidence, and paper-only review actions for the selected mock opportunity. |
+| Next step | Commit the validated opportunity detail shell, push `feature/m9-opportunity-detail-shell`, open a PR to `main`, wait for checks, and merge only after checks pass. |
 | Related docs/files | `apps/web/src/App.tsx`, `apps/web/test/App.test.tsx`, `docs/product-roadmap.md`, `docs/risk-and-compliance.md`, `docs/status/work-items.json` |
-| Validation required | Required after implementation: focused web dashboard tests, root CI, status JSON parse, whitespace check, secret scan, live-trading/order-surface scan, and local web smoke if UI changes. |
+| Validation required | Passed: focused web dashboard tests, typecheck, lint, format check, root CI, status JSON parse, whitespace check, diff secret scan, diff live-trading/order-surface scan, headless DOM smoke, and mobile screenshot smoke. |
 
 ## Status Vocabulary
 
