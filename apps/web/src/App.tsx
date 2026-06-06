@@ -1654,6 +1654,115 @@ export function App() {
             </p>
           </article>
 
+          {topDailyOpportunity ? (
+            <article className="panel panel-large" aria-label="Opportunity detail research shell">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Opportunity Detail</p>
+                  <h2>
+                    {topDailyOpportunity.ticker} {decisionLabels[topDailyOpportunity.decision]}
+                  </h2>
+                </div>
+                <span className="status-pill subtle">Opportunity API snapshot</span>
+              </div>
+              <div className="evidence-strip" aria-label="Opportunity identity summary">
+                <div>
+                  <span>Candidate</span>
+                  <strong>{topDailyOpportunity.id}</strong>
+                </div>
+                <div>
+                  <span>Rank</span>
+                  <strong>{topDailyOpportunity.rank}</strong>
+                </div>
+                <div>
+                  <span>Ticker</span>
+                  <strong>{topDailyOpportunity.ticker}</strong>
+                </div>
+              </div>
+              <div
+                className="evidence-strip evidence-strip-secondary"
+                aria-label="Opportunity citation and freshness"
+              >
+                <div>
+                  <span>Source</span>
+                  <strong>{topDailyCitation?.title ?? "missing"}</strong>
+                </div>
+                <div>
+                  <span>Retrieved</span>
+                  <strong>{topDailyCitation?.retrievedAt ?? "missing"}</strong>
+                </div>
+                <div>
+                  <span>Fresh As Of</span>
+                  <strong>{topDailyOpportunity.dataFreshness.asOf}</strong>
+                </div>
+              </div>
+              <div className="score-grid" aria-label="Opportunity risk score summary">
+                <ScoreMeter label="Risk Controls" value={topDailyOpportunity.scores.risk} />
+                <ScoreMeter label="Confidence" value={topDailyOpportunity.scores.confidence} />
+                <ScoreMeter label="Liquidity" value={topDailyOpportunity.scores.liquidity} />
+              </div>
+              <p className="eyebrow">Research Context</p>
+              <p className="panel-copy">{topDailyOpportunity.thesis}</p>
+              <div
+                className="evidence-strip evidence-strip-secondary"
+                aria-label="Opportunity risk narrative"
+              >
+                <div>
+                  <span>Downside</span>
+                  <strong>{topDailyOpportunity.downsideScenario}</strong>
+                </div>
+                <div>
+                  <span>Invalidation</span>
+                  <strong>{topDailyOpportunity.invalidationConditions.join("; ")}</strong>
+                </div>
+                <div>
+                  <span>Why It Might Be Wrong</span>
+                  <strong>{topDailyOpportunity.whySystemMightBeWrong}</strong>
+                </div>
+              </div>
+              <div
+                className="evidence-strip evidence-strip-secondary"
+                aria-label="Opportunity evidence links"
+              >
+                <div>
+                  <span>Evidence</span>
+                  <strong>{topDailyOpportunity.evidence.gate}</strong>
+                </div>
+                <div>
+                  <span>Evidence IDs</span>
+                  <strong>
+                    {topDailyOpportunity.evidence.ids.length > 0
+                      ? topDailyOpportunity.evidence.ids.join(", ")
+                      : "none"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Liquidity</span>
+                  <strong>{topDailyOpportunity.liquidity.passes ? "passes" : "blocked"}</strong>
+                </div>
+              </div>
+              <p className="panel-copy">
+                Opportunity detail is a research review workspace; paper-only actions stay disabled
+                until audit-backed decision writes are implemented.
+              </p>
+              <p className="eyebrow">Paper-only opportunity actions</p>
+              <div className="decision-actions" aria-label="Opportunity decision actions">
+                <button type="button" disabled>
+                  Watch Opportunity
+                </button>
+                <button type="button" disabled>
+                  Reject Opportunity
+                </button>
+                <button type="button" disabled>
+                  Accept Paper Candidate
+                </button>
+                <button type="button" disabled>
+                  Needs More Data
+                </button>
+              </div>
+            </article>
+          ) : null}
+
           <article className="panel panel-large">
             <div className="panel-heading">
               <div>

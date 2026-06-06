@@ -750,8 +750,8 @@ describe("operator console shell", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText("candidate-MSFT-momentum-daily-1").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Mock momentum candidate with verified stock backtest evidence."),
-    ).toBeInTheDocument();
+      screen.getAllByText("Mock momentum candidate with verified stock backtest evidence.").length,
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("Mock daily price history").length).toBeGreaterThan(0);
     expect(screen.getAllByText("2026-05-28T14:30:00.000Z").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Close below mock breakout level").length).toBeGreaterThan(0);
@@ -762,6 +762,62 @@ describe("operator console shell", () => {
     expect(
       screen.getByText(
         "No good trades today remains valid when every reviewed candidate is blocked.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Opportunity Detail")).toBeInTheDocument();
+    const opportunityDetail = screen.getByLabelText("Opportunity detail research shell");
+    expect(within(opportunityDetail).getByText("Opportunity API snapshot")).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getByText("candidate-MSFT-momentum-daily-1"),
+    ).toBeInTheDocument();
+    expect(within(opportunityDetail).getByText("Rank")).toBeInTheDocument();
+    expect(within(opportunityDetail).getByText("1")).toBeInTheDocument();
+    expect(within(opportunityDetail).getAllByText("MSFT").length).toBeGreaterThan(0);
+    expect(
+      within(opportunityDetail).getByText(
+        "Mock momentum candidate with verified stock backtest evidence.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(opportunityDetail).getByText("Mock daily price history")).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getAllByText("2026-05-28T14:30:00.000Z").length,
+    ).toBeGreaterThan(0);
+    expect(within(opportunityDetail).getByText("Downside")).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getByText("Shares close below the mock breakout level."),
+    ).toBeInTheDocument();
+    expect(within(opportunityDetail).getByText("Invalidation")).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getByText("Close below mock breakout level"),
+    ).toBeInTheDocument();
+    expect(within(opportunityDetail).getByText("Why It Might Be Wrong")).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getByText("Mock data may not represent current market behavior."),
+    ).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getByLabelText("Opportunity risk score summary"),
+    ).toBeInTheDocument();
+    expect(within(opportunityDetail).getAllByText("86").length).toBeGreaterThan(0);
+    expect(within(opportunityDetail).getByText("81")).toBeInTheDocument();
+    expect(within(opportunityDetail).getByText("bt_mock_momentum_1")).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getByText("Paper-only opportunity actions"),
+    ).toBeInTheDocument();
+    expect(
+      within(opportunityDetail).getByRole("button", { name: "Watch Opportunity" }),
+    ).toBeDisabled();
+    expect(
+      within(opportunityDetail).getByRole("button", { name: "Reject Opportunity" }),
+    ).toBeDisabled();
+    expect(
+      within(opportunityDetail).getByRole("button", { name: "Accept Paper Candidate" }),
+    ).toBeDisabled();
+    expect(
+      within(opportunityDetail).getByRole("button", { name: "Needs More Data" }),
+    ).toBeDisabled();
+    expect(
+      within(opportunityDetail).getByText(
+        "Opportunity detail is a research review workspace; paper-only actions stay disabled until audit-backed decision writes are implemented.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("No provider keys required")).toBeInTheDocument();
@@ -860,7 +916,9 @@ describe("operator console shell", () => {
     expect(screen.getByRole("button", { name: "Watchlist" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Paper Trade" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Avoid" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Needs More Data" })).toBeDisabled();
+    screen
+      .getAllByRole("button", { name: "Needs More Data" })
+      .forEach((button) => expect(button).toBeDisabled());
     expect(screen.getAllByText("Risk Controls").length).toBeGreaterThan(0);
     expect(screen.getByText("83")).toBeInTheDocument();
   });
@@ -885,6 +943,7 @@ describe("operator console shell", () => {
     expect(screen.queryByText("Daily Opportunities")).not.toBeInTheDocument();
     expect(screen.queryByText("Daily Recommendation History")).not.toBeInTheDocument();
     expect(screen.queryByText("Ticker Detail")).not.toBeInTheDocument();
+    expect(screen.queryByText("Opportunity Detail")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Watchlist" })).not.toBeInTheDocument();
   });
 
@@ -911,6 +970,7 @@ describe("operator console shell", () => {
     expect(screen.queryByText("Daily Opportunities")).not.toBeInTheDocument();
     expect(screen.queryByText("Daily Recommendation History")).not.toBeInTheDocument();
     expect(screen.queryByText("Ticker Detail")).not.toBeInTheDocument();
+    expect(screen.queryByText("Opportunity Detail")).not.toBeInTheDocument();
     expect(screen.queryByText("Watchlist")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Watchlist" })).not.toBeInTheDocument();
   });
@@ -953,5 +1013,6 @@ describe("operator console shell", () => {
     expect(screen.getAllByText("No Good Trades Today").length).toBeGreaterThan(0);
     expect(screen.getByText("fresh_data, paper_trade_evidence")).toBeInTheDocument();
     expect(screen.queryByText("candidate-MSFT-momentum-daily-1")).not.toBeInTheDocument();
+    expect(screen.queryByText("Opportunity Detail")).not.toBeInTheDocument();
   });
 });
