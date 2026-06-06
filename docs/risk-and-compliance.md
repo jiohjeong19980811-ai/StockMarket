@@ -85,6 +85,8 @@ Every opportunity must include:
 - Backtest or paper-trade evidence run ID when available.
 - Liquidity pass/fail and data freshness pass/fail.
 
+Operator decisions on opportunities must be persisted through a paper-only audit ledger before they are treated as tracked workflow state. The ledger must record `watchlist`, `paper_trade`, `avoid`, or `needs_more_data`, require reason codes and audit-log linkage, keep `notRecommendation = 1`, and reject any live-trading or broker-execution flag. `paper_trade` decisions must not be accepted unless the referenced recommendation has verified evidence, passing risk and liquidity gates, and validation evidence available for review.
+
 Scoring semantics:
 
 - `scores.risk` is a risk-control quality score where higher means safer controls and fewer unresolved gate failures. It is not a prediction of upside.

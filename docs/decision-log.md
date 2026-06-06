@@ -359,3 +359,9 @@ Reason: Newly visible plugins can improve research, UI review, analytics, and va
 Decision: Treat `watchlist`, `paper_trade`, `avoid`, and `needs_more_data` as explicit operator decisions in the mock opportunity decision API and operator console. Each action returns audit-shaped metadata, remains non-durable until the next persistence slice, and keeps `liveTradingEnabled: false`, `brokerExecution: false`, and `notRecommendation: true`.
 
 Reason: Operators need to review, accept, reject, track, and defer paper-trade candidates without turning UI actions into trade instructions. Explicit paper-only decisions make the workflow auditable while preserving the no-broker-execution MVP boundary.
+
+## 2026-06-05: Opportunity Decision Ledger
+
+Decision: Add a durable `opportunity_decisions` ledger and read model for operator decisions on research opportunities. Persisted decisions require audit-log linkage, paper mode, explicit reason codes, `notRecommendation = 1`, `liveTradingEnabled = false`, and `brokerExecution = false`. `paper_trade` decisions must reference recommendations with verified evidence, passing risk and liquidity gates, and existing validation evidence.
+
+Reason: Paper-trade candidates need durable review, acceptance, rejection, deferral, and readback before the operator console can track them over time. The ledger preserves auditability and future paper-trading workflow support without introducing broker execution, live trading, or personalized financial advice.

@@ -171,7 +171,7 @@ describe("mock daily opportunities route", () => {
           notRecommendation: true,
           liveTradingEnabled: false,
           brokerExecution: false,
-          reasonCodes: [],
+          reasonCodes: ["operator_accepted"],
           evidenceGate: "verified",
           downsideScenario: "Shares close below the mock breakout level.",
           invalidationConditions: ["Close below mock breakout level"],
@@ -295,6 +295,100 @@ describe("mock daily opportunities route", () => {
         expect("brokerOrder" in body.decision).toBe(false);
         expect("orderPlacement" in body.decision).toBe(false);
       }
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("persists and reads back a mock opportunity decision through an in-memory ledger", async () => {
+    const server = buildServer({
+      APP_ENV: "test",
+      API_PORT: 4000,
+      LIVE_TRADING_ENABLED: false,
+    });
+
+    try {
+      const response = await server.inject({
+        method: "POST",
+        url: "/opportunities/mock-decision-ledger-dry-run",
+        payload: {
+          decision: "avoid",
+        },
+      });
+
+      expect(response.statusCode, response.body).toBe(200);
+      const body = response.json();
+      expect(body).toMatchObject({
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: false,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+        },
+        persistedInMemory: {
+          dailyOpportunityReports: 1,
+          dailyOpportunityReportRecommendations: 1,
+          recommendations: 1,
+          auditLogs: 2,
+          opportunityDecisions: 1,
+        },
+        decision: {
+          status: "accepted",
+          candidateId: "candidate-MSFT-momentum-daily-1",
+          ticker: "MSFT",
+          operatorDecision: "avoid",
+          mode: "paper",
+          notRecommendation: true,
+          liveTradingEnabled: false,
+          brokerExecution: false,
+          reasonCodes: ["operator_rejected"],
+        },
+        decisions: [
+          {
+            id: "decision_mock_opportunity_avoid",
+            recommendationId: "candidate-MSFT-momentum-daily-1",
+            ticker: "MSFT",
+            operatorDecision: "avoid",
+            mode: "paper",
+            notRecommendation: true,
+            liveTradingEnabled: false,
+            brokerExecution: false,
+            reasonCodes: ["operator_rejected"],
+            evidenceGate: "verified",
+            downsideScenario: "Shares close below the mock breakout level.",
+            invalidationConditions: ["Close below mock breakout level"],
+            audit: {
+              auditLogId: "audit_mock_opportunity_decision_avoid",
+              eventType: "operator_decision",
+              actorType: "operator",
+              actorId: "operator:mock",
+              subjectType: "recommendation",
+              subjectId: "candidate-MSFT-momentum-daily-1",
+              riskDecision: "avoid",
+              operatorDecision: "avoid",
+            },
+            sourceCitation: {
+              title: "Mock daily price history",
+              retrievedAt: "2026-05-28T14:30:00.000Z",
+            },
+            dataFreshness: {
+              status: "fresh",
+              asOf: "2026-05-28T14:30:00.000Z",
+            },
+          },
+        ],
+        safety: {
+          paperOnly: true,
+          noBrokerExecution: true,
+          notFinancialAdvice: true,
+          liveTradingEnabled: false,
+        },
+      });
+      expect("brokerOrder" in body.decisions[0]).toBe(false);
+      expect("orderPlacement" in body.decisions[0]).toBe(false);
     } finally {
       await server.close();
     }

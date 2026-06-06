@@ -1,25 +1,26 @@
 # Validation Status
 
-Last updated: 2026-06-05T21:19:03-04:00
+Last updated: 2026-06-05T21:47:04-04:00
 
 ## Current State
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 10 paper-only opportunity decisions |
-| Current task | Add remaining opportunity decision actions |
+| Current task | Add durable opportunity decision persistence and readback |
 | Owner/agent | Codex founding CTO / lead architect / principal engineer / security reviewer / risk reviewer / QA reviewer |
 | Status | Completed |
 | Priority | High |
 | Category | Paper trading UI and auditability |
 | Blockers | None |
-| Next step | Continue with M10-004 durable opportunity decision persistence and readback. |
-| Related docs/files | `apps/api/src/server.ts`, `apps/api/test/daily-opportunities.test.ts`, `apps/web/src/App.tsx`, `apps/web/test/App.test.tsx`, `docs/status/` |
+| Next step | Prepare PR and merge after checks pass, then pause for checkpoint before M11-001 historical daily price ingestion and read API. |
+| Related docs/files | `packages/db`, `apps/api/src/server.ts`, `apps/api/test/daily-opportunities.test.ts`, `apps/web/src/App.tsx`, `apps/web/test/App.test.tsx`, `docs/status/` |
 
 ## Checks
 
 | Check | Status | Last result | Command or method |
 | --- | --- | --- | --- |
+| Milestone 10 durable opportunity decision persistence | Completed | Focused DB/API/web tests passed after adding an `opportunity_decisions` migration, DB ledger helper/read model, nonempty operator reason-code gate, mock ledger dry-run API route, and operator-console action wiring to the ledger endpoint. Root CI passed with typecheck, lint, format check, 211 unit tests, 16 hook tests, dependency audit, production build, and API smoke. Status JSON parse, whitespace check, strict secret-shaped scan, executable live-trading/order-surface scan, and added-line live/order review passed. Local API smoke returned a `paper_trade` decision with `operator_accepted`, `liveTradingEnabled: false`, and `brokerExecution: false`; web HTTP smoke returned 200. The in-app Browser backend was unavailable (`iab` missing), so Browser-plugin UI smoke could not run. No live trading, broker order placement, crypto trading automation, provider keys, or secrets were introduced. | `npm.cmd run test --workspace @stockmarket/db -- opportunity-decision-ledger`; `npm.cmd run test --workspace @stockmarket/db -- migration.test.ts`; `npm.cmd run test --workspace @stockmarket/api -- daily-opportunities`; `npm.cmd run test --workspace @stockmarket/web -- App.test.tsx`; `npm.cmd run ci`; `python -m json.tool docs/status/work-items.json`; `git diff --check`; strict secret-shaped scan; executable live-trading/order-surface scan; added-line live/order review; `Invoke-RestMethod http://127.0.0.1:4000/opportunities/mock-decision-ledger-dry-run`; `Invoke-WebRequest http://127.0.0.1:3001` |
 | Milestone 10 remaining opportunity decision actions | Completed | Focused API/web tests passed after adding watchlist, avoid, needs-more-data, and paper-trade mock decision submissions. Root CI passed with typecheck, lint, format check, 206 unit tests, 16 hook tests, dependency audit, production build, and API smoke. Status JSON parse, whitespace check, secret-pattern scan, and live-trading/order-surface scan passed. Fallback local smoke passed with web HTTP 200 and a watchlist API decision returning `brokerExecution: false`; the in-app Browser backend was unavailable (`iab` missing), so Browser-plugin UI smoke could not run. No live trading, broker order placement, crypto trading automation, provider keys, or secrets were introduced. | `npm.cmd run test --workspace @stockmarket/api -- daily-opportunities`; `npm.cmd run test --workspace @stockmarket/web -- App.test.tsx`; `npm.cmd run ci`; `python -m json.tool docs/status/work-items.json`; `git diff --check`; secret-pattern scan; live-trading/order-surface scan; `Invoke-WebRequest http://127.0.0.1:3001`; `Invoke-RestMethod http://127.0.0.1:4000/opportunities/mock-decision-dry-run` |
 | Milestone 7 stock backtest read-model API validation | Needs Review | Focused DB/API tests passed; typecheck, lint, format check, 197 unit tests, 16 hook tests, production build, API smoke, status JSON parse, whitespace check, secret-pattern scan, live-trading surface scan, and runtime dependency audit passed. Full root CI stops at `npm audit --audit-level=moderate` because the existing root dev dependency `vitest@3.2.4` is flagged by npm audit. `npm install --save-dev vitest@^4.1.8` was attempted and blocked by the current permission policy. No live trading, broker order placement, crypto trading, provider keys, or recommendation output was introduced. | `npm.cmd run test --workspace @stockmarket/db -- backtest-run-ledger`; `npm.cmd run test --workspace @stockmarket/api -- backtesting`; `npm.cmd run typecheck`; `npm.cmd run lint`; `npm.cmd run format:check`; `npm.cmd run test`; `python -m unittest discover .codex/hooks/tests`; `npm.cmd run build`; `npm.cmd run smoke:api`; `python -m json.tool docs/status/work-items.json`; `git diff --check`; secret-pattern scan; live-trading surface scan; `npm.cmd audit --omit=dev --audit-level=moderate`; `npm.cmd run ci`; `npm.cmd install --save-dev vitest@^4.1.8` |
 | Milestone 7 evidence-gate merged-main CI | Completed | Fast-forward merge to `main` completed after focused risk, validation, release, and systems review. Merged `main` passed typecheck, lint, format check, 195 unit tests, 16 hook tests, dependency audit, production build, and API smoke. | `git checkout main`; `git merge --ff-only feature/milestone-7-backtest-persistence`; `npm.cmd run ci` |

@@ -871,3 +871,56 @@ export const dailyOpportunityReportRecommendations = sqliteTable(
     check("daily_report_recommendations_created_at_nonempty", sql`length(${table.createdAt}) > 0`),
   ],
 );
+
+export const opportunityDecisions = sqliteTable(
+  "opportunity_decisions",
+  {
+    id: text("id").primaryKey(),
+    recommendationId: text("recommendation_id")
+      .notNull()
+      .references(() => recommendations.id, { onDelete: "cascade" }),
+    auditLogId: text("audit_log_id")
+      .notNull()
+      .references(() => auditLogs.id),
+    mode: text("mode").notNull().default("paper"),
+    operatorDecision: text("operator_decision", {
+      enum: ["watchlist", "paper_trade", "avoid", "needs_more_data"],
+    }).notNull(),
+    reasonCodesJson: text("reason_codes_json").notNull().default("[]"),
+    liveTradingEnabled: integer("live_trading_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    brokerExecution: integer("broker_execution", { mode: "boolean" }).notNull().default(false),
+    notRecommendation: integer("not_recommendation", { mode: "boolean" }).notNull().default(true),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("opportunity_decisions_audit_unique").on(table.auditLogId),
+    index("opportunity_decisions_recommendation_idx").on(table.recommendationId, table.createdAt),
+    index("opportunity_decisions_operator_decision_idx").on(
+      table.operatorDecision,
+      table.createdAt,
+    ),
+    check("opportunity_decisions_id_nonempty", sql`length(${table.id}) > 0`),
+    check(
+      "opportunity_decisions_recommendation_nonempty",
+      sql`length(${table.recommendationId}) > 0`,
+    ),
+    check("opportunity_decisions_audit_nonempty", sql`length(${table.auditLogId}) > 0`),
+    check("opportunity_decisions_mode_paper_only", sql`${table.mode} = 'paper'`),
+    check(
+      "opportunity_decisions_reason_codes_valid",
+      sql`
+        json_valid(${table.reasonCodesJson})
+        AND json_type(${table.reasonCodesJson}) = 'array'
+        AND json_array_length(${table.reasonCodesJson}) > 0
+      `,
+    ),
+    check("opportunity_decisions_no_live_trading", sql`${table.liveTradingEnabled} = 0`),
+    check("opportunity_decisions_no_broker_execution", sql`${table.brokerExecution} = 0`),
+    check("opportunity_decisions_not_recommendation", sql`${table.notRecommendation} = 1`),
+    check("opportunity_decisions_created_at_nonempty", sql`length(${table.createdAt}) > 0`),
+    check("opportunity_decisions_updated_at_nonempty", sql`length(${table.updatedAt}) > 0`),
+  ],
+);
