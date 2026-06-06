@@ -130,4 +130,90 @@ describe("mock daily opportunities route", () => {
       await server.close();
     }
   });
+
+  it("runs a mock opportunity decision dry run with audit metadata and no broker execution", async () => {
+    const server = buildServer({
+      APP_ENV: "test",
+      API_PORT: 4000,
+      LIVE_TRADING_ENABLED: false,
+    });
+
+    try {
+      const response = await server.inject({
+        method: "POST",
+        url: "/opportunities/mock-decision-dry-run",
+      });
+
+      expect(response.statusCode, response.body).toBe(200);
+      const body = response.json();
+      expect(body).toMatchObject({
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: false,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+        },
+        persistedInMemory: {
+          dailyOpportunityReports: 1,
+          dailyOpportunityReportRecommendations: 1,
+          recommendations: 1,
+          auditLogs: 2,
+        },
+        decision: {
+          status: "accepted",
+          candidateId: "candidate-MSFT-momentum-daily-1",
+          ticker: "MSFT",
+          operatorDecision: "paper_trade",
+          mode: "paper",
+          notRecommendation: true,
+          liveTradingEnabled: false,
+          brokerExecution: false,
+          reasonCodes: [],
+          evidenceGate: "verified",
+          downsideScenario: "Shares close below the mock breakout level.",
+          invalidationConditions: ["Close below mock breakout level"],
+          audit: {
+            auditLogId: "audit_mock_opportunity_decision_1",
+            eventType: "operator_decision",
+            actorType: "operator",
+            actorId: "operator:mock",
+            occurredAt: "2026-05-28T15:10:00.000Z",
+            subjectType: "recommendation",
+            subjectId: "candidate-MSFT-momentum-daily-1",
+            riskDecision: "pass",
+            operatorDecision: "paper_trade",
+          },
+          sourceCitation: {
+            title: "Mock daily price history",
+            retrievedAt: "2026-05-28T14:30:00.000Z",
+          },
+          dataFreshness: {
+            status: "fresh",
+            asOf: "2026-05-28T14:30:00.000Z",
+          },
+        },
+        safety: {
+          paperOnly: true,
+          noBrokerExecution: true,
+          notFinancialAdvice: true,
+          liveTradingEnabled: false,
+        },
+      });
+      expect(body.decision.scores).toMatchObject({
+        risk: expect.any(Number),
+        confidence: expect.any(Number),
+        liquidity: expect.any(Number),
+      });
+      expect("brokerOrder" in body.decision).toBe(false);
+      expect("orderPlacement" in body.decision).toBe(false);
+      expect(JSON.stringify(body)).not.toMatch(
+        /liveTradingEnabled":true|brokerCredential|placeOrder/,
+      );
+    } finally {
+      await server.close();
+    }
+  });
 });

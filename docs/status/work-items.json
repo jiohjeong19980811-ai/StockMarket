@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T20:48:07-04:00",
+  "lastUpdated": "2026-06-05T20:54:20-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -10,12 +10,12 @@
     "Deferred"
   ],
   "currentFocus": {
-    "phase": "Milestone 9: Ticker and Opportunity Detail Pages",
-    "task": "Add opportunity detail page shell",
+    "phase": "Milestone 10: Paper-Only Opportunity Decisions",
+    "task": "Add mock opportunity decision write API",
     "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead",
     "status": "Needs Review",
     "priority": "High",
-    "category": "Opportunity detail UI"
+    "category": "Paper trading API and auditability"
   },
   "items": [
     {
@@ -1457,11 +1457,11 @@
       "title": "Add opportunity detail page shell",
       "phase": "Milestone 9",
       "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead",
-      "status": "Needs Review",
+      "status": "Completed",
       "priority": "High",
       "category": "Opportunity detail UI",
       "blockers": [],
-      "nextStep": "Commit the validated opportunity detail shell, push the feature branch, open a PR to main, wait for checks, and merge only after checks pass.",
+      "nextStep": "Merged to main in PR #8; continue with M10-001 paper-only opportunity decision write API.",
       "relatedDocs": [
         "apps/web/src/App.tsx",
         "apps/web/test/App.test.tsx",
@@ -1476,6 +1476,32 @@
         "Secret-pattern scan",
         "Live-trading surface scan",
         "Local web smoke"
+      ]
+    },
+    {
+      "id": "M10-001",
+      "title": "Add mock opportunity decision write API",
+      "phase": "Milestone 10",
+      "owner": "Codex founding CTO / lead architect / principal engineer / product manager / security reviewer / risk reviewer",
+      "status": "Needs Review",
+      "priority": "High",
+      "category": "Paper trading API and auditability",
+      "blockers": [],
+      "nextStep": "Commit the validated opportunity decision API, push the feature branch, open a PR to main, wait for checks, and merge only after checks pass.",
+      "relatedDocs": [
+        "apps/api/src/server.ts",
+        "apps/api/test",
+        "docs/product-roadmap.md",
+        "docs/risk-and-compliance.md"
+      ],
+      "validationRequired": [
+        "Focused API tests",
+        "Root CI",
+        "Status JSON parse",
+        "Whitespace check",
+        "Secret-pattern scan",
+        "Live-trading surface scan",
+        "API smoke"
       ]
     }
   ]

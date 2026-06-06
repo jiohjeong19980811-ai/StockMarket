@@ -911,6 +911,118 @@ export function buildServer(env: ApiEnv) {
     }
   });
 
+  server.post("/opportunities/mock-decision-dry-run", async () => {
+    const client = await createLocalClient();
+    const backtestResult = evaluateStockBacktest(mockStockBacktestInput);
+    const report = generateDailyOpportunityReport({
+      id: "daily_mock_20260528",
+      generatedAt: "2026-05-28T15:05:00.000Z",
+      candidates: mockDailyOpportunityCandidates,
+    });
+    const opportunity = report.opportunities[0];
+
+    if (opportunity === undefined) {
+      throw new Error("Mock opportunity decision dry run requires one ranked opportunity.");
+    }
+
+    const sourceCitation = opportunity.sourceCitations[0];
+    const audit = {
+      auditLogId: "audit_mock_opportunity_decision_1",
+      eventType: "operator_decision",
+      actorType: "operator",
+      actorId: "operator:mock",
+      occurredAt: "2026-05-28T15:10:00.000Z",
+      subjectType: "recommendation",
+      subjectId: opportunity.id,
+      riskDecision: "pass",
+      operatorDecision: "paper_trade",
+      operatorNotes: "Mock operator accepted the paper-only opportunity candidate.",
+    };
+
+    try {
+      await runMigrations(client);
+      await seedMockBacktestStrategy(client);
+      await persistStockBacktestRun(
+        client,
+        mockStockBacktestInput,
+        backtestResult,
+        "2026-05-29T18:00:00.000Z",
+      );
+      await persistDailyOpportunityReport(client, report, {
+        persistedAt: "2026-05-29T18:05:00.000Z",
+        strategyVersionIds: {
+          momentum: mockStockBacktestInput.strategyVersionId,
+        },
+      });
+      await client.execute({
+        sql: `INSERT INTO audit_logs
+          (id, event_type, actor_type, actor_id, occurred_at, subject_type, subject_id,
+           risk_decision, operator_decision, operator_notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          audit.auditLogId,
+          audit.eventType,
+          audit.actorType,
+          audit.actorId,
+          audit.occurredAt,
+          audit.subjectType,
+          audit.subjectId,
+          audit.riskDecision,
+          audit.operatorDecision,
+          audit.operatorNotes,
+        ],
+      });
+
+      return {
+        mode: "mock",
+        requiresEnv: false,
+        liveTradingEnabled: false,
+        providerKeysRequired: [],
+        notRecommendation: true,
+        persistence: {
+          scope: "in_memory",
+          durable: false,
+          note: "Dry-run opportunity decisions are audit-shaped and discarded after the response.",
+        },
+        persistedInMemory: {
+          dailyOpportunityReports: await countRows(client, "daily_opportunity_reports"),
+          dailyOpportunityReportRecommendations: await countRows(
+            client,
+            "daily_opportunity_report_recommendations",
+          ),
+          recommendations: await countRows(client, "recommendations"),
+          auditLogs: await countRows(client, "audit_logs"),
+        },
+        decision: {
+          status: "accepted",
+          candidateId: opportunity.id,
+          ticker: opportunity.ticker,
+          operatorDecision: "paper_trade",
+          mode: "paper",
+          notRecommendation: true,
+          liveTradingEnabled: false,
+          brokerExecution: false,
+          reasonCodes: [],
+          evidenceGate: opportunity.evidence.gate,
+          downsideScenario: opportunity.downsideScenario,
+          invalidationConditions: opportunity.invalidationConditions,
+          scores: opportunity.scores,
+          audit,
+          sourceCitation: sourceCitation ?? null,
+          dataFreshness: opportunity.dataFreshness,
+        },
+        safety: {
+          paperOnly: true,
+          noBrokerExecution: true,
+          notFinancialAdvice: true,
+          liveTradingEnabled: false,
+        },
+      };
+    } finally {
+      client.close();
+    }
+  });
+
   server.get("/strategies/policies", async () => ({
     mode: "policy",
     requiresEnv: false,
