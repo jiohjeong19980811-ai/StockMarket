@@ -216,4 +216,87 @@ describe("mock daily opportunities route", () => {
       await server.close();
     }
   });
+
+  it("records watchlist, avoid, and needs-more-data mock opportunity decisions", async () => {
+    const server = buildServer({
+      APP_ENV: "test",
+      API_PORT: 4000,
+      LIVE_TRADING_ENABLED: false,
+    });
+
+    const expectedDecisions = [
+      {
+        decision: "watchlist",
+        auditLogId: "audit_mock_opportunity_decision_watchlist",
+        reasonCode: "operator_watchlist",
+        riskDecision: "watchlist",
+      },
+      {
+        decision: "avoid",
+        auditLogId: "audit_mock_opportunity_decision_avoid",
+        reasonCode: "operator_rejected",
+        riskDecision: "avoid",
+      },
+      {
+        decision: "needs_more_data",
+        auditLogId: "audit_mock_opportunity_decision_needs_more_data",
+        reasonCode: "operator_needs_more_data",
+        riskDecision: "needs_more_data",
+      },
+    ] as const;
+
+    try {
+      for (const expected of expectedDecisions) {
+        const response = await server.inject({
+          method: "POST",
+          url: "/opportunities/mock-decision-dry-run",
+          payload: {
+            decision: expected.decision,
+          },
+        });
+
+        expect(response.statusCode, response.body).toBe(200);
+        const body = response.json();
+        expect(body).toMatchObject({
+          mode: "mock",
+          liveTradingEnabled: false,
+          providerKeysRequired: [],
+          notRecommendation: true,
+          persistedInMemory: {
+            dailyOpportunityReports: 1,
+            dailyOpportunityReportRecommendations: 1,
+            recommendations: 1,
+            auditLogs: 2,
+          },
+          decision: {
+            status: "accepted",
+            candidateId: "candidate-MSFT-momentum-daily-1",
+            ticker: "MSFT",
+            operatorDecision: expected.decision,
+            mode: "paper",
+            notRecommendation: true,
+            liveTradingEnabled: false,
+            brokerExecution: false,
+            reasonCodes: [expected.reasonCode],
+            audit: {
+              auditLogId: expected.auditLogId,
+              eventType: "operator_decision",
+              riskDecision: expected.riskDecision,
+              operatorDecision: expected.decision,
+            },
+          },
+          safety: {
+            paperOnly: true,
+            noBrokerExecution: true,
+            notFinancialAdvice: true,
+            liveTradingEnabled: false,
+          },
+        });
+        expect("brokerOrder" in body.decision).toBe(false);
+        expect("orderPlacement" in body.decision).toBe(false);
+      }
+    } finally {
+      await server.close();
+    }
+  });
 });
