@@ -328,6 +328,7 @@ describe("database migrations", () => {
       "0004_backtest_runs.sql",
       "0005_recommendation_evidence_gate.sql",
       "0006_daily_opportunity_reports.sql",
+      "0007_opportunity_decisions.sql",
     ]);
     for (const row of result.rows) {
       expect(row.checksum).toEqual(expect.stringMatching(/^[a-f0-9]{64}$/));

@@ -50,10 +50,12 @@ Acceptance criteria:
 - API smoke can verify persisted paper trades can be read back through a safe paper-only read model with audit links and computed simulated outcomes.
 - API smoke can verify a mock paper-trade evidence summary with closed-trade metrics and review-gated status.
 - API smoke can verify recommendation evidence detail resolves a closed paper-trade evidence ID with citations, freshness, reason codes, and audit trail while keeping the route in-memory and mock-only.
+- API smoke can verify mock opportunity decisions are persisted through an in-memory opportunity-decision ledger and read back with audit linkage, source timestamps, freshness, reason codes, paper-only status, and no broker execution.
 - Operator console can show simulated paper-trade close outcome, P/L, return percent, exit price, and lessons from the mock close dry run.
 - Operator console can show paper-trade evidence summary metrics, including closed/open counts, win rate, realized P/L, review status, and validation-only messaging.
 - Operator console can show mock persisted ledger readback details, including paper-only status, close audit ID, entry/exit prices, simulated P/L, return, and risk percent.
 - Operator console can show recommendation evidence detail with source timestamps, freshness, downside/invalidation text, resolved paper-trade evidence, and audit events while keeping decision buttons disabled until audit-backed writes exist.
+- Operator console can submit watchlist, paper-trade, avoid, and needs-more-data opportunity decisions through the paper-only ledger dry run and show audit/readback details.
 - Operator console hides sample paper-trade metrics when the API is unavailable and shows `Data unavailable` / `No operational decision` instead of an actionable-looking fallback.
 - Paper-trade evidence summaries aggregate closed simulated trades for validation metrics while remaining non-recommendation and review-gated.
 - Backtesting framework exists.

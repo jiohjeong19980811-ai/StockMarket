@@ -18,8 +18,10 @@ import {
   createLocalClient,
   getRecommendationEvidenceDetail,
   listPersistedDailyOpportunityReports,
+  listPersistedOpportunityDecisions,
   listPersistedStockBacktestRuns,
   listPersistedPaperTrades,
+  persistOpportunityDecision,
   persistDailyOpportunityReport,
   persistIngestionBatch,
   persistPaperTrade,
@@ -59,6 +61,7 @@ type DryRunTableName =
   | "recommendation_citations"
   | "audit_logs"
   | "paper_trades"
+  | "opportunity_decisions"
   | "backtest_runs"
   | "backtest_run_trades"
   | "daily_opportunity_reports"
@@ -399,7 +402,7 @@ const mockOpportunityDecisionAuditConfig: Record<
   },
   paper_trade: {
     auditLogId: "audit_mock_opportunity_decision_1",
-    reasonCodes: [],
+    reasonCodes: ["operator_accepted"],
     riskDecision: "pass",
     operatorNotes: "Mock operator accepted the paper-only opportunity candidate.",
   },
@@ -1074,6 +1077,130 @@ export function buildServer(env: ApiEnv) {
             sourceCitation: sourceCitation ?? null,
             dataFreshness: opportunity.dataFreshness,
           },
+          safety: {
+            paperOnly: true,
+            noBrokerExecution: true,
+            notFinancialAdvice: true,
+            liveTradingEnabled: false,
+          },
+        };
+      } finally {
+        client.close();
+      }
+    },
+  );
+
+  server.post<{ Body: OpportunityDecisionRequestBody }>(
+    "/opportunities/mock-decision-ledger-dry-run",
+    async (request, reply) => {
+      const requestedDecision =
+        request.body?.decision === undefined ? "paper_trade" : request.body.decision;
+      if (!isOpportunityDecision(requestedDecision)) {
+        return reply.code(400).send({
+          mode: "mock",
+          requiresEnv: false,
+          liveTradingEnabled: false,
+          providerKeysRequired: [],
+          notRecommendation: true,
+          error: "Unsupported mock opportunity decision.",
+          allowedDecisions: opportunityDecisions,
+        });
+      }
+      const auditConfig = mockOpportunityDecisionAuditConfig[requestedDecision];
+      const client = await createLocalClient();
+      const backtestResult = evaluateStockBacktest(mockStockBacktestInput);
+      const report = generateDailyOpportunityReport({
+        id: "daily_mock_20260528",
+        generatedAt: "2026-05-28T15:05:00.000Z",
+        candidates: mockDailyOpportunityCandidates,
+      });
+      const opportunity = report.opportunities[0];
+
+      if (opportunity === undefined) {
+        throw new Error(
+          "Mock opportunity decision ledger dry run requires one ranked opportunity.",
+        );
+      }
+
+      try {
+        await runMigrations(client);
+        await seedMockBacktestStrategy(client);
+        await persistStockBacktestRun(
+          client,
+          mockStockBacktestInput,
+          backtestResult,
+          "2026-05-29T18:00:00.000Z",
+        );
+        await persistDailyOpportunityReport(client, report, {
+          persistedAt: "2026-05-29T18:05:00.000Z",
+          strategyVersionIds: {
+            momentum: mockStockBacktestInput.strategyVersionId,
+          },
+        });
+        await persistOpportunityDecision(client, {
+          id: `decision_mock_opportunity_${requestedDecision}`,
+          recommendationId: opportunity.id,
+          auditLogId: auditConfig.auditLogId,
+          decidedBy: "operator:mock",
+          decidedAt: "2026-05-28T15:10:00.000Z",
+          decision: requestedDecision,
+          riskDecision: auditConfig.riskDecision,
+          reasonCodes: auditConfig.reasonCodes,
+          notes: auditConfig.operatorNotes,
+          createdAt: "2026-05-28T15:10:00.000Z",
+        });
+
+        const decisions = await listPersistedOpportunityDecisions(client, {
+          recommendationId: opportunity.id,
+          limit: 10,
+        });
+        const decisionReadback = decisions[0];
+        if (decisionReadback === undefined) {
+          throw new Error(
+            "Mock opportunity decision ledger dry run requires one persisted decision.",
+          );
+        }
+
+        return {
+          mode: "mock",
+          requiresEnv: false,
+          liveTradingEnabled: false,
+          providerKeysRequired: [],
+          notRecommendation: true,
+          persistence: {
+            scope: "in_memory",
+            durable: false,
+            note: "Dry-run opportunity decision ledger data is discarded after the response.",
+          },
+          persistedInMemory: {
+            dailyOpportunityReports: await countRows(client, "daily_opportunity_reports"),
+            dailyOpportunityReportRecommendations: await countRows(
+              client,
+              "daily_opportunity_report_recommendations",
+            ),
+            recommendations: await countRows(client, "recommendations"),
+            auditLogs: await countRows(client, "audit_logs"),
+            opportunityDecisions: await countRows(client, "opportunity_decisions"),
+          },
+          decision: {
+            status: "accepted",
+            candidateId: decisionReadback.recommendationId,
+            ticker: decisionReadback.ticker,
+            operatorDecision: decisionReadback.operatorDecision,
+            mode: decisionReadback.mode,
+            notRecommendation: decisionReadback.notRecommendation,
+            liveTradingEnabled: decisionReadback.liveTradingEnabled,
+            brokerExecution: decisionReadback.brokerExecution,
+            reasonCodes: decisionReadback.reasonCodes,
+            evidenceGate: decisionReadback.evidenceGate,
+            downsideScenario: decisionReadback.downsideScenario,
+            invalidationConditions: decisionReadback.invalidationConditions,
+            scores: decisionReadback.scores,
+            audit: decisionReadback.audit,
+            sourceCitation: decisionReadback.sourceCitation,
+            dataFreshness: decisionReadback.dataFreshness,
+          },
+          decisions,
           safety: {
             paperOnly: true,
             noBrokerExecution: true,

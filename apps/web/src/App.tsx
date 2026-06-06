@@ -584,7 +584,8 @@ const evidenceDetailEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidenc
 const backtestReadModelEndpoint = "http://127.0.0.1:4000/backtesting/mock-read-model-dry-run";
 const dailyOpportunitiesEndpoint = "http://127.0.0.1:4000/opportunities/mock-daily-dry-run";
 const dailyOpportunityHistoryEndpoint = "http://127.0.0.1:4000/opportunities/mock-history-dry-run";
-const opportunityDecisionEndpoint = "http://127.0.0.1:4000/opportunities/mock-decision-dry-run";
+const opportunityDecisionEndpoint =
+  "http://127.0.0.1:4000/opportunities/mock-decision-ledger-dry-run";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",

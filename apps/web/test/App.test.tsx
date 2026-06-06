@@ -702,7 +702,7 @@ function mockOpportunityDecisionBodyFor(decision: string) {
     },
     paper_trade: {
       auditLogId: "audit_mock_opportunity_decision_1",
-      reasonCodes: [],
+      reasonCodes: ["operator_accepted"],
       riskDecision: "pass",
       operatorNotes: "Mock operator accepted the paper-only opportunity candidate.",
     },
@@ -775,7 +775,7 @@ describe("operator console shell", () => {
         typeof init?.body === "string"
           ? ((JSON.parse(init.body || "{}") as { decision?: string }).decision ?? "paper_trade")
           : "paper_trade";
-      const body = url.includes("opportunities/mock-decision-dry-run")
+      const body = url.includes("opportunities/mock-decision-ledger-dry-run")
         ? mockOpportunityDecisionBodyFor(requestedDecision)
         : url.includes("opportunities/mock-history-dry-run")
           ? mockDailyHistoryBody
@@ -985,7 +985,9 @@ describe("operator console shell", () => {
     ).toBeInTheDocument();
     expect(
       fetchMock.mock.calls
-        .filter(([input]) => input.toString().includes("opportunities/mock-decision-dry-run"))
+        .filter(([input]) =>
+          input.toString().includes("opportunities/mock-decision-ledger-dry-run"),
+        )
         .map(([, init]) => JSON.parse((init as RequestInit | undefined)?.body?.toString() ?? "{}")),
     ).toEqual([
       { decision: "watchlist" },
@@ -993,6 +995,11 @@ describe("operator console shell", () => {
       { decision: "needs_more_data" },
       { decision: "paper_trade" },
     ]);
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        input.toString().includes("opportunities/mock-decision-ledger-dry-run"),
+      ).length,
+    ).toBe(4);
     expect(screen.getByText("No provider keys required")).toBeInTheDocument();
     expect(screen.getByText("Mock scoring evaluation")).toBeInTheDocument();
     expect(screen.getByText("Strategy Policy")).toBeInTheDocument();
