@@ -692,6 +692,54 @@ const mockOpportunityDecisionBody = {
   },
 };
 
+function mockOpportunityDecisionBodyFor(decision: string) {
+  const decisions = {
+    watchlist: {
+      auditLogId: "audit_mock_opportunity_decision_watchlist",
+      reasonCodes: ["operator_watchlist"],
+      riskDecision: "watchlist",
+      operatorNotes: "Mock operator moved the opportunity to the watchlist for paper-only review.",
+    },
+    paper_trade: {
+      auditLogId: "audit_mock_opportunity_decision_1",
+      reasonCodes: [],
+      riskDecision: "pass",
+      operatorNotes: "Mock operator accepted the paper-only opportunity candidate.",
+    },
+    avoid: {
+      auditLogId: "audit_mock_opportunity_decision_avoid",
+      reasonCodes: ["operator_rejected"],
+      riskDecision: "avoid",
+      operatorNotes: "Mock operator rejected the opportunity after risk review.",
+    },
+    needs_more_data: {
+      auditLogId: "audit_mock_opportunity_decision_needs_more_data",
+      reasonCodes: ["operator_needs_more_data"],
+      riskDecision: "needs_more_data",
+      operatorNotes: "Mock operator requested fresher research context before deciding.",
+    },
+  } as const;
+  const config = decisions[decision as keyof typeof decisions] ?? decisions.paper_trade;
+
+  return {
+    ...mockOpportunityDecisionBody,
+    decision: {
+      ...mockOpportunityDecisionBody.decision,
+      operatorDecision:
+        decision in decisions ? (decision as keyof typeof decisions) : "paper_trade",
+      reasonCodes: config.reasonCodes,
+      audit: {
+        ...mockOpportunityDecisionBody.decision.audit,
+        auditLogId: config.auditLogId,
+        riskDecision: config.riskDecision,
+        operatorDecision:
+          decision in decisions ? (decision as keyof typeof decisions) : "paper_trade",
+        operatorNotes: config.operatorNotes,
+      },
+    },
+  };
+}
+
 const mockNoGoodDailyHistoryBody = {
   ...mockDailyHistoryBody,
   persistedInMemory: {
@@ -721,32 +769,35 @@ afterEach(() => {
 
 describe("operator console shell", () => {
   it("shows research-first safety posture", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = input.toString();
-        const body = url.includes("opportunities/mock-decision-dry-run")
-          ? mockOpportunityDecisionBody
-          : url.includes("opportunities/mock-history-dry-run")
-            ? mockDailyHistoryBody
-            : url.includes("opportunities/mock-daily-dry-run")
-              ? mockDailyOpportunityBody
-              : url.includes("backtesting/mock-read-model-dry-run")
-                ? mockBacktestReadModelBody
-                : url.includes("mock-read-model-dry-run")
-                  ? mockPaperReadModelBody
-                  : url.includes("mock-evidence-detail-dry-run")
-                    ? mockEvidenceDetailBody
-                    : url.includes("mock-evidence-summary")
-                      ? mockPaperEvidenceSummaryBody
-                      : url.includes("mock-close-dry-run")
-                        ? mockPaperCloseBody
-                        : url.includes("paper-trading")
-                          ? mockPaperTradingBody
-                          : mockScoringBody;
-        return new Response(JSON.stringify(body));
-      }),
-    );
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input.toString();
+      const requestedDecision =
+        typeof init?.body === "string"
+          ? ((JSON.parse(init.body || "{}") as { decision?: string }).decision ?? "paper_trade")
+          : "paper_trade";
+      const body = url.includes("opportunities/mock-decision-dry-run")
+        ? mockOpportunityDecisionBodyFor(requestedDecision)
+        : url.includes("opportunities/mock-history-dry-run")
+          ? mockDailyHistoryBody
+          : url.includes("opportunities/mock-daily-dry-run")
+            ? mockDailyOpportunityBody
+            : url.includes("backtesting/mock-read-model-dry-run")
+              ? mockBacktestReadModelBody
+              : url.includes("mock-read-model-dry-run")
+                ? mockPaperReadModelBody
+                : url.includes("mock-evidence-detail-dry-run")
+                  ? mockEvidenceDetailBody
+                  : url.includes("mock-evidence-summary")
+                    ? mockPaperEvidenceSummaryBody
+                    : url.includes("mock-close-dry-run")
+                      ? mockPaperCloseBody
+                      : url.includes("paper-trading")
+                        ? mockPaperTradingBody
+                        : mockScoringBody;
+      return new Response(JSON.stringify(body));
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
 
     render(<App />);
 
@@ -872,25 +923,56 @@ describe("operator console shell", () => {
     ).toBeInTheDocument();
     expect(
       within(opportunityDetail).getByRole("button", { name: "Watch Opportunity" }),
-    ).toBeDisabled();
+    ).not.toBeDisabled();
     expect(
       within(opportunityDetail).getByRole("button", { name: "Reject Opportunity" }),
-    ).toBeDisabled();
+    ).not.toBeDisabled();
     expect(
       within(opportunityDetail).getByRole("button", { name: "Accept Paper Candidate" }),
     ).not.toBeDisabled();
     expect(
       within(opportunityDetail).getByRole("button", { name: "Needs More Data" }),
-    ).toBeDisabled();
+    ).not.toBeDisabled();
     expect(
       within(opportunityDetail).getByText(
         "Opportunity detail is a research review workspace; paper-only actions use audit-backed mock decision writes.",
       ),
     ).toBeInTheDocument();
+    fireEvent.click(within(opportunityDetail).getByRole("button", { name: "Watch Opportunity" }));
+    let opportunityDecisionAudit = await within(opportunityDetail).findByLabelText(
+      "Opportunity decision audit",
+    );
+    expect(within(opportunityDecisionAudit).getByText("Watchlist")).toBeInTheDocument();
+    expect(
+      within(opportunityDecisionAudit).getByText("audit_mock_opportunity_decision_watchlist"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(within(opportunityDetail).getByRole("button", { name: "Reject Opportunity" }));
+    opportunityDecisionAudit = await within(opportunityDetail).findByLabelText(
+      "Opportunity decision audit",
+    );
+    expect(within(opportunityDecisionAudit).getByText("Avoid")).toBeInTheDocument();
+    expect(
+      within(opportunityDecisionAudit).getByText("audit_mock_opportunity_decision_avoid"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(within(opportunityDetail).getByRole("button", { name: "Needs More Data" }));
+    opportunityDecisionAudit = await within(opportunityDetail).findByLabelText(
+      "Opportunity decision audit",
+    );
+    expect(within(opportunityDecisionAudit).getByText("Needs More Data")).toBeInTheDocument();
+    expect(
+      within(opportunityDecisionAudit).getByText("audit_mock_opportunity_decision_needs_more_data"),
+    ).toBeInTheDocument();
+
     fireEvent.click(
       within(opportunityDetail).getByRole("button", { name: "Accept Paper Candidate" }),
     );
+    opportunityDecisionAudit = await within(opportunityDetail).findByLabelText(
+      "Opportunity decision audit",
+    );
     expect(await within(opportunityDetail).findByText("Decision accepted")).toBeInTheDocument();
+    expect(within(opportunityDecisionAudit).getByText("Paper Trade")).toBeInTheDocument();
     expect(
       within(opportunityDetail).getByText("audit_mock_opportunity_decision_1"),
     ).toBeInTheDocument();
@@ -901,6 +983,16 @@ describe("operator console shell", () => {
         "Paper-only decision recorded; no broker execution occurred.",
       ),
     ).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls
+        .filter(([input]) => input.toString().includes("opportunities/mock-decision-dry-run"))
+        .map(([, init]) => JSON.parse((init as RequestInit | undefined)?.body?.toString() ?? "{}")),
+    ).toEqual([
+      { decision: "watchlist" },
+      { decision: "avoid" },
+      { decision: "needs_more_data" },
+      { decision: "paper_trade" },
+    ]);
     expect(screen.getByText("No provider keys required")).toBeInTheDocument();
     expect(screen.getByText("Mock scoring evaluation")).toBeInTheDocument();
     expect(screen.getByText("Strategy Policy")).toBeInTheDocument();
@@ -994,12 +1086,11 @@ describe("operator console shell", () => {
         "No broker or live-trading fields are exposed in this validation read model.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Watchlist" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Paper Trade" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Avoid" })).toBeDisabled();
-    screen
-      .getAllByRole("button", { name: "Needs More Data" })
-      .forEach((button) => expect(button).toBeDisabled());
+    const resolverActions = screen.getByLabelText("Operator decision actions");
+    expect(within(resolverActions).getByRole("button", { name: "Watchlist" })).toBeDisabled();
+    expect(within(resolverActions).getByRole("button", { name: "Paper Trade" })).toBeDisabled();
+    expect(within(resolverActions).getByRole("button", { name: "Avoid" })).toBeDisabled();
+    expect(within(resolverActions).getByRole("button", { name: "Needs More Data" })).toBeDisabled();
     expect(screen.getAllByText("Risk Controls").length).toBeGreaterThan(0);
     expect(screen.getByText("83")).toBeInTheDocument();
   });

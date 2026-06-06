@@ -1,21 +1,21 @@
 # Current Work Status
 
-Last updated: 2026-06-05T21:01:16-04:00
+Last updated: 2026-06-05T21:19:03-04:00
 
 ## Current Focus
 
 | Field | Value |
 | --- | --- |
 | Current phase | Milestone 10: Paper-Only Opportunity Decisions |
-| Current task | Wire opportunity decision dry run into operator console |
+| Current task | Add durable opportunity decision persistence and readback |
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead |
 | Priority | High |
 | Category | Paper trading UI and auditability |
-| Status | Needs Review |
+| Status | Planned |
 | Blockers | None |
-| Next step | Commit the validated opportunity decision UI, push `feature/m10-opportunity-decision-ui`, open a PR to `main`, wait for checks, and merge only after checks pass. |
-| Related docs/files | `apps/web/src/App.tsx`, `apps/web/test/App.test.tsx`, `apps/api/src/server.ts`, `docs/product-roadmap.md`, `docs/risk-and-compliance.md`, `docs/status/work-items.json` |
-| Validation required | Passed: focused web dashboard tests, typecheck, lint, format check, root CI, local web/API smoke, mobile screenshot smoke, status JSON parse, whitespace check, diff secret scan, and diff live-trading/order-surface scan. |
+| Next step | Write failing DB/API tests for a durable opportunity-decision ledger/read model that records watchlist, paper-trade, avoid, and needs-more-data actions as paper-only audit events without broker execution. |
+| Related docs/files | `packages/db`, `apps/api/src/server.ts`, `apps/api/test`, `apps/web/src/App.tsx`, `apps/web/test/App.test.tsx`, `docs/product-roadmap.md`, `docs/risk-and-compliance.md`, `docs/status/work-items.json` |
+| Validation required | Required after implementation: focused DB/API/web tests, root CI, status JSON parse, whitespace check, secret scan, live-trading/order-surface scan, and local web/API smoke. |
 
 ## Status Vocabulary
 

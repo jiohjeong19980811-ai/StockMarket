@@ -1397,7 +1397,7 @@ export function App() {
     };
   }, []);
 
-  async function handleOpportunityDecision() {
+  async function handleOpportunityDecision(decision: Decision) {
     setOpportunityDecisionState("submitting");
 
     try {
@@ -1406,7 +1406,7 @@ export function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: "{}",
+        body: JSON.stringify({ decision }),
       });
 
       if (!response.ok) {
@@ -1815,24 +1815,42 @@ export function App() {
               </p>
               <p className="eyebrow">Paper-only opportunity actions</p>
               <div className="decision-actions" aria-label="Opportunity decision actions">
-                <button type="button" disabled>
+                <button
+                  type="button"
+                  disabled={opportunityDecisionState === "submitting"}
+                  onClick={() => {
+                    void handleOpportunityDecision("watchlist");
+                  }}
+                >
                   Watch Opportunity
                 </button>
-                <button type="button" disabled>
+                <button
+                  type="button"
+                  disabled={opportunityDecisionState === "submitting"}
+                  onClick={() => {
+                    void handleOpportunityDecision("avoid");
+                  }}
+                >
                   Reject Opportunity
                 </button>
                 <button
                   type="button"
                   disabled={opportunityDecisionState === "submitting"}
                   onClick={() => {
-                    void handleOpportunityDecision();
+                    void handleOpportunityDecision("paper_trade");
                   }}
                 >
                   {opportunityDecisionState === "submitting"
                     ? "Recording Paper Candidate"
                     : "Accept Paper Candidate"}
                 </button>
-                <button type="button" disabled>
+                <button
+                  type="button"
+                  disabled={opportunityDecisionState === "submitting"}
+                  onClick={() => {
+                    void handleOpportunityDecision("needs_more_data");
+                  }}
+                >
                   Needs More Data
                 </button>
               </div>
@@ -1855,14 +1873,20 @@ export function App() {
                       <strong>{opportunityDecision.decision.audit.auditLogId}</strong>
                     </div>
                     <div>
-                      <span>Event</span>
-                      <strong>{opportunityDecision.decision.audit.eventType}</strong>
+                      <span>Decision</span>
+                      <strong>
+                        {decisionLabels[opportunityDecision.decision.operatorDecision]}
+                      </strong>
                     </div>
                   </div>
                   <div
                     className="evidence-strip evidence-strip-secondary"
                     aria-label="Opportunity decision safety"
                   >
+                    <div>
+                      <span>Event</span>
+                      <strong>{opportunityDecision.decision.audit.eventType}</strong>
+                    </div>
                     <div>
                       <span>Occurred</span>
                       <strong>{opportunityDecision.decision.audit.occurredAt}</strong>

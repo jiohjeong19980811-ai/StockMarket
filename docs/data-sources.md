@@ -92,6 +92,7 @@ Provider selection scoring is tracked in `packages/data/src/provider-selection.t
 | Provider | Primary use | Timing | Notes |
 | --- | --- | --- | --- |
 | Polygon.io / Massive | Equities, options chains, market/news data | First paid-provider candidate | Confirm current branding, plan coverage, historical options depth, rate limits, and redistribution/storage terms. |
+| LSEG | Equities, company intelligence, market data, and news through the desktop/plugin surface | Evaluate later | Potentially valuable for public-equity research, but do not treat plugin output as app data until entitlements, storage rights, source timestamps, and backend adapter behavior are reviewed. No callable LSEG tool is visible in the current Codex session. |
 | Financial Modeling Prep | Fundamentals, earnings, ratios, market news | Evaluate for MVP | Confirm endpoint quality, licensing, and paid-plan limits. |
 | Finnhub | Company news, fundamentals, earnings, analyst signals, sentiment/social data | Evaluate for MVP | Validate data quality and licensing before production use. |
 | SEC EDGAR | Official filings and XBRL company facts | Use for verification | Official source; no key required for public APIs, but respect SEC access guidance. |
@@ -108,3 +109,4 @@ Provider selection scoring is tracked in `packages/data/src/provider-selection.t
 - Any provider that cannot supply timestamps or data lineage should lower confidence or be excluded from recommendations.
 - Broker APIs must be modeled separately from market data APIs so order-placement capability cannot accidentally appear in MVP.
 - Missing or unusable provider records must preserve ingestion-run, provider-record, and data-quality audit trails while being quarantined from normalized strategy datasets.
+- Provider-like plugins or connectors must follow the same adapter, timestamp, freshness, citation, entitlement, and storage-review rules as direct API providers. They are not allowed to populate recommendations, backtests, or paper-trading evidence by bypassing the backend data layer.
