@@ -81,6 +81,10 @@ The repo includes these checked-in skills:
 
 Skills are workflow guides. Custom agents are role-specific reviewers or implementers. Use skills for repeatable task procedure and agents for independent perspective.
 
+## Plugin And Skill Governance
+
+Use `docs/plugin-skill-governance.md` for the current adoption policy for visible Codex plugins and skills. The main Codex operator remains the final decision-maker. Subagents may use approved tools only within their documented role, and no plugin or skill may bypass provider adapters, risk controls, evidence gates, audit logs, or the no-live-execution MVP boundary.
+
 ## Lifecycle Hook Support
 
 Project hooks add guardrails around agent work:
