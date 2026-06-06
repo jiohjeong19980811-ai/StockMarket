@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-06-05T20:56:28-04:00",
+  "lastUpdated": "2026-06-05T21:01:16-04:00",
   "statusVocabulary": [
     "Planned",
     "In Progress",
@@ -13,7 +13,7 @@
     "phase": "Milestone 10: Paper-Only Opportunity Decisions",
     "task": "Wire opportunity decision dry run into operator console",
     "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead",
-    "status": "Planned",
+    "status": "Needs Review",
     "priority": "High",
     "category": "Paper trading UI and auditability"
   },
@@ -1509,11 +1509,11 @@
       "title": "Wire opportunity decision dry run into operator console",
       "phase": "Milestone 10",
       "owner": "Codex founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer",
-      "status": "Planned",
+      "status": "Needs Review",
       "priority": "High",
       "category": "Paper trading UI and auditability",
       "blockers": [],
-      "nextStep": "Write failing operator-console tests for enabling the paper-only opportunity acceptance action, calling the mock decision dry-run API, and displaying returned audit/safety state without live trading.",
+      "nextStep": "Commit the validated opportunity decision UI, push the feature branch, open a PR to main, wait for checks, and merge only after checks pass.",
       "relatedDocs": [
         "apps/web/src/App.tsx",
         "apps/web/test/App.test.tsx",

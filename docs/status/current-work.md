@@ -1,6 +1,6 @@
 # Current Work Status
 
-Last updated: 2026-06-05T20:56:28-04:00
+Last updated: 2026-06-05T21:01:16-04:00
 
 ## Current Focus
 
@@ -11,11 +11,11 @@ Last updated: 2026-06-05T20:56:28-04:00
 | Owner/agent | Codex acting as founding CTO / lead architect / principal engineer / product manager / UI reviewer / risk reviewer / quantitative research lead |
 | Priority | High |
 | Category | Paper trading UI and auditability |
-| Status | Planned |
+| Status | Needs Review |
 | Blockers | None |
-| Next step | Write failing operator-console tests for enabling the paper-only opportunity acceptance action, calling the mock decision dry-run API, and displaying returned audit/safety state without live trading. |
+| Next step | Commit the validated opportunity decision UI, push `feature/m10-opportunity-decision-ui`, open a PR to `main`, wait for checks, and merge only after checks pass. |
 | Related docs/files | `apps/web/src/App.tsx`, `apps/web/test/App.test.tsx`, `apps/api/src/server.ts`, `docs/product-roadmap.md`, `docs/risk-and-compliance.md`, `docs/status/work-items.json` |
-| Validation required | Required after implementation: focused web dashboard tests, root CI, status JSON parse, whitespace check, secret scan, live-trading/order-surface scan, and local web/API smoke. |
+| Validation required | Passed: focused web dashboard tests, typecheck, lint, format check, root CI, local web/API smoke, mobile screenshot smoke, status JSON parse, whitespace check, diff secret scan, and diff live-trading/order-surface scan. |
 
 ## Status Vocabulary
 

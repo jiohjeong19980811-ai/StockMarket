@@ -535,7 +535,45 @@ interface DailyOpportunityHistoryResponse {
   }>;
 }
 
+interface OpportunityDecisionResponse {
+  mode: "mock";
+  requiresEnv: boolean;
+  liveTradingEnabled: false;
+  providerKeysRequired: string[];
+  notRecommendation: true;
+  decision: {
+    status: "accepted" | "rejected";
+    candidateId: string;
+    ticker: string;
+    operatorDecision: Decision;
+    mode: "paper";
+    notRecommendation: true;
+    liveTradingEnabled: false;
+    brokerExecution: false;
+    reasonCodes: string[];
+    audit: {
+      auditLogId: string;
+      eventType: string;
+      actorType: "operator" | "system";
+      actorId: string;
+      occurredAt: string;
+      subjectType: string;
+      subjectId: string;
+      riskDecision: string;
+      operatorDecision: Decision;
+      operatorNotes: string;
+    };
+  };
+  safety: {
+    paperOnly: true;
+    noBrokerExecution: true;
+    notFinancialAdvice: true;
+    liveTradingEnabled: false;
+  };
+}
+
 type ApiState = "loading" | "online" | "offline";
+type OpportunityDecisionState = "idle" | "submitting" | "accepted" | "error";
 
 const scoringEndpoint = "http://127.0.0.1:4000/scoring/mock-evaluation";
 const paperTradingEndpoint = "http://127.0.0.1:4000/paper-trading/mock-decision";
@@ -546,6 +584,7 @@ const evidenceDetailEndpoint = "http://127.0.0.1:4000/paper-trading/mock-evidenc
 const backtestReadModelEndpoint = "http://127.0.0.1:4000/backtesting/mock-read-model-dry-run";
 const dailyOpportunitiesEndpoint = "http://127.0.0.1:4000/opportunities/mock-daily-dry-run";
 const dailyOpportunityHistoryEndpoint = "http://127.0.0.1:4000/opportunities/mock-history-dry-run";
+const opportunityDecisionEndpoint = "http://127.0.0.1:4000/opportunities/mock-decision-dry-run";
 
 const fallbackScoring: MockScoringResponse = {
   mode: "mock",
@@ -1249,6 +1288,10 @@ export function App() {
   );
   const [dailyOpportunityHistory, setDailyOpportunityHistory] =
     useState<DailyOpportunityHistoryResponse>(fallbackDailyOpportunityHistory);
+  const [opportunityDecision, setOpportunityDecision] =
+    useState<OpportunityDecisionResponse | null>(null);
+  const [opportunityDecisionState, setOpportunityDecisionState] =
+    useState<OpportunityDecisionState>("idle");
 
   useEffect(() => {
     let active = true;
@@ -1353,6 +1396,31 @@ export function App() {
       active = false;
     };
   }, []);
+
+  async function handleOpportunityDecision() {
+    setOpportunityDecisionState("submitting");
+
+    try {
+      const response = await fetch(opportunityDecisionEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Opportunity decision API returned ${response.status}`);
+      }
+
+      const body = (await response.json()) as OpportunityDecisionResponse;
+      setOpportunityDecision(body);
+      setOpportunityDecisionState(body.decision.status === "accepted" ? "accepted" : "error");
+    } catch {
+      setOpportunityDecision(null);
+      setOpportunityDecisionState("error");
+    }
+  }
 
   const failedGates = scoring.result.gates.filter((gate) => !gate.passed);
   const paperTrade = paperTrading.result.trade;
@@ -1742,8 +1810,8 @@ export function App() {
                 </div>
               </div>
               <p className="panel-copy">
-                Opportunity detail is a research review workspace; paper-only actions stay disabled
-                until audit-backed decision writes are implemented.
+                Opportunity detail is a research review workspace; paper-only actions use
+                audit-backed mock decision writes.
               </p>
               <p className="eyebrow">Paper-only opportunity actions</p>
               <div className="decision-actions" aria-label="Opportunity decision actions">
@@ -1753,13 +1821,77 @@ export function App() {
                 <button type="button" disabled>
                   Reject Opportunity
                 </button>
-                <button type="button" disabled>
-                  Accept Paper Candidate
+                <button
+                  type="button"
+                  disabled={opportunityDecisionState === "submitting"}
+                  onClick={() => {
+                    void handleOpportunityDecision();
+                  }}
+                >
+                  {opportunityDecisionState === "submitting"
+                    ? "Recording Paper Candidate"
+                    : "Accept Paper Candidate"}
                 </button>
                 <button type="button" disabled>
                   Needs More Data
                 </button>
               </div>
+              {opportunityDecision ? (
+                <>
+                  <div
+                    className="evidence-strip evidence-strip-secondary"
+                    aria-label="Opportunity decision audit"
+                  >
+                    <div>
+                      <span>Decision Status</span>
+                      <strong>
+                        {opportunityDecision.decision.status === "accepted"
+                          ? "Decision accepted"
+                          : "Decision blocked"}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Audit</span>
+                      <strong>{opportunityDecision.decision.audit.auditLogId}</strong>
+                    </div>
+                    <div>
+                      <span>Event</span>
+                      <strong>{opportunityDecision.decision.audit.eventType}</strong>
+                    </div>
+                  </div>
+                  <div
+                    className="evidence-strip evidence-strip-secondary"
+                    aria-label="Opportunity decision safety"
+                  >
+                    <div>
+                      <span>Occurred</span>
+                      <strong>{opportunityDecision.decision.audit.occurredAt}</strong>
+                    </div>
+                    <div>
+                      <span>Mode</span>
+                      <strong>
+                        {opportunityDecision.safety.paperOnly ? "paper only" : "blocked"}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Broker</span>
+                      <strong>
+                        {opportunityDecision.decision.brokerExecution === false
+                          ? "no execution"
+                          : "blocked"}
+                      </strong>
+                    </div>
+                  </div>
+                  <p className="panel-copy">
+                    Paper-only decision recorded; no broker execution occurred.
+                  </p>
+                </>
+              ) : null}
+              {opportunityDecisionState === "error" ? (
+                <p className="panel-copy">
+                  Opportunity decision write is unavailable; no paper action was recorded.
+                </p>
+              ) : null}
             </article>
           ) : null}
 
